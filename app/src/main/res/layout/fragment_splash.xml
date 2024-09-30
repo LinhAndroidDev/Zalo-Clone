@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_splash_view"
+        tools:context=".fragment.SplashFragment">
+
+        <TextView
+            android:text="Chat App"
+            style="@style/text_common"
+            android:textColor="@color/text_white"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:layout_gravity="center"/>
+
+    </FrameLayout>
+</layout>

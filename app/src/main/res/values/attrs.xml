@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CustomHeaderView">
+        <attr name="item_view" format="enum">
+            <enum name="chat" value="0" />
+            <enum name="phoneBook" value="1" />
+            <enum name="discover" value="2" />
+            <enum name="diary" value="3" />
+            <enum name="personal" value="4" />
+            <enum name="room_chat" value="5"/>
+        </attr>
+    </declare-styleable>
+</resources>

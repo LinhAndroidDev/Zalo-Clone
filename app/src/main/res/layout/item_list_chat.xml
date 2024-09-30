@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="10dp"
+            android:paddingHorizontal="15dp">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:src="@mipmap/ic_launcher"
+                android:layout_width="60dp"
+                android:layout_height="60dp"/>
+
+            <LinearLayout
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="15dp"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_weight="1"
+                        android:text="Media box"
+                        android:textSize="14sp"
+                        android:textColor="@color/black"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:layout_marginStart="5dp"
+                        android:text="20/09"
+                        android:textSize="14sp"
+                        android:textColor="@color/black"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_marginTop="2dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_weight="1"
+                        android:text="Báo mới: [APP] Nhiều bộ, nghành đồng thuận với đề xuất nghỉ Tết Nguyên đán Ất Tỵ 9 ngày"
+                        android:textSize="12sp"
+                        android:textColor="@color/black"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"/>
+
+                    <View
+                        android:layout_gravity="center_vertical"
+                        android:background="@drawable/bg_circle"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"/>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_marginStart="90dp"
+            android:background="#E1E1E1"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"/>
+    </LinearLayout>
+</layout>

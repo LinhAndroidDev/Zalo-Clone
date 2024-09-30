@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="back_common">#068BFF</color>
+    <color name="back_common_end">#01A4FF</color>
+    <color name="blue">#0b8cff</color>
+    <color name="blue1">#0268ff</color>
+    <color name="color_sender">#d0f2fe</color>
+    <color name="blue_light">#daeaff</color>
+    <color name="blue_dark">#0a4197</color>
+    <color name="grey">#4C4C4C</color>
+    <color name="grey_1">#9f9f9f</color>
+    <color name="grey_2">#77787a</color>
+    <color name="stroke_sender">#bbced7</color>
+    <color name="stroke_receiver">#d7dbde</color>
+    <color name="grey_bg">#dfe3e6</color>
+    <color name="red">#fb534f</color>
+
+    //Text Color
+    <color name="text_common">#FF000000</color>
+    <color name="text_white">#FFFFFFFF</color>
+    <color name="text_icon">#1c77e4</color>
+    <color name="text_hint">#dfe3e6</color>
+    <color name="text_grey">#626365</color>
+    <color name="text_sender">#a7a7a7</color>
+</resources>
