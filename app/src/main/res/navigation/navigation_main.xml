@@ -26,30 +26,54 @@
         <action
             android:id="@+id/action_homeFragment_to_chatFragment"
             app:destination="@id/chatFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_searchFragment"
+            app:destination="@id/searchFragment" />
     </fragment>
     <fragment
         android:id="@+id/phoneBookFragment"
         android:name="com.example.messageapp.fragment.PhoneBookFragment"
         android:label="PhoneBookFragment"
-        tools:layout="@layout/fragment_phone_book" />
+        tools:layout="@layout/fragment_phone_book" >
+        <action
+            android:id="@+id/action_phoneBookFragment_to_searchFragment"
+            app:destination="@id/searchFragment" />
+    </fragment>
     <fragment
         android:id="@+id/discoverFragment"
         android:name="com.example.messageapp.fragment.DiscoverFragment"
         android:label="DiscoverFragment"
-        tools:layout="@layout/fragment_discover" />
+        tools:layout="@layout/fragment_discover" >
+        <action
+            android:id="@+id/action_discoverFragment_to_searchFragment"
+            app:destination="@id/searchFragment" />
+    </fragment>
     <fragment
         android:id="@+id/diaryFragment"
         android:name="com.example.messageapp.fragment.DiaryFragment"
         android:label="DiaryFragment"
-        tools:layout="@layout/fragment_diary" />
+        tools:layout="@layout/fragment_diary" >
+        <action
+            android:id="@+id/action_diaryFragment_to_searchFragment"
+            app:destination="@id/searchFragment" />
+    </fragment>
     <fragment
         android:id="@+id/personalFragment"
         android:name="com.example.messageapp.fragment.PersonalFragment"
         android:label="PersonalFragment"
-        tools:layout="@layout/fragment_personal" />
+        tools:layout="@layout/fragment_personal" >
+        <action
+            android:id="@+id/action_personalFragment_to_searchFragment"
+            app:destination="@id/searchFragment" />
+    </fragment>
     <fragment
         android:id="@+id/chatFragment"
         android:name="com.example.messageapp.fragment.ChatFragment"
         android:label="ChatFragment"
         tools:layout="@layout/fragment_chat" />
+    <fragment
+        android:id="@+id/searchFragment"
+        android:name="com.example.messageapp.fragment.SearchFragment"
+        android:label="SearchFragment"
+        tools:layout="@layout/fragment_search"/>
 </navigation>

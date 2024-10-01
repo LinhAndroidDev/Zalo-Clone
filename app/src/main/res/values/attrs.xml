@@ -7,7 +7,8 @@
             <enum name="discover" value="2" />
             <enum name="diary" value="3" />
             <enum name="personal" value="4" />
-            <enum name="room_chat" value="5"/>
+            <enum name="room_chat" value="5" />
+            <enum name="search" value="6" />
         </attr>
     </declare-styleable>
 </resources>

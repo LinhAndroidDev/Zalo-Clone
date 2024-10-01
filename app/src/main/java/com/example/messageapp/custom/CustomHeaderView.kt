@@ -6,9 +6,13 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.navigation.fragment.findNavController
+import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.databinding.CustomHeaderViewBinding
+import com.example.messageapp.utils.showKeyboard
 
 class CustomHeaderView @JvmOverloads constructor(
     context: Context,
@@ -54,9 +58,16 @@ class CustomHeaderView @JvmOverloads constructor(
                     binding.setting.isVisible = true
                 }
 
+                ActionBottomBar.CHAT_VIEW -> {
+                    binding.viewCommon.isVisible = false
+                    binding.viewChat.layout.isVisible = true
+                    binding.viewSearch.layout.isVisible = false
+                }
+
                 else -> {
                     binding.viewCommon.isVisible = false
-                    binding.viewChat.isVisible = true
+                    binding.viewChat.layout.isVisible = false
+                    binding.viewSearch.layout.isVisible = true
                 }
             }
         }
@@ -65,7 +76,12 @@ class CustomHeaderView @JvmOverloads constructor(
     }
 
     private fun onClickView() {
-        binding?.backChat?.setOnClickListener { (context as FragmentActivity).onBackPressed() }
+        binding?.viewChat?.backChat?.setOnClickListener { (context as FragmentActivity).onBackPressed() }
+        binding?.viewSearch?.backSearch?.setOnClickListener { (context as FragmentActivity).onBackPressed() }
+        binding?.searchView?.setOnClickListener {
+            val navController = (context as MainActivity).supportFragmentManager.findFragmentById(R.id.navHostFragment)?.findNavController()
+            navController?.navigate(R.id.searchFragment)
+        }
     }
 
     private fun hideAllViews() {
@@ -76,5 +92,10 @@ class CustomHeaderView @JvmOverloads constructor(
             binding.layoutDiary.isVisible = false
             binding.setting.isVisible = false
         }
+    }
+
+    fun focusSearch() {
+        binding?.viewSearch?.edtSearch?.isFocusable = true
+        binding?.viewSearch?.edtSearch?.showKeyboard()
     }
 }

@@ -31,7 +31,8 @@ enum class ActionBottomBar(val rawValue: Int) {
     DISCOVER_VIEW(2),
     DIARY_VIEW(3),
     PERSONAL_VIEW(4),
-    CHAT_VIEW(5);
+    CHAT_VIEW(5),
+    SEARCH_VIEW(6);
 
     companion object {
         fun of(value: Int): ActionBottomBar {
