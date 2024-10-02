@@ -11,6 +11,7 @@
         tools:context=".fragment.IntroFragment">
 
         <LinearLayout
+            android:id="@+id/btnChangeLanguage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
@@ -24,7 +25,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/language"
+                android:text="@string/vietnamese"
                 android:textColor="@color/text_common"
                 android:textSize="15sp" />
 

@@ -17,7 +17,7 @@
     <string name="find_more_friend">Tìm thêm bạn</string>
     <string name="mini_app_use_recent">Mini App sử dụng gần đây</string>
     <string name="contact_found">Liên hệ đã tìm</string>
-    <string name="language">Tiếng Việt</string>
+    <string name="vietnamese">Tiếng Việt</string>
     <string name="login">Đăng nhập</string>
     <string name="create_new_account">Tạo tài khoản mới</string>
     <string name="intro1">Gọi video ổn định</string>
@@ -43,4 +43,6 @@
     <string name="get_password">Lấy lại mật khẩu</string>
     <string name="show">HIỆN</string>
     <string name="hide">ẨN</string>
+    <string name="select_language">Chọn ngôn ngữ</string>
+    <string name="english">English</string>
 </resources>
