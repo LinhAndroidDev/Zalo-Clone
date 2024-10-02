@@ -2,6 +2,8 @@
     <string name="app_name">Message App</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="title_app">Zalo</string>
     <string name="text_search">Tìm kiếm</string>
     <string name="message">Tin nhắn</string>
     <string name="phone_book">Danh bạ</string>
@@ -15,4 +17,30 @@
     <string name="find_more_friend">Tìm thêm bạn</string>
     <string name="mini_app_use_recent">Mini App sử dụng gần đây</string>
     <string name="contact_found">Liên hệ đã tìm</string>
+    <string name="language">Tiếng Việt</string>
+    <string name="login">Đăng nhập</string>
+    <string name="create_new_account">Tạo tài khoản mới</string>
+    <string name="intro1">Gọi video ổn định</string>
+    <string name="detail1">Trò chuyện thật đã với chất lượng video ổn định mọi lúc, mọi nơi</string>
+    <string name="intro2">Chat nhóm tiện ích</string>
+    <string name="detail2">Nơi cùng nhau trao đổi, giữ liên lạc với gia đình, bạn bè, đồng nghiệp…</string>
+    <string name="intro3">Gửi ảnh nhanh chóng</string>
+    <string name="detail3">Trao đổi hình ảnh chất lượng cao với bạn bè và người thân thật nhanh và dễ dàng</string>
+    <string name="intro4">Nhật ký bạn bè</string>
+    <string name="detail4">Nơi cập nhật hoạt động mới nhất của những người bạn quan tâm</string>
+    <string name="enter_phone_number">Nhập số điện thoại</string>
+    <string name="header_phone">+84</string>
+    <string name="agree_condition_use_app">Tôi đồng ý với các </string>
+    <string name="agree_condition_internet_app">Tôi đồng ý với </string>
+    <string name="condition_use_app">điều khoản sử dụng Zalo</string>
+    <string name="condition_internet_app">điều khoản Mạng xã hội của Zalo</string>
+    <string name="continue_register">Tiếp tục</string>
+    <string name="you_had_account">Bạn đã có tài khoản?</string>
+    <string name="login_now">Đăng nhập ngay</string>
+    <string name="please_enter_phone_number">Vui lòng nhập số điện thoại và mật khẩu để đăng nhập</string>
+    <string name="phone_number">Số điện thoại</string>
+    <string name="password">Mật khẩu</string>
+    <string name="get_password">Lấy lại mật khẩu</string>
+    <string name="show">HIỆN</string>
+    <string name="hide">ẨN</string>
 </resources>

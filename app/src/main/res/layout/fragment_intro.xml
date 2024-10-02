@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/white"
+        tools:context=".fragment.IntroFragment">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="40dp"
+            android:layout_marginEnd="15dp"
+            android:background="@drawable/bg_corner_25_stroke_grey"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="5dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/language"
+                android:textColor="@color/text_common"
+                android:textSize="15sp" />
+
+            <ImageView
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:layout_marginStart="5dp"
+                android:layout_marginBottom="2dp"
+                android:importantForAccessibility="no"
+                android:rotation="270"
+                android:src="@drawable/ic_back"
+                app:tint="@color/black" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:text="@string/title_app"
+            android:textColor="@color/text_blue"
+            android:textSize="33sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/font_noto_sans" />
+
+        <androidx.viewpager.widget.ViewPager
+            android:id="@+id/vpgIntro"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="30dp"
+            android:layout_weight="1" />
+
+        <com.example.messageapp.custom.CircleIndicator
+            android:id="@+id/indicator"
+            android:layout_width="match_parent"
+            android:layout_height="15dp"
+            android:layout_gravity="center_horizontal"
+            app:ci_background="@color/text_hint"
+            app:ci_gravity="center"
+            app:ci_margin="5dp"
+            app:ci_mode="outside"
+            app:ci_radius="4dp"
+            app:ci_selected_background="@color/blue" />
+
+        <TextView
+            android:id="@+id/btnLogin"
+            android:layout_marginTop="100dp"
+            android:layout_marginHorizontal="20dp"
+            android:text="@string/login"
+            android:textSize="14sp"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:gravity="center_horizontal"
+            android:background="@drawable/bg_corner_25_blue_light"
+            android:backgroundTint="@color/blue1"
+            android:paddingVertical="15dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/font_noto_sans" />
+
+        <TextView
+            android:id="@+id/btnCreateNewAccount"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="20dp"
+            android:layout_marginHorizontal="20dp"
+            android:text="@string/create_new_account"
+            android:textSize="14sp"
+            android:textColor="@color/text_common"
+            android:textStyle="bold"
+            android:gravity="center_horizontal"
+            android:background="@drawable/bg_corner_25_blue_light"
+            android:backgroundTint="@color/text_hint"
+            android:paddingVertical="15dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/font_noto_sans" />
+    </LinearLayout>
+</layout>

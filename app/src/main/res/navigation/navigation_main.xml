@@ -10,11 +10,14 @@
         android:name="com.example.messageapp.fragment.SplashFragment"
         android:label="splash_fragment"
         tools:layout="@layout/fragment_splash">
+<!--        <action-->
+<!--            android:id="@+id/action_splashFragment_to_homeFragment"-->
+<!--            app:destination="@+id/homeFragment"-->
+<!--            app:popUpTo="@id/splashFragment"-->
+<!--            app:popUpToInclusive="true" />-->
         <action
-            android:id="@+id/action_splashFragment_to_homeFragment"
-            app:destination="@+id/homeFragment"
-            app:popUpTo="@id/splashFragment"
-            app:popUpToInclusive="true" />
+            android:id="@+id/action_splashFragment_to_introFragment"
+            app:destination="@id/introFragment" />
     </fragment>
 
     <fragment
@@ -76,4 +79,30 @@
         android:name="com.example.messageapp.fragment.SearchFragment"
         android:label="SearchFragment"
         tools:layout="@layout/fragment_search"/>
+    <fragment
+        android:id="@+id/introFragment"
+        android:name="com.example.messageapp.fragment.IntroFragment"
+        android:label="IntroFragment"
+        tools:layout="@layout/fragment_intro">
+        <action
+            android:id="@+id/action_introFragment_to_registerFragment"
+            app:destination="@id/registerFragment" />
+        <action
+            android:id="@+id/action_introFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.example.messageapp.fragment.RegisterFragment"
+        android:label="RegisterFragment"
+        tools:layout="@layout/fragment_register"/>
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.messageapp.fragment.LoginFragment"
+        android:label="LoginFragment"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_introFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
 </navigation>

@@ -21,6 +21,7 @@
     <color name="text_common">#FF000000</color>
     <color name="text_white">#FFFFFFFF</color>
     <color name="text_icon">#1c77e4</color>
+    <color name="text_blue">#0268ff</color>
     <color name="text_hint">#dfe3e6</color>
     <color name="text_grey">#626365</color>
     <color name="text_sender">#a7a7a7</color>
