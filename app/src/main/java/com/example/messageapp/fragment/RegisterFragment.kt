@@ -11,6 +11,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentRegisterBinding
+import com.example.messageapp.dialog.DialogFragmentConfirmSendOTP
 import com.example.messageapp.utils.showKeyboard
 import com.example.messageapp.utils.showViewAboveKeyBoard
 import com.example.messageapp.viewmodel.RegisterFragmentViewModel
@@ -24,6 +25,7 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
 
         binding?.root?.post {
             binding?.edtEnterPhone?.showKeyboard()
+            binding?.btnContinueRegister?.disableBtnContinue()
         }
         binding?.edtEnterPhone?.setOnFocusChangeListener { _, b ->
             binding?.viewEnterPhone?.isSelected = b
@@ -107,14 +109,21 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
                 binding?.btnContinueRegister?.disableBtnContinue()
             }
         }
+
+        binding?.btnContinueRegister?.setOnClickListener {
+            val dialog = DialogFragmentConfirmSendOTP()
+            dialog.show(childFragmentManager, "")
+        }
     }
 
     private fun TextView.enableBtnContinue() {
+        isEnabled = true
         setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
         backgroundTintList = ContextCompat.getColorStateList(requireContext(), R.color.blue)
     }
 
     private fun TextView.disableBtnContinue() {
+        isEnabled = false
         setTextColor(ContextCompat.getColor(requireContext(), R.color.grey_1))
         backgroundTintList = ContextCompat.getColorStateList(requireContext(), R.color.grey_bg)
     }

@@ -95,7 +95,11 @@
         android:id="@+id/registerFragment"
         android:name="com.example.messageapp.fragment.RegisterFragment"
         android:label="RegisterFragment"
-        tools:layout="@layout/fragment_register"/>
+        tools:layout="@layout/fragment_register">
+        <action
+            android:id="@+id/action_registerFragment_to_receiveOTPFragment"
+            app:destination="@id/receiveOTPFragment" />
+    </fragment>
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.example.messageapp.fragment.LoginFragment"
@@ -103,6 +107,15 @@
         tools:layout="@layout/fragment_login">
         <action
             android:id="@+id/action_introFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/receiveOTPFragment"
+        android:name="com.example.messageapp.fragment.ReceiveOTPFragment"
+        android:label="ReceiveOTPFragment"
+        tools:layout="@layout/fragment_receive_o_t_p">
+        <action
+            android:id="@+id/action_receiveOTPFragment_to_homeFragment"
             app:destination="@id/homeFragment" />
     </fragment>
 </navigation>

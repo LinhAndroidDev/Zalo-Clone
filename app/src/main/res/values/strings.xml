@@ -45,4 +45,12 @@
     <string name="hide">ẨN</string>
     <string name="select_language">Chọn ngôn ngữ</string>
     <string name="english">English</string>
+    <string name="confirm_phone_number">Xác nhận số điện thoại</string>
+    <string name="note_confirm_phone_number">Chúng tôi sẽ gửi mã xác nhận đến số điện thoại trên. Vui lòng xác nhận số điện thoại này là đúng.</string>
+    <string name="change">Thay đổi</string>
+    <string name="confirm">Xác nhận</string>
+    <string name="note_receive_otp">Bạn sẽ nhận được tin nhắn có mã kích hoạt từ Zalo.</string>
+    <string name="enter_activation_code">Nhập mã kích hoạt</string>
+    <string name="receive_otp_in_time">Bạn sẽ nhận được mã kích hoạt trong %s giây</string>
+    <string name="send_otp_again">Gửi lại mã</string>
 </resources>
