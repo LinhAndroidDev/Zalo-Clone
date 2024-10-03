@@ -1,6 +1,7 @@
 package com.example.messageapp.fragment
 
 import android.annotation.SuppressLint
+import android.os.Bundle
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
@@ -18,6 +19,10 @@ import com.example.messageapp.viewmodel.RegisterFragmentViewModel
 
 class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_register
+
+    companion object {
+        const val PHONE_NUMBER = "PHONE_NUMBER"
+    }
 
     @SuppressLint("SetTextI18n")
     override fun initView() {
@@ -112,7 +117,10 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
 
         binding?.btnContinueRegister?.setOnClickListener {
             val dialog = DialogFragmentConfirmSendOTP()
+            val bundle = Bundle()
+            bundle.putString(PHONE_NUMBER, binding?.edtEnterPhone?.text.toString().replace(" ", ""))
             dialog.show(childFragmentManager, "")
+            dialog.arguments = bundle
         }
     }
 

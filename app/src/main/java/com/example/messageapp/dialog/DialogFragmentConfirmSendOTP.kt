@@ -11,11 +11,16 @@ import androidx.fragment.app.DialogFragment
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.databinding.DialogConfirmSendOtpBinding
+import com.example.messageapp.fragment.RegisterFragment
 import com.example.messageapp.helper.screenWidth
 
 @SuppressLint("UseGetLayoutInflater")
 class DialogFragmentConfirmSendOTP : DialogFragment() {
     private val binding by lazy { DialogConfirmSendOtpBinding.inflate(LayoutInflater.from(context)) }
+
+    companion object {
+        const val PHONE_NUMBER_FROM_CONFIRM_SEND_OTP = "PHONE_NUMBER_FROM_CONFIRM_SEND_OTP"
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -25,6 +30,7 @@ class DialogFragmentConfirmSendOTP : DialogFragment() {
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -37,12 +43,19 @@ class DialogFragmentConfirmSendOTP : DialogFragment() {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         }
 
+        val phoneNumber = arguments?.getString(RegisterFragment.PHONE_NUMBER)
+        phoneNumber?.let {
+            binding.tvPhoneNumber.text = "(${getString(R.string.header_phone)}) $it"
+        }
+
         binding.btnChange.setOnClickListener {
             dismiss()
         }
 
         binding.btnConfirm.setOnClickListener {
-            findNavController().navigate(R.id.receiveOTPFragment)
+            val bundle = Bundle()
+            bundle.putString(PHONE_NUMBER_FROM_CONFIRM_SEND_OTP, phoneNumber)
+            findNavController().navigate(R.id.receiveOTPFragment, bundle)
             dismiss()
         }
     }

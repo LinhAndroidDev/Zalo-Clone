@@ -4,6 +4,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
     id("com.google.gms.google-services")
+//    id("androidx.navigation.safeargs.kotlin")
 }
 
 android {
@@ -59,6 +60,7 @@ dependencies {
     val nav_version = "2.8.0-beta06"
     implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
     implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
+//    implementation("androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("de.hdodenhof:circleimageview:3.1.0")

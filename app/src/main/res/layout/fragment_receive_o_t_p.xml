@@ -1,39 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:background="@color/white"
+        android:orientation="vertical"
         tools:context=".fragment.ReceiveOTPFragment">
 
         <TextView
-            android:layout_marginTop="40dp"
-            android:layout_gravity="center_horizontal"
-            android:text="@string/title_app"
-            android:textSize="35sp"
-            android:textColor="@color/blue1"
-            android:textStyle="bold"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/font_noto_sans"/>
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="40dp"
+            android:fontFamily="@font/font_noto_sans"
+            android:text="@string/title_app"
+            android:textColor="@color/blue1"
+            android:textSize="35sp"
+            android:textStyle="bold" />
 
         <TextView
-            android:layout_marginTop="30dp"
-            android:layout_marginHorizontal="80dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
+            android:layout_marginHorizontal="80dp"
+            android:layout_marginTop="30dp"
             android:gravity="center"
             android:text="@string/note_receive_otp"
-            android:textSize="12sp"
             android:textColor="@color/text_common"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textSize="12sp" />
 
         <TextView
-            android:layout_gravity="center_horizontal"
+            android:id="@+id/tvPhoneNumber"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:layout_marginVertical="15dp"
             android:text="(+84) 123 456 789"
             android:textColor="@color/text_common"
@@ -41,24 +43,79 @@
             android:textStyle="bold" />
 
         <TextView
-            android:layout_gravity="center_horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:text="@string/enter_activation_code"
+            android:textAllCaps="true"
             android:textColor="@color/text_common"
-            android:textSize="14sp"
-            android:textAllCaps="true" />
+            android:textSize="14sp" />
 
-        <EditText
+        <RelativeLayout
+            android:id="@+id/viewCoverOtp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:layout_marginTop="10dp"
-            android:textSize="16sp"
-            android:textColor="@color/text_common"
-            android:textStyle="bold"
-            android:paddingVertical="12dp"
-            android:layout_marginHorizontal="100dp"
-            android:background="@drawable/bg_enter_phone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:background="@drawable/bg_enter_phone">
+
+            <com.example.messageapp.custom.OtpEditText
+                android:id="@+id/edtEnterOTP"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginHorizontal="30dp"
+                android:layout_marginTop="15dp"
+                android:layout_marginBottom="10dp"
+                android:digits="1234567890"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:inputType="number"
+                android:textColor="@color/text_common"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:dashColor="@color/grey_1"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:lineCount="6"
+                app:lineEndColor="@color/grey_1"
+                app:lineStartColor="@color/grey_1"
+                app:showDash="false" />
+        </RelativeLayout>
+
+        <!--        <RelativeLayout-->
+        <!--            android:layout_marginTop="10dp"-->
+        <!--            android:layout_width="wrap_content"-->
+        <!--            android:layout_height="wrap_content">-->
+
+        <!--            <EditText-->
+        <!--                android:id="@+id/edtEnterOTP"-->
+        <!--                android:gravity="center_horizontal"-->
+        <!--                android:textSize="20sp"-->
+        <!--                android:textColor="@color/text_common"-->
+        <!--                android:textStyle="bold"-->
+        <!--                android:paddingVertical="12dp"-->
+        <!--                android:paddingHorizontal="10dp"-->
+        <!--                android:layout_marginHorizontal="100dp"-->
+        <!--                android:background="@drawable/bg_enter_phone"-->
+        <!--                android:letterSpacing="0.5"-->
+        <!--                android:layout_width="match_parent"-->
+        <!--                android:layout_height="wrap_content"/>-->
+
+        <!--            <TextView-->
+        <!--                android:gravity="center_horizontal"-->
+        <!--                android:text="______"-->
+        <!--                android:textSize="20sp"-->
+        <!--                android:paddingTop="16dp"-->
+        <!--                android:letterSpacing="0.6"-->
+        <!--                android:textColor="@color/grey_1"-->
+        <!--                android:textStyle="bold"-->
+        <!--                android:layout_width="match_parent"-->
+        <!--                android:layout_height="wrap_content"/>-->
+        <!--        </RelativeLayout>-->
 
         <TextView
             android:id="@+id/btnContinueRegister"
@@ -68,24 +125,24 @@
             android:layout_marginTop="20dp"
             android:background="@drawable/bg_corner_25_blue_light"
             android:backgroundTint="@color/blue1"
+            android:fontFamily="@font/font_noto_sans"
             android:gravity="center_horizontal"
             android:paddingVertical="12dp"
             android:text="@string/confirm"
+            android:textAllCaps="true"
             android:textColor="@color/text_white"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:textAllCaps="true"
-            android:fontFamily="@font/font_noto_sans" />
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvTimeReceiveOTP"
-            android:layout_marginTop="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
             android:gravity="center"
             android:text="@string/receive_otp_in_time"
-            android:textSize="12sp"
             android:textColor="@color/grey_2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textSize="12sp" />
     </LinearLayout>
 </layout>
