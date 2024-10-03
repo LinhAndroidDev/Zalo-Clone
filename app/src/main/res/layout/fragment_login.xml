@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:app="http://schemas.android.com/apk/res-auto">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <LinearLayout
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -21,6 +22,7 @@
                 android:layout_width="28dp"
                 android:layout_height="28dp"
                 android:layout_marginStart="15dp"
+                android:importantForAccessibility="no"
                 android:src="@drawable/ic_back_login"
                 app:tint="@color/white" />
 
@@ -43,23 +45,27 @@
             android:paddingVertical="10dp"
             android:text="@string/please_enter_phone_number"
             android:textColor="@color/text_common"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 
         <EditText
+            android:id="@+id/edtEnterPhone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="15dp"
             android:layout_marginTop="30dp"
             android:hint="@string/phone_number"
-            android:inputType="textEmailAddress"
+            android:importantForAutofill="no"
+            android:inputType="phone"
             android:textSize="16sp" />
 
         <EditText
+            android:id="@+id/edtEnterPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="15dp"
             android:layout_marginTop="10dp"
             android:hint="@string/password"
+            android:importantForAutofill="no"
             android:inputType="textPassword"
             android:textSize="16sp" />
 
@@ -92,6 +98,7 @@
 
             <ImageView
                 android:layout_margin="10dp"
+                android:importantForAccessibility="no"
                 android:src="@drawable/ic_back_login"
                 android:layout_width="30dp"
                 android:layout_height="30dp"

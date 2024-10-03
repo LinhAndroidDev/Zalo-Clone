@@ -12,6 +12,7 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentRegisterBinding
 import com.example.messageapp.utils.showKeyboard
+import com.example.messageapp.utils.showViewAboveKeyBoard
 import com.example.messageapp.viewmodel.RegisterFragmentViewModel
 
 class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentViewModel>() {
@@ -22,7 +23,6 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
         super.initView()
 
         binding?.root?.post {
-            binding?.edtEnterPhone?.isFocusable = true
             binding?.edtEnterPhone?.showKeyboard()
         }
         binding?.edtEnterPhone?.setOnFocusChangeListener { _, b ->
@@ -32,6 +32,8 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
                 if (b) R.color.blue else R.color.black
             )
         }
+
+        binding?.root?.let { root -> binding?.viewLoginNow?.showViewAboveKeyBoard(root) }
 
         binding?.edtEnterPhone?.filters = arrayOf(InputFilter.LengthFilter(19))
         binding?.edtEnterPhone?.addTextChangedListener(object : TextWatcher {
@@ -50,9 +52,9 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
 
                 isUpdating = true
                 val phoneNumber = s.toString().replace(" ", "")
-                if(phoneNumber.length < 5) {
+                if (phoneNumber.length < 5) {
                     binding?.btnContinueRegister?.disableBtnContinue()
-                } else if(binding?.cbConditionUse?.isChecked == true && binding?.cbConditionInternet?.isChecked == true) {
+                } else if (binding?.cbConditionUse?.isChecked == true && binding?.cbConditionInternet?.isChecked == true) {
                     binding?.btnContinueRegister?.enableBtnContinue()
                 }
 
@@ -90,7 +92,7 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
 
         binding?.cbConditionUse?.setOnCheckedChangeListener { _, b ->
             val phoneNumber = binding?.edtEnterPhone?.text.toString().length
-            if(b && binding?.cbConditionInternet?.isChecked == true && phoneNumber > 4) {
+            if (b && binding?.cbConditionInternet?.isChecked == true && phoneNumber > 4) {
                 binding?.btnContinueRegister?.enableBtnContinue()
             } else {
                 binding?.btnContinueRegister?.disableBtnContinue()
@@ -99,7 +101,7 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
 
         binding?.cbConditionInternet?.setOnCheckedChangeListener { _, b ->
             val phoneNumber = binding?.edtEnterPhone?.text.toString().length
-            if(b && binding?.cbConditionUse?.isChecked == true && phoneNumber > 4) {
+            if (b && binding?.cbConditionUse?.isChecked == true && phoneNumber > 4) {
                 binding?.btnContinueRegister?.enableBtnContinue()
             } else {
                 binding?.btnContinueRegister?.disableBtnContinue()

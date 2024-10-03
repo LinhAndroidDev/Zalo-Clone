@@ -11,7 +11,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import java.lang.reflect.ParameterizedType
 
-@Suppress("UNREACHABLE_CODE")
 abstract class BaseFragment<VB : ViewDataBinding, VM: ViewModel> : Fragment(), CoreInterface.AndroidView {
     protected var binding: VB? = null
     protected var viewModel: VM? = null

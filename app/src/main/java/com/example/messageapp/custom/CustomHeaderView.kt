@@ -95,7 +95,6 @@ class CustomHeaderView @JvmOverloads constructor(
     }
 
     fun focusSearch() {
-        binding?.viewSearch?.edtSearch?.isFocusable = true
         binding?.viewSearch?.edtSearch?.showKeyboard()
     }
 }
