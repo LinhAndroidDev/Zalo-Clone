@@ -7,4 +7,12 @@ import com.example.messageapp.viewmodel.PhoneBookFragmentViewModel
 
 class PhoneBookFragment : BaseFragment<FragmentPhoneBookBinding, PhoneBookFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_phone_book
+
+    override fun initView() {
+        super.initView()
+    }
+
+    override fun onClickView() {
+        super.onClickView()
+    }
 }

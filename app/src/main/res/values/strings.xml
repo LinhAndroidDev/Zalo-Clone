@@ -53,4 +53,9 @@
     <string name="enter_activation_code">Nhập mã kích hoạt</string>
     <string name="receive_otp_in_time">Bạn sẽ nhận được mã kích hoạt trong %s giây</string>
     <string name="send_otp_again">Gửi lại mã</string>
+    <string name="friend_request">Lời mời kết bạn</string>
+    <string name="phone_book_machine">Danh bạ máy</string>
+    <string name="contact_using_zalo">Liên hệ có dùng Zalo</string>
+    <string name="birthday_calendar">Lịch sinh nhật</string>
+    <string name="track_your_birthday">Theo dõi sinh nhật của bạn</string>
 </resources>

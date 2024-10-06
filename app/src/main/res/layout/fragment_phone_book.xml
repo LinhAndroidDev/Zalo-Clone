@@ -4,7 +4,8 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".fragment.PhoneBookFragment">
+        tools:context=".fragment.PhoneBookFragment"
+        android:orientation="vertical">
 
         <com.example.messageapp.custom.CustomHeaderView
             android:id="@+id/header"
@@ -15,5 +16,11 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:item_view="phoneBook"/>
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rcvPhoneBook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
     </LinearLayout>
 </layout>

@@ -13,6 +13,7 @@
         android:layout_height="20dp"
         android:layout_marginVertical="15dp"
         android:layout_marginStart="20dp"
+        android:importantForAccessibility="no"
         android:src="@drawable/ic_back"
         app:tint="@color/white" />
 
@@ -40,22 +41,24 @@
     </LinearLayout>
 
     <ImageView
-        android:layout_width="25dp"
-        android:layout_height="25dp"
-        android:src="@drawable/ic_call"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_contact"
         app:tint="@color/white" />
 
     <ImageView
         android:layout_width="25dp"
         android:layout_height="25dp"
         android:layout_marginStart="20dp"
-        android:src="@drawable/ic_call_video"
+        android:importantForAccessibility="no" android:src="@drawable/ic_call_video"
         app:tint="@color/white" />
 
     <ImageView
         android:layout_width="25dp"
         android:layout_height="25dp"
         android:layout_marginHorizontal="20dp"
+        android:importantForAccessibility="no"
         android:src="@drawable/ic_menu"
         app:tint="@color/white" />
 </LinearLayout>

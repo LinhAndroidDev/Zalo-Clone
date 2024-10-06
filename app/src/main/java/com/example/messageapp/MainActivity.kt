@@ -50,6 +50,7 @@ class MainActivity : AppCompatActivity() {
                 || isFragmentCurrent(R.id.discoverFragment)
                 || isFragmentCurrent(R.id.diaryFragment)
                 || isFragmentCurrent(R.id.personalFragment)
+                || isFragmentCurrent(R.id.introFragment)
     }
 
     @Deprecated("Deprecated in Java")
