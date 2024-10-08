@@ -1,12 +1,16 @@
 package com.example.messageapp.adapter
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.Adapter
+import com.bumptech.glide.Glide
 import com.example.messageapp.R
+import com.example.messageapp.databinding.HeaderGroupPhoneBookBinding
 import com.example.messageapp.databinding.HeaderPhoneBookBinding
+import com.example.messageapp.databinding.ItemPhoneBookBinding
 import com.example.messageapp.model.PhoneBook
 import java.lang.IllegalArgumentException
 
@@ -28,12 +32,13 @@ class PhoneBookAdapter : Adapter<RecyclerView.ViewHolder>() {
 
     inner class HeaderViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
 
-    inner class HeaderGroupViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
+    inner class HeaderGroupViewHolder(val v: HeaderGroupPhoneBookBinding) :
+        RecyclerView.ViewHolder(v.root)
 
-    inner class ItemViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
+    inner class ItemViewHolder(val v: ItemPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return when(TypePhoneBook.of(viewType)) {
+        return when (TypePhoneBook.of(viewType)) {
             TypePhoneBook.HEADER_PHONE_BOOK -> {
                 HeaderViewHolder(
                     DataBindingUtil.inflate(
@@ -72,7 +77,7 @@ class PhoneBookAdapter : Adapter<RecyclerView.ViewHolder>() {
     override fun getItemCount(): Int = phoneBooks.size
 
     override fun getItemViewType(position: Int): Int {
-        return when(phoneBooks[position].type) {
+        return when (phoneBooks[position].type) {
             TypePhoneBook.HEADER_PHONE_BOOK -> {
                 TypePhoneBook.HEADER_PHONE_BOOK.ordinal
             }
@@ -87,18 +92,28 @@ class PhoneBookAdapter : Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        when(TypePhoneBook.of(holder.itemViewType)) {
+        val phoneBook = phoneBooks[position]
+        val itemPhoneBooks =
+            phoneBooks.filter { pBook -> pBook.type == TypePhoneBook.ITEM_PHONE_BOOK }
+        when (TypePhoneBook.of(holder.itemViewType)) {
             TypePhoneBook.HEADER_PHONE_BOOK -> {
                 holder as HeaderViewHolder
+                holder.v.tvAllPhoneBook.text = "Tất cả  ${itemPhoneBooks.size}"
             }
 
             TypePhoneBook.HEADER_GROUP_PHONE_BOOK -> {
                 holder as HeaderGroupViewHolder
+                holder.v.nameGroup.text = phoneBook.nameFriend
             }
 
             else -> {
                 holder as ItemViewHolder
+                holder.v.nameFriend.text = phoneBook.nameFriend
+                Glide.with(holder.v.root)
+                    .load(phoneBook.avatar)
+                    .into(holder.v.avatarFriend)
             }
         }
     }
