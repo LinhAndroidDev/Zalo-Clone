@@ -3,11 +3,12 @@ package com.example.messageapp.adapter
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.Adapter
 import com.bumptech.glide.Glide
 import com.example.messageapp.R
+import com.example.messageapp.custom.StickyAdapter
 import com.example.messageapp.databinding.HeaderGroupPhoneBookBinding
 import com.example.messageapp.databinding.HeaderPhoneBookBinding
 import com.example.messageapp.databinding.ItemPhoneBookBinding
@@ -27,7 +28,7 @@ enum class TypePhoneBook {
     }
 }
 
-class PhoneBookAdapter : Adapter<RecyclerView.ViewHolder>() {
+class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, RecyclerView.ViewHolder>() {
     var phoneBooks = arrayListOf<PhoneBook>()
 
     inner class HeaderViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
@@ -75,6 +76,54 @@ class PhoneBookAdapter : Adapter<RecyclerView.ViewHolder>() {
     }
 
     override fun getItemCount(): Int = phoneBooks.size
+
+    override fun getHeaderPositionForItem(itemPosition: Int): Int {
+        return if (phoneBooks[itemPosition].type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK) {
+            itemPosition
+        } else {
+            val previousHeaderPosition = phoneBooks.subList(0, itemPosition)
+                .lastIndexOfFirstInstanceOf<PhoneBook>()
+            previousHeaderPosition
+        }
+//        return when (phoneBooks[itemPosition].type) {
+//            TypePhoneBook.HEADER_PHONE_BOOK -> {
+//                itemPosition
+//            }
+//
+//            TypePhoneBook.HEADER_GROUP_PHONE_BOOK -> {
+//                itemPosition
+//            }
+//
+//            TypePhoneBook.ITEM_PHONE_BOOK -> {
+//                phoneBooks.indexOfFirst { it.type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK }
+//            }
+//        }
+    }
+
+    // Extension function để tìm vị trí của phần tử HeaderItem gần nhất
+    private inline fun <reified T> List<Any>.lastIndexOfFirstInstanceOf(): Int {
+        return this.indexOfLast { it is T }
+    }
+
+    override fun onCreateHeaderViewHolder(parent: ViewGroup): HeaderGroupViewHolder {
+        return HeaderGroupViewHolder(
+            DataBindingUtil.inflate(
+                LayoutInflater.from(parent.context),
+                R.layout.header_group_phone_book,
+                parent,
+                false
+            )
+        )
+    }
+
+    override fun onBindHeaderViewHolder(holder: HeaderGroupViewHolder, headerPosition: Int) {
+        holder.v.nameGroup.text = phoneBooks[headerPosition].nameFriend[0].toString()
+        holder.v.nameGroup.setBackgroundColor(ContextCompat.getColor(holder.v.root.context, R.color.white))
+//        if(phoneBooks[headerPosition].type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK) {
+//            holder.v.nameGroup.text = phoneBooks[headerPosition].nameFriend[0].toString()
+//            holder.v.nameGroup.setBackgroundColor(ContextCompat.getColor(holder.v.root.context, R.color.white))
+//        }
+    }
 
     override fun getItemViewType(position: Int): Int {
         return when (phoneBooks[position].type) {
