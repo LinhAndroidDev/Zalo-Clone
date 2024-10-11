@@ -36,6 +36,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    internal fun getHeightBottomNav(): Int {
+        return binding?.bottomNav?.height ?: 0
+    }
+
     private fun isFragmentCurrent(fragmentId: Int): Boolean {
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController

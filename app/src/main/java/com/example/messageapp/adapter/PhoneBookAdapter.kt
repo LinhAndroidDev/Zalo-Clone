@@ -1,8 +1,10 @@
 package com.example.messageapp.adapter
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.SectionIndexer
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -12,8 +14,10 @@ import com.example.messageapp.custom.StickyAdapter
 import com.example.messageapp.databinding.HeaderGroupPhoneBookBinding
 import com.example.messageapp.databinding.HeaderPhoneBookBinding
 import com.example.messageapp.databinding.ItemPhoneBookBinding
+import com.example.messageapp.helper.Helpers.Companion.sectionsHelper
 import com.example.messageapp.model.PhoneBook
 import java.lang.IllegalArgumentException
+import java.util.Locale
 
 enum class TypePhoneBook {
     HEADER_PHONE_BOOK,
@@ -28,8 +32,10 @@ enum class TypePhoneBook {
     }
 }
 
-class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, RecyclerView.ViewHolder>() {
+class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, RecyclerView.ViewHolder>(), SectionIndexer {
     var phoneBooks = arrayListOf<PhoneBook>()
+    private var sectionsTranslator = HashMap<Int, Int>()
+    private var mSectionPositions: ArrayList<Int>? = null
 
     inner class HeaderViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
 
@@ -79,30 +85,15 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
 
     override fun getHeaderPositionForItem(itemPosition: Int): Int {
         return if (phoneBooks[itemPosition].type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK) {
+            Log.e("Header Group: ", "HEADER_GROUP_PHONE_BOOK")
             itemPosition
+        } else if(phoneBooks[itemPosition].type == TypePhoneBook.HEADER_PHONE_BOOK) {
+            Log.e("Header Group: ", "HEADER_PHONE_BOOK")
+            itemPosition - 1
         } else {
-            val previousHeaderPosition = phoneBooks.subList(0, itemPosition)
-                .lastIndexOfFirstInstanceOf<PhoneBook>()
-            previousHeaderPosition
+            Log.e("Header Group: ", "ITEM_PHONE_BOOK")
+            itemPosition - 1
         }
-//        return when (phoneBooks[itemPosition].type) {
-//            TypePhoneBook.HEADER_PHONE_BOOK -> {
-//                itemPosition
-//            }
-//
-//            TypePhoneBook.HEADER_GROUP_PHONE_BOOK -> {
-//                itemPosition
-//            }
-//
-//            TypePhoneBook.ITEM_PHONE_BOOK -> {
-//                phoneBooks.indexOfFirst { it.type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK }
-//            }
-//        }
-    }
-
-    // Extension function để tìm vị trí của phần tử HeaderItem gần nhất
-    private inline fun <reified T> List<Any>.lastIndexOfFirstInstanceOf(): Int {
-        return this.indexOfLast { it is T }
     }
 
     override fun onCreateHeaderViewHolder(parent: ViewGroup): HeaderGroupViewHolder {
@@ -117,12 +108,11 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
     }
 
     override fun onBindHeaderViewHolder(holder: HeaderGroupViewHolder, headerPosition: Int) {
-        holder.v.nameGroup.text = phoneBooks[headerPosition].nameFriend[0].toString()
+        val nameFriend = phoneBooks[headerPosition].nameFriend
+        if(nameFriend.isNotEmpty()) {
+            holder.v.nameGroup.text = phoneBooks[headerPosition].nameFriend[0].toString()
+        }
         holder.v.nameGroup.setBackgroundColor(ContextCompat.getColor(holder.v.root.context, R.color.white))
-//        if(phoneBooks[headerPosition].type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK) {
-//            holder.v.nameGroup.text = phoneBooks[headerPosition].nameFriend[0].toString()
-//            holder.v.nameGroup.setBackgroundColor(ContextCompat.getColor(holder.v.root.context, R.color.white))
-//        }
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -166,4 +156,35 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
             }
         }
     }
+
+    override fun getSections(): Array<String> {
+        val alphabetFull = ArrayList<String>()
+        val sections = ArrayList<String>()
+        mSectionPositions = arrayListOf()
+        val headerGroups =
+            phoneBooks.filter { pBook -> pBook.type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK }
+                .map { it.nameFriend }
+        run {
+            var i = 0
+            while (i < headerGroups.size) {
+                val section = headerGroups[i][0].toString().uppercase(Locale.getDefault())
+                if (!sections.contains(section)) {
+                    sections.add(section)
+                    mSectionPositions?.add(i)
+                }
+                i++
+            }
+        }
+        headerGroups.forEach { element -> alphabetFull.add(element) }
+        sectionsTranslator = sectionsHelper(sections, alphabetFull)
+        return alphabetFull.toTypedArray()
+    }
+
+    override fun getPositionForSection(sectionIndex: Int): Int {
+        val headerGroups =
+            phoneBooks.filter { pBook -> pBook.type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK }
+        return phoneBooks.indexOf(headerGroups[sectionIndex])
+    }
+
+    override fun getSectionForPosition(position: Int): Int = 0
 }

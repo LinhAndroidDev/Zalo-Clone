@@ -1,6 +1,7 @@
 package com.example.messageapp.custom;
 
 import android.graphics.Canvas;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -94,9 +95,11 @@ public class StickyHeaderItemDecorator extends RecyclerView.ItemDecoration {
         }
 
         if (preOverlappedPosition != overlappedHeaderPosition && shouldMoveHeader(viewOverlappedByHeader)) {
+            Log.e("State Header", "MOVE_HEADER");
             updateStickyHeader(topChildPosition, overlappedByHeaderPosition);
             moveHeader(c, viewOverlappedByHeader);
         } else {
+            Log.e("State Header", "DRAW_HEADER");
             updateStickyHeader(topChildPosition, RecyclerView.NO_POSITION);
             drawHeader(c);
         }

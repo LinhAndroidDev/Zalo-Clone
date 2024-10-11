@@ -2,12 +2,12 @@ package com.example.messageapp.utils
 
 import android.content.Context
 import android.graphics.Rect
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.isVisible
 
 fun EditText.showKeyboard() {
     this.isFocusable = true
@@ -30,5 +30,18 @@ fun View.showViewAboveKeyBoard(rootView: View) {
             // Bàn phím đã ẩn
             this.translationY = 0f
         }
+    }
+}
+
+fun Context.vibratePhone(duration: Long = 100) {
+    val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        // Dành cho Android 8.0 trở lên
+        val vibrationEffect = VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)
+        vibrator.vibrate(vibrationEffect)
+    } else {
+        // Dành cho các phiên bản Android cũ hơn
+        vibrator.vibrate(duration)
     }
 }
