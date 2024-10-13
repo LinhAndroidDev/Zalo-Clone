@@ -392,6 +392,14 @@ import com.example.messageapp.R
     }
 
     /**
+     * @param value int to set the position scroll to of
+     * list compared to position of letter in the index bar
+     */
+    fun setUpPositionScrollValue(value: Int) {
+        mScroller?.setUpPositionScroll(value)
+    }
+
+    /**
      * @param shown boolean to show or hide the index bar
      */
     fun setIndexBarStrokeVisibility(shown: Boolean) {

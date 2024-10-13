@@ -1,7 +1,6 @@
 package com.example.messageapp.adapter
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.SectionIndexer
@@ -35,8 +34,6 @@ enum class TypePhoneBook {
 class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, RecyclerView.ViewHolder>(), SectionIndexer {
     var phoneBooks = arrayListOf<PhoneBook>()
     private var sectionsTranslator = HashMap<Int, Int>()
-    private var mSectionPositions: ArrayList<Int>? = null
-
     inner class HeaderViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
 
     inner class HeaderGroupViewHolder(val v: HeaderGroupPhoneBookBinding) :
@@ -84,16 +81,7 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
     override fun getItemCount(): Int = phoneBooks.size
 
     override fun getHeaderPositionForItem(itemPosition: Int): Int {
-        return if (phoneBooks[itemPosition].type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK) {
-            Log.e("Header Group: ", "HEADER_GROUP_PHONE_BOOK")
-            itemPosition
-        } else if(phoneBooks[itemPosition].type == TypePhoneBook.HEADER_PHONE_BOOK) {
-            Log.e("Header Group: ", "HEADER_PHONE_BOOK")
-            itemPosition - 1
-        } else {
-            Log.e("Header Group: ", "ITEM_PHONE_BOOK")
-            itemPosition - 1
-        }
+        return phoneBooks[itemPosition].headerPosition
     }
 
     override fun onCreateHeaderViewHolder(parent: ViewGroup): HeaderGroupViewHolder {
@@ -160,7 +148,6 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
     override fun getSections(): Array<String> {
         val alphabetFull = ArrayList<String>()
         val sections = ArrayList<String>()
-        mSectionPositions = arrayListOf()
         val headerGroups =
             phoneBooks.filter { pBook -> pBook.type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK }
                 .map { it.nameFriend }
@@ -170,7 +157,6 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
                 val section = headerGroups[i][0].toString().uppercase(Locale.getDefault())
                 if (!sections.contains(section)) {
                     sections.add(section)
-                    mSectionPositions?.add(i)
                 }
                 i++
             }

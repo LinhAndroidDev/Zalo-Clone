@@ -144,7 +144,7 @@ class IndexFastScrollRecyclerSection(
                 val paddingTop = (sectionHeight - (indexPaint.descent() - indexPaint.ascent())) / 2
                 for (i in mSections!!.indices) {
                     if (setSetIndexBarHighLightTextVisibility) {
-                        if (mCurrentSection > -1 && i == mCurrentSection || (mScrollPositionBefore != -1 && mScrollPositionBefore == i)) {
+                        if (mScrollPositionBefore != -1 && mScrollPositionBefore == i) {
                             indexPaint.typeface = Typeface.create(setTypeface, Typeface.BOLD)
                             indexPaint.textSize = (setIndexTextSize) * mScaledDensity
                             indexPaint.color = indexbarHighLightTextColor
@@ -286,6 +286,14 @@ class IndexFastScrollRecyclerSection(
 
     private fun convertTransparentValueToBackgroundAlpha(value: Float): Int {
         return (255 * value).toInt()
+    }
+
+    /**
+     * @param value int to set the position scroll to of
+     * list compared to position of letter in the index bar
+     */
+    fun setUpPositionScroll(value: Int) {
+        mScrollPositionBefore = value
     }
 
     /**
