@@ -34,6 +34,8 @@ enum class TypePhoneBook {
 class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, RecyclerView.ViewHolder>(), SectionIndexer {
     var phoneBooks = arrayListOf<PhoneBook>()
     private var sectionsTranslator = HashMap<Int, Int>()
+    var onClickPhoneBook: (() -> Unit)? = null
+
     inner class HeaderViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
 
     inner class HeaderGroupViewHolder(val v: HeaderGroupPhoneBookBinding) :
@@ -137,6 +139,9 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
 
             else -> {
                 holder as ItemViewHolder
+                holder.itemView.setOnClickListener {
+                    onClickPhoneBook?.invoke()
+                }
                 holder.v.nameFriend.text = phoneBook.nameFriend
                 Glide.with(holder.v.root)
                     .load(phoneBook.avatar)

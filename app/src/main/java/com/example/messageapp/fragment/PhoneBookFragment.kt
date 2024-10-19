@@ -7,6 +7,7 @@ package com.example.messageapp.fragment
 import android.annotation.SuppressLint
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.MainActivity
@@ -71,6 +72,9 @@ class PhoneBookFragment : BaseFragment<FragmentPhoneBookBinding, PhoneBookFragme
         }
 
         val phoneBookAdapter = PhoneBookAdapter()
+        phoneBookAdapter.onClickPhoneBook = {
+            findNavController().navigate(R.id.chatFragment)
+        }
         phoneBookAdapter.phoneBooks = phoneBookDatas
         binding?.rcvPhoneBook?.adapter = phoneBookAdapter
         val stickyHeaderDecoration = StickyHeaderItemDecorator(phoneBookAdapter)
