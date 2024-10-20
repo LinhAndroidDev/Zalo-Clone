@@ -5,6 +5,7 @@ import com.example.messageapp.R
 import com.example.messageapp.adapter.ViewPagerAdapter
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetLanguage
+import com.example.messageapp.bottom_sheet.BottomSheetRegister
 import com.example.messageapp.databinding.FragmentIntroBinding
 import com.example.messageapp.viewmodel.IntroFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -41,7 +42,9 @@ class IntroFragment : BaseFragment<FragmentIntroBinding, IntroFragmentViewModel>
         super.onClickView()
 
         binding?.btnCreateNewAccount?.setOnClickListener {
-            findNavController().navigate(R.id.registerFragment)
+//            findNavController().navigate(R.id.registerFragment)
+            val bottomSheet = BottomSheetRegister()
+            bottomSheet.show(parentFragmentManager, "")
         }
 
         binding?.btnLogin?.setOnClickListener {

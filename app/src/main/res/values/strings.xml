@@ -37,7 +37,7 @@
     <string name="continue_register">Tiếp tục</string>
     <string name="you_had_account">Bạn đã có tài khoản?</string>
     <string name="login_now">Đăng nhập ngay</string>
-    <string name="please_enter_phone_number">Vui lòng nhập số điện thoại và mật khẩu để đăng nhập</string>
+    <string name="please_enter_phone_number">Vui lòng nhập email và mật khẩu để đăng nhập</string>
     <string name="phone_number">Số điện thoại</string>
     <string name="password">Mật khẩu</string>
     <string name="get_password">Lấy lại mật khẩu</string>
@@ -58,4 +58,8 @@
     <string name="contact_using_zalo">Liên hệ có dùng Zalo</string>
     <string name="birthday_calendar">Lịch sinh nhật</string>
     <string name="track_your_birthday">Theo dõi sinh nhật của bạn</string>
+    <string name="register">Đăng ký</string>
+    <string name="email">Email</string>
+    <string name="full_name">Họ tên</string>
+    <string name="enter_password_again">Nhập lại mật khẩu</string>
 </resources>

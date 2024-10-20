@@ -1,8 +1,8 @@
 package com.example.messageapp.fragment
 
-import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
@@ -10,13 +10,11 @@ import com.example.messageapp.databinding.FragmentLoginBinding
 import com.example.messageapp.utils.showKeyboard
 import com.example.messageapp.utils.showViewAboveKeyBoard
 import com.example.messageapp.viewmodel.LoginFragmentViewModel
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class LoginFragment : BaseFragment<FragmentLoginBinding, LoginFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_login
-
-    private val db by lazy { Firebase.firestore }
 
     override fun initView() {
         super.initView()
@@ -38,6 +36,24 @@ class LoginFragment : BaseFragment<FragmentLoginBinding, LoginFragmentViewModel>
         }
     }
 
+    override fun bindData() {
+        super.bindData()
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.loadingState?.collect {
+                binding?.loading?.isVisible = it
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.loginSuccessful?.collect { isSuccess ->
+                if(isSuccess) {
+                    findNavController().navigate(R.id.homeFragment)
+                }
+            }
+        }
+    }
+
     private fun checkEnableBtnLogin(txtPhone: CharSequence?, txtPassword: CharSequence?) {
         if(txtPhone?.isNotEmpty() == true && txtPassword?.isNotEmpty() == true) {
             enableBtnLogin()
@@ -54,31 +70,9 @@ class LoginFragment : BaseFragment<FragmentLoginBinding, LoginFragmentViewModel>
         }
 
         binding?.btnLogin?.setOnClickListener {
-            binding?.loading?.isVisible = true
-            val docRef = db.collection("users").get()
-
-            docRef.addOnSuccessListener { result ->
-                binding?.loading?.isVisible = false
-
-                var isExistAccount = false
-                for (document in result) {
-                    val data = document.data as Map<String, String?>
-                    val email = binding?.edtEnterEmail?.text?.toString()
-                    val password = binding?.edtEnterPassword?.text?.toString()
-                    if(data["email"] == email && data["password"] == password) {
-                        isExistAccount = true
-                        findNavController().navigate(R.id.homeFragment)
-                        break
-                    }
-                }
-
-                if(!isExistAccount) {
-                    Toast.makeText(requireActivity(), "Dont Exist Account", Toast.LENGTH_SHORT).show()
-                }
-            }.addOnFailureListener { e ->
-                binding?.loading?.isVisible = false
-                Toast.makeText(requireActivity(), e.message, Toast.LENGTH_SHORT).show()
-            }
+            val email = binding?.edtEnterEmail?.text?.toString() ?: ""
+            val password = binding?.edtEnterPassword?.text?.toString() ?: ""
+            viewModel?.handlerActionLogin(email = email, password = password)
         }
     }
 

@@ -5,5 +5,7 @@ interface CoreInterface {
         fun initView() {}
 
         fun onClickView() {}
+
+        fun bindData() {}
     }
 }

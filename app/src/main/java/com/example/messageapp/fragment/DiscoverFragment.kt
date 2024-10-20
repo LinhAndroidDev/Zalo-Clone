@@ -23,6 +23,7 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
                 "name" to binding?.name?.text.toString(),
                 "email" to binding?.email?.text.toString(),
                 "password" to binding?.password?.text.toString(),
+                "avatar" to ""
             )
 
             db.collection("users")
