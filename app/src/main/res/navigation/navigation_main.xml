@@ -41,6 +41,9 @@
         <action
             android:id="@+id/action_phoneBookFragment_to_searchFragment"
             app:destination="@id/searchFragment" />
+        <action
+            android:id="@+id/action_phoneBookFragment_to_friendRequestFragment"
+            app:destination="@id/friendRequestFragment" />
     </fragment>
     <fragment
         android:id="@+id/discoverFragment"
@@ -118,4 +121,9 @@
             android:id="@+id/action_receiveOTPFragment_to_homeFragment"
             app:destination="@id/homeFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/friendRequestFragment"
+        android:name="com.example.messageapp.fragment.FriendRequestFragment"
+        android:label="FriendRequestFragment"
+        tools:layout="@layout/fragment_friend_request"/>
 </navigation>

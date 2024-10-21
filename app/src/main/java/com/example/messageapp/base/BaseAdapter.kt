@@ -34,6 +34,12 @@ abstract class BaseAdapter<T : Any, VB : ViewDataBinding> :
         items.addAll(list)
     }
 
+    fun addItems(list: ArrayList<T>) {
+        val startPosition = items.size
+        items.addAll(list)
+        notifyItemRangeChanged(startPosition, list.size)
+    }
+
     class BaseDiffCallback<T>(private val oldList: List<T>, private val newList: List<T>) : DiffUtil.Callback() {
         override fun getOldListSize(): Int {
             return oldList.size

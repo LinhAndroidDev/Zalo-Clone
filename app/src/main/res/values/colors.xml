@@ -16,6 +16,7 @@
     <color name="stroke_receiver">#d7dbde</color>
     <color name="grey_bg">#dfe3e6</color>
     <color name="red">#fb534f</color>
+    <color name="grey_light">#F0F0F0</color>
 
     //Text Color
     <color name="text_common">#FF000000</color>

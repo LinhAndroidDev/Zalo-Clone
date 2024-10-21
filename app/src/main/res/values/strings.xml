@@ -12,6 +12,7 @@
     <string name="personal">Cá nhân</string>
     <string name="suggest_friend">Gợi ý kết bạn</string>
     <string name="agree">Đồng ý</string>
+    <string name="refuse">Từ chối</string>
     <string name="see_more">Xem thêm</string>
     <string name="note_chat">Dễ dàng tìm kiếm và trò chuyện với bạn bè</string>
     <string name="find_more_friend">Tìm thêm bạn</string>
@@ -62,4 +63,8 @@
     <string name="email">Email</string>
     <string name="full_name">Họ tên</string>
     <string name="enter_password_again">Nhập lại mật khẩu</string>
+    <string name="older">Cũ hơn</string>
+    <string name="want_to_make_friends">Muốn kết bạn</string>
+    <string name="you_may_be_familiar_with">Có thể bạn quen</string>
+    <string name="add">Thêm</string>
 </resources>

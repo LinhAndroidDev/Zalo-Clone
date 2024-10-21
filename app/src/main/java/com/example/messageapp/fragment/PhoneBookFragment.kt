@@ -75,6 +75,9 @@ class PhoneBookFragment : BaseFragment<FragmentPhoneBookBinding, PhoneBookFragme
         phoneBookAdapter.onClickPhoneBook = {
             findNavController().navigate(R.id.chatFragment)
         }
+        phoneBookAdapter.onClickFriendRequest = {
+            findNavController().navigate(R.id.friendRequestFragment)
+        }
         phoneBookAdapter.phoneBooks = phoneBookDatas
         binding?.rcvPhoneBook?.adapter = phoneBookAdapter
         val stickyHeaderDecoration = StickyHeaderItemDecorator(phoneBookAdapter)

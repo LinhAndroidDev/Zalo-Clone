@@ -48,7 +48,7 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
                 val users = ArrayList<User>()
                 for (document in snapshot.documents) {
                     val data = document.data as Map<String, String?>
-                    users.add(User(data["name"], data["email"], data["password"], document.id)) // Lấy dữ liệu từ mỗi document và thêm vào list
+                    users.add(User(data["name"], data["email"], data["password"], keyAuth =  document.id)) // Lấy dữ liệu từ mỗi document và thêm vào list
                 }
 
                 // Hiển thị danh sách user hoặc xử lý dữ liệu tùy ý
