@@ -64,10 +64,17 @@ class CustomHeaderView @JvmOverloads constructor(
                     binding.viewSearch.layout.isVisible = false
                 }
 
-                else -> {
+                ActionBottomBar.SEARCH_VIEW -> {
                     binding.viewCommon.isVisible = false
                     binding.viewChat.layout.isVisible = false
                     binding.viewSearch.layout.isVisible = true
+                }
+
+                else -> {
+                    binding.headerTitle.layout.isVisible = true
+                    binding.viewCommon.isVisible = false
+                    binding.viewChat.layout.isVisible = false
+                    binding.viewSearch.layout.isVisible = false
                 }
             }
         }
@@ -78,6 +85,7 @@ class CustomHeaderView @JvmOverloads constructor(
     private fun onClickView() {
         binding?.viewChat?.backChat?.setOnClickListener { (context as FragmentActivity).onBackPressed() }
         binding?.viewSearch?.backSearch?.setOnClickListener { (context as FragmentActivity).onBackPressed() }
+        binding?.headerTitle?.backHeader?.setOnClickListener { (context as FragmentActivity).onBackPressed() }
         binding?.searchView?.setOnClickListener {
             val navController = (context as MainActivity).supportFragmentManager.findFragmentById(R.id.navHostFragment)?.findNavController()
             navController?.navigate(R.id.searchFragment)

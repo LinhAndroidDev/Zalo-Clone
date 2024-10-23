@@ -9,6 +9,7 @@
             <enum name="personal" value="4" />
             <enum name="room_chat" value="5" />
             <enum name="search" value="6" />
+            <enum name="header_title" value="7" />
         </attr>
     </declare-styleable>
 
