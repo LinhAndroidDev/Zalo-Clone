@@ -58,7 +58,7 @@
                     <TextView
                         android:id="@+id/tvMessage"
                         android:layout_weight="1"
-                        android:text="Báo mới: [APP] Nhiều bộ, nghành đồng thuận với đề xuất nghỉ Tết Nguyên đán Ất Tỵ 9 ngày"
+                        android:text="Chúc một ngày tốt lành, thời tiết Hà Nội hôm nay 23/10: Mây dải rác"
                         android:textSize="12sp"
                         android:textColor="@color/black"
                         android:maxLines="1"

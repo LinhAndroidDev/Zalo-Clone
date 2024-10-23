@@ -20,7 +20,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
 
         val names = mutableListOf("An", "Bảo", "Brian", "Alex", "Aiden", "Finn", "Khánh", "Duy")
         val friends = arrayListOf<Friend>()
-        friends.add(Friend("Thoi tiet", "https://c3.klipartz.com/pngpicture/514/476/sticker-png-ios-8-icons-weather.png"))
+        friends.add(Friend("Thời Tiết", "https://cdn.jim-nielsen.com/ios/512/weather-2021-12-07.png?rf=1024"))
         names.forEachIndexed { index, s ->
             friends.add(Friend(s, avatars[index]))
         }
