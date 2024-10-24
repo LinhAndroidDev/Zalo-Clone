@@ -10,9 +10,11 @@ import com.example.messageapp.databinding.FragmentLoginBinding
 import com.example.messageapp.utils.showKeyboard
 import com.example.messageapp.utils.showViewAboveKeyBoard
 import com.example.messageapp.viewmodel.LoginFragmentViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class LoginFragment : BaseFragment<FragmentLoginBinding, LoginFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_login
 
@@ -47,7 +49,7 @@ class LoginFragment : BaseFragment<FragmentLoginBinding, LoginFragmentViewModel>
 
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.loginSuccessful?.collect { isSuccess ->
-                if(isSuccess) {
+                if (isSuccess) {
                     findNavController().navigate(R.id.homeFragment)
                 }
             }
@@ -55,7 +57,7 @@ class LoginFragment : BaseFragment<FragmentLoginBinding, LoginFragmentViewModel>
     }
 
     private fun checkEnableBtnLogin(txtPhone: CharSequence?, txtPassword: CharSequence?) {
-        if(txtPhone?.isNotEmpty() == true && txtPassword?.isNotEmpty() == true) {
+        if (txtPhone?.isNotEmpty() == true && txtPassword?.isNotEmpty() == true) {
             enableBtnLogin()
         } else {
             disableBtnLogin()

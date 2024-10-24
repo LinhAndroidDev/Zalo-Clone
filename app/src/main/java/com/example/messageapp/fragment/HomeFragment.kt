@@ -2,6 +2,7 @@ package com.example.messageapp.fragment
 
 import android.os.Bundle
 import android.view.View
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ListChatAdapter
@@ -11,7 +12,11 @@ import com.example.messageapp.databinding.FragmentHomeBinding
 import com.example.messageapp.helper.avatars
 import com.example.messageapp.model.Friend
 import com.example.messageapp.viewmodel.HomeViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override val layoutResId: Int = R.layout.fragment_home
 
@@ -30,8 +35,21 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
             findNavController().navigate(R.id.chatFragment)
         }
         binding?.rcvListChat?.adapter = chatAdapter
+    }
 
+    override fun bindData() {
+        super.bindData()
 
-        binding?.rcvSuggestFriend?.adapter = SuggestFriendAdapter()
+        viewModel?.getSuggestFriend()
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.friends?.collect { friends ->
+                friends?.let {
+                    val adapter = SuggestFriendAdapter()
+                    adapter.items = friends
+                    binding?.rcvSuggestFriend?.adapter = adapter
+                }
+            }
+        }
     }
 }

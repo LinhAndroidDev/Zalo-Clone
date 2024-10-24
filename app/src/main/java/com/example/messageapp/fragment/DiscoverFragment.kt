@@ -7,6 +7,8 @@ import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiscoverBinding
 import com.example.messageapp.model.User
 import com.example.messageapp.viewmodel.DiscoverFragmentViewModel
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
@@ -29,7 +31,8 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
             db.collection("users")
                 .add(city)
                 .addOnSuccessListener {
-                    Toast.makeText(requireActivity(), "Create Successful", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireActivity(), "Create Successful", Toast.LENGTH_SHORT)
+                        .show()
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(requireActivity(), e.message, Toast.LENGTH_SHORT).show()
@@ -47,8 +50,15 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
             if (snapshot != null && !snapshot.isEmpty) {
                 val users = ArrayList<User>()
                 for (document in snapshot.documents) {
-                    val data = document.data as Map<String, String?>
-                    users.add(User(data["name"], data["email"], data["password"], keyAuth =  document.id)) // Lấy dữ liệu từ mỗi document và thêm vào list
+                    val data = document.data as Map<*, *>
+                    users.add(
+                        User(
+                            data["name"].toString(),
+                            data["email"].toString(),
+                            data["password"].toString(),
+                            keyAuth = document.id
+                        )
+                    ) // Lấy dữ liệu từ mỗi document và thêm vào list
                 }
 
                 // Hiển thị danh sách user hoặc xử lý dữ liệu tùy ý

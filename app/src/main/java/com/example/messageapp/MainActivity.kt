@@ -21,7 +21,8 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(LayoutInflater.from(this))
         setContentView(binding?.root)
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
 
         binding?.bottomNav?.setupWithNavController(navController)
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.homeFragment, R.id.phoneBookFragment, R.id.discoverFragment, R.id.diaryFragment, R.id.personalFragment -> {
                     binding?.bottomNav?.visibility = View.VISIBLE
                 }
+
                 else -> binding?.bottomNav?.visibility = View.GONE
             }
         }
@@ -41,7 +43,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isFragmentCurrent(fragmentId: Int): Boolean {
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
         val currentDestination = navController.currentDestination
 
@@ -59,11 +62,14 @@ class MainActivity : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if(isFragmentNav()) {
-            if(!isDoubleTab) {
+        if (isFragmentNav()) {
+            if (!isDoubleTab) {
                 isDoubleTab = true
-                Toast.makeText(this@MainActivity,"Nhấn nút Back lần nữa để thoát", Toast.LENGTH_SHORT).show()
-
+                Toast.makeText(
+                    this@MainActivity,
+                    "Nhấn nút Back lần nữa để thoát",
+                    Toast.LENGTH_SHORT
+                ).show()
                 object : CountDownTimer(2000, 2000) {
                     override fun onTick(millisUntilFinished: Long) {
 
@@ -74,7 +80,6 @@ class MainActivity : AppCompatActivity() {
                     }
 
                 }.start()
-
             } else {
                 finish()
             }

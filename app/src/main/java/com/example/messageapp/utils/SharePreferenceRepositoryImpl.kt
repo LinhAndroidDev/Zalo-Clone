@@ -15,4 +15,12 @@ class SharePreferenceRepositoryImpl(private val ctx: Context) : SharePreferenceR
         val language = prefs[SharePreferenceRepository.LANGUAGE_SELECTED, 0]
         return Language.of(language ?: 0)
     }
+
+    override fun saveAuth(auth: String) {
+        prefs[SharePreferenceRepository.KEY_AUTH] = auth
+    }
+
+    override fun getAuth(): String {
+        return prefs[SharePreferenceRepository.KEY_AUTH] ?: ""
+    }
 }

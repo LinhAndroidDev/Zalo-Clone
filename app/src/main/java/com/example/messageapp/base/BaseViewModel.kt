@@ -1,8 +1,6 @@
 package com.example.messageapp.base
 
 import androidx.lifecycle.ViewModel
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -13,8 +11,6 @@ open class BaseViewModel : ViewModel() {
     var messageState: StateFlow<String> = _messageState
     private var _errorState = MutableStateFlow("")
     var errorState: StateFlow<String> = _errorState
-    val db by lazy { Firebase.firestore }
-
 
     fun showLoading(isLoading: Boolean) {
         _loadingState.value = isLoading
