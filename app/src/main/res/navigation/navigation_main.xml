@@ -76,7 +76,11 @@
         android:id="@+id/chatFragment"
         android:name="com.example.messageapp.fragment.ChatFragment"
         android:label="ChatFragment"
-        tools:layout="@layout/fragment_chat" />
+        tools:layout="@layout/fragment_chat">
+
+        <argument android:name="friend"
+            app:argType="com.example.messageapp.model.User"/>
+    </fragment>
     <fragment
         android:id="@+id/searchFragment"
         android:name="com.example.messageapp.fragment.SearchFragment"

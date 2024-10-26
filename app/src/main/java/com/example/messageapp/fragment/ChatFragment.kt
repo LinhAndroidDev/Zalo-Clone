@@ -25,10 +25,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var chatAdapter: ChatAdapter? = null
     private var scrollPosition = 0
 
-    companion object {
-        const val FRIEND_DATA = "FRIEND_DATA"
-    }
-
     override fun initView() {
         super.initView()
 
@@ -53,7 +49,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             }
         }
 
-        friendData = arguments?.getParcelable(FRIEND_DATA)
+        friendData = ChatFragmentArgs.fromBundle(requireArguments()).friend
         friendData?.let {
             chatAdapter = ChatAdapter(friendData?.avatar.toString(), friendData?.keyAuth.toString())
             binding?.rcvChat?.adapter = chatAdapter

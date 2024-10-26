@@ -1,5 +1,6 @@
 package com.example.messageapp.fragment
 
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
@@ -17,8 +18,8 @@ class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentV
         super.onClickView()
 
         binding?.btnLogout?.setOnClickListener {
-            findNavController().popBackStack(R.id.loginFragment, true)
-            findNavController().navigate(R.id.loginFragment)
+            findNavController().navigate(R.id.loginFragment,null,
+                NavOptions.Builder().setPopUpTo(findNavController().graph.startDestinationId, true).build())
         }
     }
 }

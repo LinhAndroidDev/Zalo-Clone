@@ -27,18 +27,16 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         super.onViewCreated(view, savedInstanceState)
 
         listChatAdapter.onClickView = { conversation ->
-            val bundle = Bundle()
             val user = User(conversation)
-            bundle.putParcelable(ChatFragment.FRIEND_DATA, user)
-            findNavController().navigate(R.id.chatFragment, bundle)
+            val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(user)
+            findNavController().navigate(action)
         }
         binding?.rcvListChat?.adapter = listChatAdapter
 
         binding?.rcvSuggestFriend?.adapter = suggestFriendAdapter
         suggestFriendAdapter.onClickItem = { friend ->
-            val bundle = Bundle()
-            bundle.putParcelable(ChatFragment.FRIEND_DATA, friend)
-            findNavController().navigate(R.id.chatFragment, bundle)
+            val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(friend)
+            findNavController().navigate(action)
         }
     }
 

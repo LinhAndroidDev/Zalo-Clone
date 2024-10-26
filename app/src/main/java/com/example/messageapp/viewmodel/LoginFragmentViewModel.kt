@@ -26,10 +26,12 @@ class LoginFragmentViewModel @Inject constructor() : BaseViewModel() {
      */
     fun handlerActionLogin(email: String, password: String) = viewModelScope.launch {
         showLoading(true)
-        FireBaseInstance.getUsers(
+        FireBaseInstance.checkLogin(
+            email = email,
+            password = password,
             success = { result ->
                 showLoading(false)
-                handlerLoginSuccess(email, password, result)
+                handlerLoginSuccess(result)
             },
             failure = { error ->
                 showLoading(false)
@@ -40,25 +42,20 @@ class LoginFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     /**
      * This function handler when login success
-     * @param result check exist account use email and password
+     * @param result get data user and save to share preference
      * Then send action _loginSuccessful to Fragment
      */
-    private fun handlerLoginSuccess(email: String, password: String, result: QuerySnapshot) {
-        var isExistAccount = false
-        for (document in result.documents) {
-            val data = document.data as Map<*, *>
-            if (data["email"] == email && data["password"] == password) {
-                isExistAccount = true
+    private fun handlerLoginSuccess(result: QuerySnapshot) {
+        if (result.isEmpty) {
+            showError("Dont Exist Account")
+        } else {
+            result.forEach { document ->
+                val data = document.data as Map<*, *>
                 shared.saveAuth(document.id)
                 shared.saveNameUser(data["name"].toString())
                 shared.saveAvatarUser(data["avatar"].toString())
                 _loginSuccessful.value = true
-                break
             }
         }
-        if (!isExistAccount) {
-            showError("Dont Exist Account")
-        }
-
     }
 }

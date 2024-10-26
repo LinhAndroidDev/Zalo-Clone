@@ -6,9 +6,12 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.messageapp.databinding.ActivityMainBinding
+import com.example.messageapp.fragment.LoginFragment
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -84,7 +87,15 @@ class MainActivity : AppCompatActivity() {
                 finish()
             }
         } else {
-            super.onBackPressed()
+            if (isFragmentCurrent(R.id.loginFragment)) {
+                val navHostFragment =
+                    supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+                val navController = navHostFragment.navController
+                navController.navigate(R.id.introFragment,null,
+                    NavOptions.Builder().setPopUpTo(navController.graph.startDestinationId, true).build())
+            } else {
+                super.onBackPressed()
+            }
         }
     }
 }

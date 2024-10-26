@@ -14,6 +14,24 @@ object FireBaseInstance {
 
     private const val USERS = "users"
 
+    fun checkLogin(
+        email: String,
+        password: String,
+        success: (QuerySnapshot) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(USERS)
+            .whereEqualTo("email", email)
+            .whereEqualTo("password", password)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                success.invoke(querySnapshot)
+            }
+            .addOnFailureListener { exception ->
+                failure.invoke(exception.message.toString())
+            }
+    }
+
     /**
      * This function is used to get all users from the Firestore database
      */

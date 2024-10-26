@@ -30,7 +30,8 @@
         android:layout_marginHorizontal="15dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidth="0.5dp"
+        app:boxStrokeWidthFocused="1.5dp"
         app:boxStrokeColor="@color/text_input_box_stroke_color">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -51,7 +52,8 @@
         android:layout_marginHorizontal="15dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidth="0.5dp"
+        app:boxStrokeWidthFocused="1.5dp"
         app:boxStrokeColor="@color/text_input_box_stroke_color">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -68,12 +70,14 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutPassword"
         android:layout_marginTop="10dp"
         android:layout_marginHorizontal="15dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:passwordToggleEnabled="true"
-        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidth="0.5dp"
+        app:boxStrokeWidthFocused="1.5dp"
         app:boxStrokeColor="@color/text_input_box_stroke_color">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -90,12 +94,14 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutPasswordAgain"
         android:layout_marginTop="10dp"
         android:layout_marginHorizontal="15dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:passwordToggleEnabled="true"
-        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidth="0.5dp"
+        app:boxStrokeWidthFocused="1.5dp"
         app:boxStrokeColor="@color/text_input_box_stroke_color">
 
         <com.google.android.material.textfield.TextInputEditText
