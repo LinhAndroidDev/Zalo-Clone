@@ -2,7 +2,8 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
-import com.example.messageapp.model.Friend
+import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.User
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.google.firebase.firestore.QuerySnapshot
@@ -17,8 +18,10 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
 
-    private val _friends: MutableStateFlow<MutableList<Friend>?> = MutableStateFlow(null)
+    private val _friends: MutableStateFlow<MutableList<User>?> = MutableStateFlow(null)
     val friends = _friends.asStateFlow()
+    private val _conversation: MutableStateFlow<ArrayList<Conversation>?> = MutableStateFlow(null)
+    val conversation = _conversation.asStateFlow()
 
     fun getSuggestFriend() = viewModelScope.launch {
         showLoading(true)
@@ -36,15 +39,39 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
-    private fun handlerGetSuggestFriend(result: QuerySnapshot, success: (MutableList<Friend>) -> Unit) {
-        val friendData = mutableListOf<Friend>()
+    private fun handlerGetSuggestFriend(result: QuerySnapshot, success: (MutableList<User>) -> Unit) {
+        val friendData = mutableListOf<User>()
         for(document in result.documents) {
             if(document.id != shared.getAuth()) {
                 document.data?.let { data ->
-                    friendData.add(Friend(data["name"].toString(), data["avatar"].toString()))
+                    friendData.add(
+                        User(
+                            data["name"].toString(),
+                            data["email"].toString(),
+                            data["avatar"].toString(),
+                            document.id
+                        )
+                    )
                 }
             }
         }
         success.invoke(friendData)
+    }
+
+    fun getListConversation() = viewModelScope.launch {
+        FireBaseInstance.getListConversation(shared.getAuth(),
+            success = { result ->
+                val conversationData = arrayListOf<Conversation>()
+                result?.forEach { document ->
+                    val conversation = document.toObject(Conversation::class.java)
+                    if (conversation.sender == shared.getAuth()) {
+                        conversationData.add(conversation)
+                    }
+                }
+                _conversation.value = conversationData
+            },
+            failure = { error ->
+                showError(error)
+            })
     }
 }

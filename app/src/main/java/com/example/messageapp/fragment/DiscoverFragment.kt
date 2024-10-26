@@ -55,7 +55,6 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
                         User(
                             data["name"].toString(),
                             data["email"].toString(),
-                            data["password"].toString(),
                             keyAuth = document.id
                         )
                     ) // Lấy dữ liệu từ mỗi document và thêm vào list
@@ -64,7 +63,7 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
                 // Hiển thị danh sách user hoặc xử lý dữ liệu tùy ý
                 var text = ""
                 users.forEach { user ->
-                    text += "name: ${user.name} - email: ${user.email} - password: ${user.password} - keyAuth: ${user.keyAuth} \n\n"
+                    text += "name: ${user.name} - email: ${user.email} - keyAuth: ${user.keyAuth} \n\n"
                 }
                 binding?.tvResult?.text = text
             } else {

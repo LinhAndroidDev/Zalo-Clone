@@ -34,7 +34,7 @@
                     android:maxLines="1"
                     android:text="Phương VIETTEL"
                     android:textColor="@color/black"
-                    android:textSize="14sp" />
+                    android:textSize="16sp" />
 
                 <TextView
                     android:layout_width="wrap_content"

@@ -6,14 +6,21 @@
     android:layout_height="wrap_content"
     android:visibility="gone">
 
-    <ImageView
+    <LinearLayout
         android:id="@+id/backHeader"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_marginVertical="15dp"
-        android:layout_marginStart="20dp"
-        android:src="@drawable/ic_back"
-        app:tint="@color/white" />
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginVertical="15dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="10dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_back"
+            app:tint="@color/white" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/searchView"

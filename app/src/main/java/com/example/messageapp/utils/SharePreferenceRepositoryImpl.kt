@@ -23,4 +23,20 @@ class SharePreferenceRepositoryImpl(private val ctx: Context) : SharePreferenceR
     override fun getAuth(): String {
         return prefs[SharePreferenceRepository.KEY_AUTH] ?: ""
     }
+
+    override fun saveNameUser(name: String) {
+        prefs[SharePreferenceRepository.NAME_USER] = name
+    }
+
+    override fun getNameUser(): String {
+        return prefs[SharePreferenceRepository.NAME_USER] ?: ""
+    }
+
+    override fun saveAvatarUser(avatar: String) {
+        prefs[SharePreferenceRepository.AVATAR_USER] = avatar
+    }
+
+    override fun getAvatarUser(): String {
+        return prefs[SharePreferenceRepository.AVATAR_USER] ?: ""
+    }
 }

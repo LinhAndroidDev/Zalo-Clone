@@ -44,7 +44,7 @@
                 android:layout_marginStart="5dp"
                 android:textColor="@color/text_grey"
                 android:textSize="14sp"
-                tools:text="(7)" />
+                android:text="(7)" />
         </LinearLayout>
 
         <LinearLayout
@@ -88,7 +88,7 @@
                     android:layout_gravity="center_vertical"
                     android:textColor="@color/text_grey"
                     android:textSize="12sp"
-                    tools:text="@string/contact_using_zalo" />
+                    android:text="@string/contact_using_zalo" />
             </LinearLayout>
 
         </LinearLayout>
@@ -134,7 +134,7 @@
                     android:layout_gravity="center_vertical"
                     android:textColor="@color/text_grey"
                     android:textSize="12sp"
-                    tools:text="@string/track_your_birthday" />
+                    android:text="@string/track_your_birthday" />
             </LinearLayout>
         </LinearLayout>
 

@@ -33,7 +33,7 @@
                         android:id="@+id/tvNameFriend"
                         android:layout_weight="1"
                         android:text="Media box"
-                        android:textSize="14sp"
+                        android:textSize="16sp"
                         android:textColor="@color/black"
                         android:maxLines="1"
                         android:ellipsize="end"
@@ -57,9 +57,10 @@
 
                     <TextView
                         android:id="@+id/tvMessage"
+                        android:layout_marginEnd="25dp"
                         android:layout_weight="1"
                         android:text="Chúc một ngày tốt lành, thời tiết Hà Nội hôm nay 23/10: Mây dải rác"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:textColor="@color/black"
                         android:maxLines="1"
                         android:ellipsize="end"

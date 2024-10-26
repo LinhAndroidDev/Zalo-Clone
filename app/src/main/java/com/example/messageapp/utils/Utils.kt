@@ -1,6 +1,7 @@
 package com.example.messageapp.utils
 
 import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Rect
 import android.os.Build
 import android.os.VibrationEffect
@@ -8,6 +9,7 @@ import android.os.Vibrator
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import androidx.fragment.app.FragmentActivity
 
 fun EditText.showKeyboard() {
     this.isFocusable = true
@@ -44,4 +46,13 @@ fun Context.vibratePhone(duration: Long = 100) {
         // Dành cho các phiên bản Android cũ hơn
         vibrator.vibrate(duration)
     }
+}
+
+fun Context?.getFragmentActivity(): FragmentActivity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is FragmentActivity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }

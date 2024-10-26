@@ -50,6 +50,8 @@ class LoginFragmentViewModel @Inject constructor() : BaseViewModel() {
             if (data["email"] == email && data["password"] == password) {
                 isExistAccount = true
                 shared.saveAuth(document.id)
+                shared.saveNameUser(data["name"].toString())
+                shared.saveAvatarUser(data["avatar"].toString())
                 _loginSuccessful.value = true
                 break
             }

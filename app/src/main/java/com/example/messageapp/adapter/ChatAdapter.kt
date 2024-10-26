@@ -1,30 +1,36 @@
 package com.example.messageapp.adapter
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.messageapp.R
 import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.databinding.ItemChatSenderBinding
-
-data class MessageData(
-    val message: String,
-    val isSender: Boolean,
-    val avatar: String
-)
+import com.example.messageapp.model.Message
+import com.example.messageapp.utils.DateUtils
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
 
-class ChatAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val messages = listOf(
-        MessageData("Chào bạn mình tên Toàn", false, "https://live.staticflickr.com/65535/51348774357_379be59623.jpg"),
-        MessageData("Chào bạn, rất vui được gặp bạn", true, "https://media.baobinhphuoc.com.vn/upload/news/7_2023/68992f500e9e44c4a2f9511e9ae8cdd3.jpg"),
-        MessageData("Mình tên Linh", true, "https://media.baobinhphuoc.com.vn/upload/news/7_2023/68992f500e9e44c4a2f9511e9ae8cdd3.jpg"),
-        MessageData("Bạn ở đâu thế?", false, "https://live.staticflickr.com/65535/51348774357_379be59623.jpg"),
-    )
+class ChatAdapter(
+    private val avatarFriend: String,
+    private val friendId: String
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    private var messages = arrayListOf<Message>()
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun setMessage(list: ArrayList<Message>) {
+        val startIndex = messages.size
+        messages.clear()
+        messages.addAll(list)
+        notifyDataSetChanged()
+//        notifyItemRangeChanged(startIndex, list.size)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
@@ -60,20 +66,25 @@ class ChatAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             VIEW_SENDER -> {
                 holder as SenderViewHolder
                 holder.v.tvSender.text = message.message
+                holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
+                holder.v.viewBottom.isVisible = position == messages.size - 1
             }
 
             else -> {
                 holder as ReceiverViewHolder
                 holder.v.tvReceiver.text = message.message
+                holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
+                holder.v.viewBottom.isVisible = position == messages.size - 1
                 Glide.with(holder.v.root)
-                    .load(message.avatar)
+                    .load(avatarFriend)
+                    .error(R.mipmap.ic_launcher)
                     .into(holder.v.avatarReceiver)
             }
         }
     }
 
     override fun getItemViewType(position: Int): Int {
-        return if (messages[position].isSender) VIEW_SENDER else VIEW_RECEIVER
+        return if (messages[position].sender != friendId) VIEW_SENDER else VIEW_RECEIVER
     }
 
     class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root)
