@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto">
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".fragment.SettingFragment"
+        android:orientation="vertical"
+        android:background="@color/white">
+
+        <com.example.messageapp.custom.CustomHeaderView
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:item_view="header_title" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_margin="15dp"
+                android:src="@drawable/ic_background_language"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                app:tint="@color/blue_dark"/>
+
+            <TextView
+                android:text="@string/interface_and_language"
+                android:textSize="16sp"
+                android:textColor="@color/text_common"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"/>
+
+            <ImageView
+                android:layout_marginEnd="20dp"
+                android:src="@drawable/ic_back"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:rotation="180"/>
+        </LinearLayout>
+
+        <View
+            android:layout_marginStart="55dp"
+            android:background="@color/grey_bg"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"/>
+
+        <LinearLayout
+            android:id="@+id/logout"
+            android:layout_marginTop="10dp"
+            android:layout_marginHorizontal="20dp"
+            android:background="@drawable/bg_corner_25_blue_light"
+            android:backgroundTint="@color/text_hint"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:src="@drawable/ic_logout"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                app:tint="@color/black"
+                android:rotation="180"/>
+
+            <TextView
+                android:id="@+id/btnCreateNewAccount"
+                android:layout_marginStart="10dp"
+                android:layout_marginVertical="12dp"
+                android:text="@string/log_out"
+                android:textSize="14sp"
+                android:textColor="@color/text_common"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/font_noto_sans" />
+        </LinearLayout>
+
+    </LinearLayout>
+</layout>

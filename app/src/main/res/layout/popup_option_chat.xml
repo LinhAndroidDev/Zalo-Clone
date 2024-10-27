@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="275dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layoutPopupOptions">
+
+    <LinearLayout
+        android:id="@+id/layoutSender"
+        android:layout_marginEnd="15dp"
+        android:layout_gravity="end"
+        android:layout_marginBottom="10dp"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="7dp"
+        android:background="@drawable/bg_sender"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvSender"
+            android:text="Toi anh co ve ko?"
+            android:textSize="14sp"
+            android:textColor="@color/text_common"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/tvTimeSender"
+            android:layout_marginTop="5dp"
+            android:text="11:09"
+            android:textSize="10sp"
+            android:textColor="@color/text_sender"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutReceiver"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="15dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_receiver"
+        android:orientation="vertical"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="7dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvReceiver"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Toi anh co ve ko?"
+            android:textColor="@color/text_common"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvTimeReceiver"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="11:09"
+            android:textColor="@color/text_sender"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginEnd="15dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_white_corner_10"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_marginTop="15dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:src="@drawable/ic_share"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:rotationY="180"
+                    app:tint="#7559b8"/>
+
+                <TextView
+                    android:layout_marginTop="5dp"
+                    android:text="@string/reply"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_common"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:src="@drawable/ic_share"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    app:tint="#3673de"/>
+
+                <TextView
+                    android:layout_marginTop="5dp"
+                    android:text="@string/forward"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_common"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnCopy"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:src="@drawable/ic_copy"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    app:tint="#1951cc"/>
+
+                <TextView
+                    android:layout_marginTop="5dp"
+                    android:text="@string/copy"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_common"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_marginTop="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:src="@drawable/ic_pin"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    app:tint="#f07e34"/>
+
+                <TextView
+                    android:layout_marginTop="5dp"
+                    android:text="@string/pin"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_common"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_marginEnd="5dp"
+                    android:src="@drawable/ic_alarm"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    app:tint="#970506"/>
+
+                <TextView
+                    android:layout_marginTop="5dp"
+                    android:text="@string/appointment_reminder"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_common"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:src="@drawable/ic_detail"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    app:tint="#515254"/>
+
+                <TextView
+                    android:layout_marginTop="5dp"
+                    android:text="@string/detail"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_common"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="15dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:src="@drawable/ic_sound_speak"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    app:tint="#7046d1"/>
+
+                <TextView
+                    android:layout_marginHorizontal="10dp"
+                    android:layout_marginTop="5dp"
+                    android:text="@string/read_text"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:textColor="@color/text_common"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:src="@drawable/ic_delete"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    app:tint="#ca0a10"/>
+
+                <TextView
+                    android:layout_marginTop="5dp"
+                    android:text="@string/delete"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_common"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

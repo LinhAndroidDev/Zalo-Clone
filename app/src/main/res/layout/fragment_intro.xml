@@ -56,11 +56,11 @@
             android:id="@+id/vpgIntro"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="30dp"
             android:layout_weight="1" />
 
         <com.example.messageapp.custom.CircleIndicator
             android:id="@+id/indicator"
+            android:layout_marginTop="10dp"
             android:layout_width="match_parent"
             android:layout_height="15dp"
             android:layout_gravity="center_horizontal"
@@ -73,7 +73,7 @@
 
         <TextView
             android:id="@+id/btnLogin"
-            android:layout_marginTop="100dp"
+            android:layout_marginTop="50dp"
             android:layout_marginHorizontal="20dp"
             android:text="@string/login"
             android:textSize="14sp"

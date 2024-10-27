@@ -2,6 +2,7 @@ package com.example.messageapp.adapter
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
@@ -22,6 +23,8 @@ class ChatAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private var messages = arrayListOf<Message>()
+    var longClickItemSender: ((Pair<View, Message>) -> Unit)? = null
+    var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
 
     @SuppressLint("NotifyDataSetChanged")
     fun setMessage(list: ArrayList<Message>) {
@@ -68,6 +71,10 @@ class ChatAdapter(
                 holder.v.tvSender.text = message.message
                 holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
                 holder.v.viewBottom.isVisible = position == messages.size - 1
+                holder.v.layoutMessage.setOnLongClickListener {
+                    longClickItemSender?.invoke(it to message)
+                    true
+                }
             }
 
             else -> {
@@ -79,6 +86,10 @@ class ChatAdapter(
                     .load(avatarFriend)
                     .error(R.mipmap.ic_launcher)
                     .into(holder.v.avatarReceiver)
+                holder.v.layoutMessage.setOnLongClickListener {
+                    longClickItemReceiver?.invoke(it to message)
+                    true
+                }
             }
         }
     }

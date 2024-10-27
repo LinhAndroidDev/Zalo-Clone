@@ -95,6 +95,13 @@ class CustomHeaderView @JvmOverloads constructor(
                     ?.findNavController()
             navController?.navigate(R.id.searchFragment)
         }
+
+        binding?.setting?.setOnClickListener {
+            val navController =
+                context.getFragmentActivity()?.supportFragmentManager?.findFragmentById(R.id.navHostFragment)
+                    ?.findNavController()
+            navController?.navigate(R.id.settingFragment)
+        }
     }
 
     private fun hideAllViews() {
