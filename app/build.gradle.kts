@@ -6,11 +6,16 @@ plugins {
     id("com.google.gms.google-services")
     id("kotlin-parcelize")
     id("androidx.navigation.safeargs.kotlin")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
     namespace = "com.example.messageapp"
     compileSdk = 34
+
+    packagingOptions {
+        exclude("META-INF/DEPENDENCIES")
+    }
 
     defaultConfig {
         applicationId = "com.example.messageapp"
@@ -56,6 +61,8 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore:25.1.0")
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
     implementation("androidx.activity:activity:1.9.2")
+    implementation("com.google.firebase:firebase-messaging:24.0.3")
+    implementation("com.google.firebase:firebase-crashlytics:19.2.1")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
@@ -71,4 +78,11 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-android-compiler:2.48")
     implementation("se.emilsjolander:stickylistheaders:2.3.0")
+
+    //Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
 }

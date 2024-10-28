@@ -1,12 +1,19 @@
 package com.example.messageapp.utils
 
+import android.util.Log
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.User
+import com.example.messageapp.remote.ApiClient
+import com.example.messageapp.remote.request.Notification
+import com.example.messageapp.remote.request.NotificationData
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.util.HashMap
 
 object FireBaseInstance {
@@ -93,6 +100,26 @@ object FireBaseInstance {
             .document(time)
             .set(message)
             .addOnCompleteListener {
+                val notificationData = NotificationData(
+                    token = friend.keyAuth,
+                    hashMapOf("title" to "This is Notification by Linh",
+                        "body" to "Hello bro")
+                )
+
+                ApiClient.api?.sendMessage(Notification(message = notificationData))
+                    ?.enqueue(object : Callback<Notification> {
+                        override fun onFailure(call: Call<Notification>, t: Throwable) {
+                            Log.e("Send Message", "Send Fail")
+                        }
+
+                        override fun onResponse(
+                            call: Call<Notification>,
+                            response: Response<Notification>
+                        ) {
+                            Log.e("Send Message", "Send Successful")
+                        }
+
+                    })
 
                 val conversationData = Conversation(
                     friendId = friend.keyAuth.toString(),

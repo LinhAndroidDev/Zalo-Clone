@@ -1,6 +1,7 @@
 package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.example.messageapp.MyApplication
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.User
@@ -18,10 +19,16 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
 
+    private val application by lazy { MyApplication() }
+
     private val _friends: MutableStateFlow<MutableList<User>?> = MutableStateFlow(null)
     val friends = _friends.asStateFlow()
     private val _conversation: MutableStateFlow<ArrayList<Conversation>?> = MutableStateFlow(null)
     val conversation = _conversation.asStateFlow()
+
+    fun subscribeToToken() {
+        application.subscribeToToken(shared.getAuth())
+    }
 
     fun getSuggestFriend() = viewModelScope.launch {
         showLoading(true)

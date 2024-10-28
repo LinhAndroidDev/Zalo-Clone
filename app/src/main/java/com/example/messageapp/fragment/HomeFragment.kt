@@ -44,6 +44,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override fun bindData() {
         super.bindData()
 
+        viewModel?.subscribeToToken()
         viewModel?.getListConversation()
         viewModel?.getSuggestFriend()
 
