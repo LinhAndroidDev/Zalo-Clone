@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.Intent
 import android.graphics.Rect
-import android.os.StrictMode
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -66,7 +65,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 } else {
                     Log.e("ChatFragment", "Bàn phím đã ẩn")
                     // Bàn phím đã xuất hiện
-                    scrollPosition = binding?.rcvChat?.computeVerticalScrollOffset() ?: 0 // Cập nhật vị trí scroll
+                    scrollPosition = binding?.rcvChat?.computeVerticalScrollOffset()
+                        ?: 0 // Cập nhật vị trí scroll
                 }
             }
         }
@@ -103,14 +103,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val layoutReceiver: LinearLayout = popupView.findViewById(R.id.layoutReceiver)
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
 
-        if(isItemSender) {
+        if (isItemSender) {
             layoutSender.isVisible = true
             popupView.findViewById<TextView>(R.id.tvSender).text = message.message
-            popupView.findViewById<TextView>(R.id.tvTimeSender).text = DateUtils.convertTimeToHour(message.time)
+            popupView.findViewById<TextView>(R.id.tvTimeSender).text =
+                DateUtils.convertTimeToHour(message.time)
         } else {
             layoutReceiver.isVisible = true
             popupView.findViewById<TextView>(R.id.tvReceiver).text = message.message
-            popupView.findViewById<TextView>(R.id.tvTimeReceiver).text = DateUtils.convertTimeToHour(message.time)
+            popupView.findViewById<TextView>(R.id.tvTimeReceiver).text =
+                DateUtils.convertTimeToHour(message.time)
         }
 
         // Tạo PopupWindow với chiều rộng và chiều cao
@@ -139,9 +141,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val height = popupView.measuredHeight
 
         // Kiểm tra vị trí của item so với chiều cao của màn hình
-        if (itemYPosition + height  > screenHeight) {
+        if (itemYPosition + height > screenHeight) {
             // Nếu item nằm ở nửa dưới màn hình, hiển thị PopupWindow phía trên item
-            popupWindow.showAsDropDown(anchor, 0, - height)
+            popupWindow.showAsDropDown(anchor, 0, -height)
         } else {
             // Nếu item nằm ở nửa trên màn hình, hiển thị PopupWindow bình thường bên dưới item
             popupWindow.showAsDropDown(anchor, 0, -anchor.height)
@@ -224,8 +226,5 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 REQUEST_CODE_MULTI_PICTURE
             )
         }
-
-        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
-        StrictMode.setThreadPolicy(policy)
     }
 }

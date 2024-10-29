@@ -22,8 +22,6 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
 
-    private val application by lazy { MyApplication() }
-
     private val _friends: MutableStateFlow<MutableList<User>?> = MutableStateFlow(null)
     val friends = _friends.asStateFlow()
     private val _conversation: MutableStateFlow<ArrayList<Conversation>?> = MutableStateFlow(null)
