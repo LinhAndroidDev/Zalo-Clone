@@ -2,7 +2,6 @@ package com.example.messageapp.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
-import com.example.messageapp.MyApplication
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.User

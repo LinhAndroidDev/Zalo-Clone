@@ -227,4 +227,17 @@ object FireBaseInstance {
                 }
             }
     }
+
+    fun getInfoUser(keyAuth: String, success: (User) -> Unit, failure: (String) -> Unit) {
+        db.collection(PATH_USER)
+            .document(keyAuth)
+            .get()
+            .addOnSuccessListener { result ->
+                result.toObject(User::class.java)?.let { user ->
+                    success.invoke(user)
+                }
+            }.addOnFailureListener { error ->
+                failure.invoke(error.message.toString())
+            }
+    }
 }

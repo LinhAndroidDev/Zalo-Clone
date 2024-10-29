@@ -1,8 +1,10 @@
 package com.example.messageapp.fragment
 
+import android.content.Intent
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
+import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentPersonalBinding
@@ -31,7 +33,8 @@ class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentV
         super.onClickView()
 
         binding?.personal?.setOnClickListener {
-
+            val intent = Intent(requireActivity(), PersonalActivity::class.java)
+            startActivity(intent)
         }
     }
 }
