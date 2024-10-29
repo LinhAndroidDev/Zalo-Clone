@@ -29,10 +29,6 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
     private val _conversation: MutableStateFlow<ArrayList<Conversation>?> = MutableStateFlow(null)
     val conversation = _conversation.asStateFlow()
 
-    fun subscribeToToken() {
-        application.subscribeToToken(shared.getAuth())
-    }
-
     fun getSuggestFriend() = viewModelScope.launch {
         showLoading(true)
         FireBaseInstance.getUsers(
