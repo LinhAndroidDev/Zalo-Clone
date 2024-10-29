@@ -6,4 +6,10 @@
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_common</item>
     </style>
+
+    <style name="BottomNavigationTextAppearance" parent="TextAppearance.AppCompat.Caption">
+        <item name="android:textStyle">normal</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:fontFamily">@font/font_noto_sans</item>
+    </style>
 </resources>

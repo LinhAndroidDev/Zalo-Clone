@@ -32,11 +32,13 @@
         </activity>
 
         <service android:name=".service.ReceiverMessageService"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>
         </service>
+
+        <receiver android:name=".broadcast.NotificationReply" />
     </application>
 
 </manifest>

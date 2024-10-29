@@ -8,10 +8,8 @@ import android.view.View
 import android.widget.Toast
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.messageapp.databinding.ActivityMainBinding
-import com.example.messageapp.fragment.LoginFragment
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -33,16 +31,16 @@ class MainActivity : AppCompatActivity() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.homeFragment, R.id.phoneBookFragment, R.id.discoverFragment, R.id.diaryFragment, R.id.personalFragment -> {
-                    binding?.bottomNav?.visibility = View.VISIBLE
+                    binding?.viewBottomNav?.visibility = View.VISIBLE
                 }
 
-                else -> binding?.bottomNav?.visibility = View.GONE
+                else -> binding?.viewBottomNav?.visibility = View.GONE
             }
         }
     }
 
     internal fun getHeightBottomNav(): Int {
-        return binding?.bottomNav?.height ?: 0
+        return binding?.viewBottomNav?.height ?: 0
     }
 
     private fun isFragmentCurrent(fragmentId: Int): Boolean {

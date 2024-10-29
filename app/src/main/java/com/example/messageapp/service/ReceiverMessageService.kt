@@ -10,12 +10,15 @@ import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.RemoteInput
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
+import com.example.messageapp.broadcast.NotificationReply
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
 class ReceiverMessageService : FirebaseMessagingService() {
+
     override fun onNewToken(token: String) {
         super.onNewToken(token)
 
@@ -29,16 +32,16 @@ class ReceiverMessageService : FirebaseMessagingService() {
         Log.d(TAG, "From: ${remoteMessage.from}")
 
         // Check if message contains a data payload.
-        remoteMessage.data.isNotEmpty().let {
-            Log.d(TAG, "Message data payload: ${remoteMessage.data}")
-            sendNotification(remoteMessage.data["title"], remoteMessage.data["body"])
-        }
-
-        // Check if message contains a notification payload.
-//        remoteMessage.notification?.let {
-//            Log.d(TAG, "Message Notification Body: ${it.body}")
-//            sendNotification(it.title, it.body)
+//        remoteMessage.data.isNotEmpty().let {
+//            Log.d(TAG, "Message data payload: ${remoteMessage.data}")
+//            sendNotification(remoteMessage.data["title"], remoteMessage.data["body"])
 //        }
+
+//      Check if message contains a notification payload.
+        remoteMessage.notification?.let {
+            Log.d(TAG, "Message Notification Body: ${it.body}")
+            sendNotification(it.title, it.body)
+        }
     }
 
     @SuppressLint("ServiceCast")
@@ -48,6 +51,23 @@ class ReceiverMessageService : FirebaseMessagingService() {
         val pendingIntent = PendingIntent.getActivity(this, 0, intent,
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
 
+        // for replies on notification
+        val remoteInput = RemoteInput.Builder(KEY_REPLY_TEXT)
+            .setLabel("Reply")
+            .build()
+
+        // Create a PendingIntent for the reply action
+        val replyIntent = Intent(this, NotificationReply::class.java)
+
+        val replyPendingIntent = PendingIntent.getBroadcast(this, 0, replyIntent, PendingIntent.FLAG_MUTABLE)
+
+        // Create a NotificationCompat.Action object for the reply action
+        val replyAction = NotificationCompat.Action.Builder(
+            R.drawable.ic_reply,
+            "Reply",
+            replyPendingIntent
+        ).addRemoteInput(remoteInput).build()
+
         val channelId = getString(R.string.title_app)
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
@@ -55,13 +75,14 @@ class ReceiverMessageService : FirebaseMessagingService() {
             .setContentTitle(title)
             .setContentText(messageBody)
             .setAutoCancel(true)
+            .addAction(replyAction)
             .setSound(defaultSoundUri)
             .setContentIntent(pendingIntent)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Channel human readable title", NotificationManager.IMPORTANCE_DEFAULT)
+            val channel = NotificationChannel(channelId, "Channel human readable title", NotificationManager.IMPORTANCE_HIGH)
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -70,5 +91,6 @@ class ReceiverMessageService : FirebaseMessagingService() {
 
     companion object {
         private const val TAG = "MyFirebaseMsgService"
+        private const val KEY_REPLY_TEXT = "KEY_REPLY_TEXT"
     }
 }

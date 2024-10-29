@@ -14,14 +14,31 @@
         app:defaultNavHost="true"
         app:navGraph="@navigation/navigation_main"/>
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNav"
+    <LinearLayout
+        android:id="@+id/viewBottomNav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/menu_bottom_nav"
-        android:visibility="gone"/>
+        android:visibility="gone">
+
+        <View
+            android:background="@color/grey_1"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"/>
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:menu="@menu/menu_bottom_nav"
+            app:backgroundTint="@color/white"
+            app:itemIconTint="@color/blue1"
+            app:itemTextColor="@color/blue1"
+            app:itemTextAppearanceActive="@style/BottomNavigationTextAppearance"
+            app:itemTextAppearanceInactive="@style/BottomNavigationTextAppearance" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

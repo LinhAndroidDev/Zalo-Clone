@@ -1,8 +1,11 @@
 package com.example.messageapp.remote.request
 
-import java.util.HashMap
-
 data class NotificationData(
     val token: String? = null,
-    val data: HashMap<String, String>
+    val notification: Data? = null
+)
+
+data class Data(
+    val title: String,
+    val body: String
 )
