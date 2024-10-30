@@ -55,7 +55,7 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to get all users from the Firestore database
+     * This function is used to get all users from the FireStore database
      */
     fun getUsers(success: (QuerySnapshot) -> Unit, failure: (String) -> Unit) {
         db.collection(PATH_USER).get().addOnSuccessListener { result ->
@@ -66,7 +66,7 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to add a new user to the Firestore database
+     * This function is used to add a new user to the FiresStore database
      */
     fun addUser(
         user: HashMap<String, String>,
@@ -82,7 +82,7 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to get all messages from the Firestore database
+     * This function is used to get all messages from the FireStore database
      */
     fun getMessage(
         idRoom: String,
@@ -103,7 +103,7 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to send a message to the Firestore database
+     * This function is used to send a message to the FireStore database
      * + Here we send a message and create 2 conversations between the sender and the receiver
      * + Then send a notification to the receiver via the receiver's token.
      */
@@ -186,7 +186,7 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to get all conversations from the Firestore database
+     * This function is used to get all conversations from the FireStore database
      */
     fun getListConversation(
         keyAuth: String,
@@ -205,7 +205,7 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to save token of user to the Firestore database
+     * This function is used to save token of user to the FireStore database
      */
     fun saveTokenMessage(keyAuth: String, data: HashMap<String, String>) {
         db.collection(PATH_TOKEN).document(keyAuth).set(data).addOnSuccessListener {
@@ -213,7 +213,7 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to get token of receiver from the Firestore database
+     * This function is used to get token of receiver from the FireStore database
      */
     private fun getTokenMessage(
         friendId: String,
@@ -234,6 +234,9 @@ object FireBaseInstance {
             }
     }
 
+    /**
+     * This function is used to get information user from the FireStore database
+     */
     fun getInfoUser(keyAuth: String, success: (User) -> Unit) {
         db.collection(PATH_USER)
             .document(keyAuth)
@@ -249,6 +252,9 @@ object FireBaseInstance {
             }
     }
 
+    /**
+     * This function is used to upload image to the Storage Firebase
+     */
     fun uploadImage(context: Context, uriPhoto: Uri, success: (String) -> Unit) {
         storage.child(PATH_IMAGE)
             .child(UUID.randomUUID().toString())
@@ -262,6 +268,9 @@ object FireBaseInstance {
             }
     }
 
+    /**
+     * This function is used to update avatar of user to the FireStore database
+     */
     fun updateAvatarUser(avatar: String, keyAuth: String) {
         db.collection(PATH_USER)
             .document(keyAuth)

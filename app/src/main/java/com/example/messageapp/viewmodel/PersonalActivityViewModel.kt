@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,6 +23,7 @@ class PersonalActivityViewModel @Inject constructor() : BaseViewModel() {
     private val _user: MutableStateFlow<User?> = MutableStateFlow(null)
     val user = _user.asStateFlow()
 
+    /** This function is used to get information of user */
     fun getInfoUser() = viewModelScope.launch {
         FireBaseInstance.getInfoUser(
             shared.getAuth(),
@@ -33,12 +33,14 @@ class PersonalActivityViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
+    /** This function is used to upload photo to firebase*/
     fun uploadPhoto(context: Context, uri: Uri) = viewModelScope.launch(Dispatchers.IO) {
         FireBaseInstance.uploadImage(context ,uriPhoto = uri) {
             updateAvatarUser(it, shared.getAuth())
         }
     }
 
+    /** This function is used to update avatar of user */
     private fun updateAvatarUser(avatar: String, keyAuth: String) =
         viewModelScope.launch(Dispatchers.IO) {
             FireBaseInstance.updateAvatarUser(avatar = avatar, keyAuth = keyAuth)
