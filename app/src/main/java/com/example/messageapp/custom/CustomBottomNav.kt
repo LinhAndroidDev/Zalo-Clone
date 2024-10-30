@@ -32,7 +32,8 @@ enum class ActionBottomBar(val rawValue: Int) {
     DIARY_VIEW(3),
     PERSONAL_VIEW(4),
     CHAT_VIEW(5),
-    SEARCH_VIEW(6);
+    SEARCH_VIEW(6),
+    HEADER_TITLE(7);
 
     companion object {
         fun of(value: Int): ActionBottomBar {
@@ -48,7 +49,6 @@ class CustomBottomNav @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr) {
     private var binding: CustomBottomNavBinding? = null
-    var actionBottomBar: ((ActionBottomBar) -> Unit)? = null
 
     init {
         binding = CustomBottomNavBinding.inflate(LayoutInflater.from(context))
@@ -77,7 +77,6 @@ class CustomBottomNav @JvmOverloads constructor(
                         imgRes = itemViews[index].iconRes,
                         isChecked = true
                     )
-                    actionBottomBar?.invoke(ActionBottomBar.of(index))
                 }
             }
         }

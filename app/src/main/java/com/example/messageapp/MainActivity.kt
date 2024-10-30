@@ -6,10 +6,13 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.messageapp.databinding.ActivityMainBinding
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private var binding: ActivityMainBinding? = null
     private var isDoubleTab = false
@@ -19,7 +22,8 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(LayoutInflater.from(this))
         setContentView(binding?.root)
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
 
         binding?.bottomNav?.setupWithNavController(navController)
@@ -27,15 +31,21 @@ class MainActivity : AppCompatActivity() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.homeFragment, R.id.phoneBookFragment, R.id.discoverFragment, R.id.diaryFragment, R.id.personalFragment -> {
-                    binding?.bottomNav?.visibility = View.VISIBLE
+                    binding?.viewBottomNav?.visibility = View.VISIBLE
                 }
-                else -> binding?.bottomNav?.visibility = View.GONE
+
+                else -> binding?.viewBottomNav?.visibility = View.GONE
             }
         }
     }
 
+    internal fun getHeightBottomNav(): Int {
+        return binding?.viewBottomNav?.height ?: 0
+    }
+
     private fun isFragmentCurrent(fragmentId: Int): Boolean {
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
         val currentDestination = navController.currentDestination
 
@@ -48,15 +58,19 @@ class MainActivity : AppCompatActivity() {
                 || isFragmentCurrent(R.id.discoverFragment)
                 || isFragmentCurrent(R.id.diaryFragment)
                 || isFragmentCurrent(R.id.personalFragment)
+                || isFragmentCurrent(R.id.introFragment)
     }
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if(isFragmentNav()) {
-            if(!isDoubleTab) {
+        if (isFragmentNav()) {
+            if (!isDoubleTab) {
                 isDoubleTab = true
-                Toast.makeText(this@MainActivity,"Nhấn nút Back lần nữa để thoát", Toast.LENGTH_SHORT).show()
-
+                Toast.makeText(
+                    this@MainActivity,
+                    "Nhấn nút Back lần nữa để thoát",
+                    Toast.LENGTH_SHORT
+                ).show()
                 object : CountDownTimer(2000, 2000) {
                     override fun onTick(millisUntilFinished: Long) {
 
@@ -67,12 +81,19 @@ class MainActivity : AppCompatActivity() {
                     }
 
                 }.start()
-
             } else {
                 finish()
             }
         } else {
-            super.onBackPressed()
+            if (isFragmentCurrent(R.id.loginFragment)) {
+                val navHostFragment =
+                    supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+                val navController = navHostFragment.navController
+                navController.navigate(R.id.introFragment,null,
+                    NavOptions.Builder().setPopUpTo(navController.graph.startDestinationId, true).build())
+            } else {
+                super.onBackPressed()
+            }
         }
     }
 }

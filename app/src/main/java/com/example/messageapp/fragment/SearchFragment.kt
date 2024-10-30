@@ -11,7 +11,9 @@ class SearchFragment : BaseFragment<FragmentSearchBinding, SearchFragmentViewMod
     override fun initView() {
         super.initView()
 
-        binding?.header?.focusSearch()
+        binding?.root?.post {
+            binding?.header?.focusSearch()
+        }
     }
 
     override fun onClickView() {

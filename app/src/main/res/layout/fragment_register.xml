@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:orientation="vertical"
+        tools:context=".fragment.RegisterFragment">
+
+        <ImageView
+            android:id="@+id/backRegister"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="30dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_back_long"
+            app:tint="@color/black" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="30dp"
+            android:fontFamily="@font/font_noto_sans"
+            android:text="@string/enter_phone_number"
+            android:textColor="@color/text_common"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/viewEnterPhone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_enter_phone">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="1dp"
+                android:background="@drawable/bg_header_phone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="12dp"
+                    android:layout_marginStart="12dp"
+                    android:text="@string/header_phone"
+                    android:textColor="@color/text_common"
+                    android:textSize="16sp" />
+
+                <ImageView
+                    android:id="@+id/imgDown"
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="12dp"
+                    android:layout_marginBottom="2dp"
+                    android:importantForAccessibility="no"
+                    android:rotation="270"
+                    android:src="@drawable/ic_back"
+                    app:tint="@color/black" />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/edtEnterPhone"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginHorizontal="10dp"
+                android:layout_weight="1"
+                android:background="@color/white"
+                android:importantForAutofill="no"
+                android:inputType="phone"
+                android:textColor="@color/text_common"
+                android:textSize="16sp"
+                tools:ignore="LabelFor"
+                tools:text="0982 9382 33" />
+
+            <ImageView
+                android:id="@+id/btnClearText"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="10dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_remove_text"
+                android:visibility="gone"
+                app:tint="@color/black" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <CheckBox
+                android:id="@+id/cbConditionUse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="@string/agree_condition_use_app" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:fontFamily="@font/font_noto_sans"
+                android:text="@string/condition_use_app"
+                android:textColor="@color/blue"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <CheckBox
+                android:id="@+id/cbConditionInternet"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="@string/agree_condition_internet_app" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:fontFamily="@font/font_noto_sans"
+                android:text="@string/condition_internet_app"
+                android:textColor="@color/blue"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btnContinueRegister"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="30dp"
+            android:background="@drawable/bg_corner_25_blue_light"
+            android:backgroundTint="@color/grey_bg"
+            android:gravity="center_horizontal"
+            android:paddingVertical="15dp"
+            android:text="@string/continue_register"
+            android:textColor="@color/grey_1"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/font_noto_sans" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:id="@+id/viewLoginNow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/you_had_account"
+                android:textColor="@color/text_common"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:text="@string/login_now"
+                android:textColor="@color/blue1"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/font_noto_sans" />
+        </LinearLayout>
+    </LinearLayout>
+</layout>

@@ -10,11 +10,14 @@
         android:name="com.example.messageapp.fragment.SplashFragment"
         android:label="splash_fragment"
         tools:layout="@layout/fragment_splash">
+<!--        <action-->
+<!--            android:id="@+id/action_splashFragment_to_homeFragment"-->
+<!--            app:destination="@+id/homeFragment"-->
+<!--            app:popUpTo="@id/splashFragment"-->
+<!--            app:popUpToInclusive="true" />-->
         <action
-            android:id="@+id/action_splashFragment_to_homeFragment"
-            app:destination="@+id/homeFragment"
-            app:popUpTo="@id/splashFragment"
-            app:popUpToInclusive="true" />
+            android:id="@+id/action_splashFragment_to_introFragment"
+            app:destination="@id/introFragment" />
     </fragment>
 
     <fragment
@@ -38,6 +41,9 @@
         <action
             android:id="@+id/action_phoneBookFragment_to_searchFragment"
             app:destination="@id/searchFragment" />
+        <action
+            android:id="@+id/action_phoneBookFragment_to_friendRequestFragment"
+            app:destination="@id/friendRequestFragment" />
     </fragment>
     <fragment
         android:id="@+id/discoverFragment"
@@ -65,15 +71,71 @@
         <action
             android:id="@+id/action_personalFragment_to_searchFragment"
             app:destination="@id/searchFragment" />
+        <action
+            android:id="@+id/action_personalFragment_to_settingFragment"
+            app:destination="@id/settingFragment" />
     </fragment>
     <fragment
         android:id="@+id/chatFragment"
         android:name="com.example.messageapp.fragment.ChatFragment"
         android:label="ChatFragment"
-        tools:layout="@layout/fragment_chat" />
+        tools:layout="@layout/fragment_chat">
+
+        <argument android:name="friend"
+            app:argType="com.example.messageapp.model.User"/>
+    </fragment>
     <fragment
         android:id="@+id/searchFragment"
         android:name="com.example.messageapp.fragment.SearchFragment"
         android:label="SearchFragment"
         tools:layout="@layout/fragment_search"/>
+    <fragment
+        android:id="@+id/introFragment"
+        android:name="com.example.messageapp.fragment.IntroFragment"
+        android:label="IntroFragment"
+        tools:layout="@layout/fragment_intro">
+        <action
+            android:id="@+id/action_introFragment_to_registerFragment"
+            app:destination="@id/registerFragment" />
+        <action
+            android:id="@+id/action_introFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.example.messageapp.fragment.RegisterFragment"
+        android:label="RegisterFragment"
+        tools:layout="@layout/fragment_register">
+        <action
+            android:id="@+id/action_registerFragment_to_receiveOTPFragment"
+            app:destination="@id/receiveOTPFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.messageapp.fragment.LoginFragment"
+        android:label="LoginFragment"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_introFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/receiveOTPFragment"
+        android:name="com.example.messageapp.fragment.ReceiveOTPFragment"
+        android:label="ReceiveOTPFragment"
+        tools:layout="@layout/fragment_receive_o_t_p">
+        <action
+            android:id="@+id/action_receiveOTPFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/friendRequestFragment"
+        android:name="com.example.messageapp.fragment.FriendRequestFragment"
+        android:label="FriendRequestFragment"
+        tools:layout="@layout/fragment_friend_request"/>
+    <fragment
+        android:id="@+id/settingFragment"
+        android:name="com.example.messageapp.fragment.SettingFragment"
+        android:label="SettingFragment"
+        tools:layout="@layout/fragment_setting"/>
 </navigation>

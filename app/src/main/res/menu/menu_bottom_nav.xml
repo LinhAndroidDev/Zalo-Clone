@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/homeFragment"
-        android:icon="@drawable/ic_chat"
+        android:icon="@drawable/ic_message"
         android:title="@string/message"/>
     <item
         android:id="@+id/phoneBookFragment"
-        android:icon="@drawable/ic_phone_book"
+        android:icon="@drawable/ic_phone_book_fill"
         android:title="@string/phone_book" />
     <item
         android:id="@+id/discoverFragment"
-        android:icon="@drawable/ic_discover"
+        android:icon="@drawable/ic_discover_fill"
         android:title="@string/discover" />
     <item
         android:id="@+id/diaryFragment"
-        android:icon="@drawable/ic_diary"
+        android:icon="@drawable/ic_diary_fill"
         android:title="@string/diary" />
     <item
         android:id="@+id/personalFragment"
-        android:icon="@drawable/ic_person"
+        android:icon="@drawable/ic_person_fill"
         android:title="@string/personal" />
 </menu>

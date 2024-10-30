@@ -14,20 +14,10 @@ import com.example.messageapp.viewmodel.SplashFragmentViewModel
 class SplashFragment : BaseFragment<FragmentSplashBinding, SplashFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_splash
     private val handler by lazy { Handler(Looper.getMainLooper()) }
-    private var runnable: Runnable = Runnable { findNavController().navigate(R.id.homeFragment) }
-
-//    override fun onCreateView(
-//        inflater: LayoutInflater,
-//        container: ViewGroup?,
-//        savedInstanceState: Bundle?
-//    ): View? {
-//        return inflater.inflate(R.layout.fragment_splash, container, false)
-//    }
+    private var runnable: Runnable = Runnable { findNavController().navigate(R.id.introFragment) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        Log.e("Class: ",  this::class.java.simpleName)
 
         handler.postDelayed(runnable, 2000)
     }

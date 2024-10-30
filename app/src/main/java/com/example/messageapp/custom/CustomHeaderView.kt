@@ -12,6 +12,9 @@ import androidx.navigation.fragment.findNavController
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.databinding.CustomHeaderViewBinding
+import com.example.messageapp.fragment.ChatFragment
+import com.example.messageapp.fragment.DiscoverFragment
+import com.example.messageapp.utils.getFragmentActivity
 import com.example.messageapp.utils.showKeyboard
 
 class CustomHeaderView @JvmOverloads constructor(
@@ -64,10 +67,17 @@ class CustomHeaderView @JvmOverloads constructor(
                     binding.viewSearch.layout.isVisible = false
                 }
 
-                else -> {
+                ActionBottomBar.SEARCH_VIEW -> {
                     binding.viewCommon.isVisible = false
                     binding.viewChat.layout.isVisible = false
                     binding.viewSearch.layout.isVisible = true
+                }
+
+                else -> {
+                    binding.headerTitle.layout.isVisible = true
+                    binding.viewCommon.isVisible = false
+                    binding.viewChat.layout.isVisible = false
+                    binding.viewSearch.layout.isVisible = false
                 }
             }
         }
@@ -76,11 +86,21 @@ class CustomHeaderView @JvmOverloads constructor(
     }
 
     private fun onClickView() {
-        binding?.viewChat?.backChat?.setOnClickListener { (context as FragmentActivity).onBackPressed() }
-        binding?.viewSearch?.backSearch?.setOnClickListener { (context as FragmentActivity).onBackPressed() }
+        binding?.viewChat?.backChat?.setOnClickListener { context.getFragmentActivity()?.onBackPressed() }
+        binding?.viewSearch?.backSearch?.setOnClickListener { context.getFragmentActivity()?.onBackPressed() }
+        binding?.headerTitle?.backHeader?.setOnClickListener { context.getFragmentActivity()?.onBackPressed() }
         binding?.searchView?.setOnClickListener {
-            val navController = (context as MainActivity).supportFragmentManager.findFragmentById(R.id.navHostFragment)?.findNavController()
+            val navController =
+                context.getFragmentActivity()?.supportFragmentManager?.findFragmentById(R.id.navHostFragment)
+                    ?.findNavController()
             navController?.navigate(R.id.searchFragment)
+        }
+
+        binding?.setting?.setOnClickListener {
+            val navController =
+                context.getFragmentActivity()?.supportFragmentManager?.findFragmentById(R.id.navHostFragment)
+                    ?.findNavController()
+            navController?.navigate(R.id.settingFragment)
         }
     }
 
@@ -95,7 +115,10 @@ class CustomHeaderView @JvmOverloads constructor(
     }
 
     fun focusSearch() {
-        binding?.viewSearch?.edtSearch?.isFocusable = true
         binding?.viewSearch?.edtSearch?.showKeyboard()
+    }
+
+    fun setTitleChatView(title: String) {
+        binding?.viewChat?.tvFriend?.text = title
     }
 }

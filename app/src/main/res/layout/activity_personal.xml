@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".PersonalActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <View
+            android:background="@color/grey_1"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <ImageView
+            android:id="@+id/imgCover"
+            android:layout_marginBottom="40dp"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <LinearLayout
+            android:id="@+id/back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <ImageView
+                android:layout_marginVertical="10dp"
+                android:layout_marginStart="15dp"
+                android:src="@drawable/ic_back"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                app:tint="@color/white" />
+        </LinearLayout>
+
+        <ImageView
+            android:src="@drawable/ic_menu_circle"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            app:tint="@color/white"
+            android:layout_marginEnd="10dp"
+            android:layout_marginTop="40dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/avatarUser"
+            android:src="@mipmap/ic_launcher"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            app:civ_border_color="@color/white"
+            app:civ_border_width="4dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <TextView
+        android:id="@+id/nameUser"
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center_horizontal"
+        tools:text="Nguyen Huu Linh"
+        android:textSize="20sp"
+        android:textColor="@color/text_common"
+        android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/font_noto_sans"/>
+
+    <LinearLayout
+        android:layout_marginTop="5dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:src="@drawable/ic_edit_personal"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            app:tint="@color/blue1"/>
+
+        <TextView
+            android:text="@string/update_your_profile"
+            android:textSize="13sp"
+            android:textColor="@color/blue1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+</LinearLayout>

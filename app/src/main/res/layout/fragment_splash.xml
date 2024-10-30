@@ -9,13 +9,13 @@
         tools:context=".fragment.SplashFragment">
 
         <TextView
-            android:text="Chat App"
+            android:text="@string/title_app"
             style="@style/text_common"
             android:textColor="@color/text_white"
-            android:textSize="30sp"
+            android:textSize="60sp"
             android:textStyle="bold"
-            android:textAllCaps="true"
-            android:layout_gravity="center"/>
+            android:layout_gravity="center"
+            android:fontFamily="@font/font_noto_sans"/>
 
     </FrameLayout>
 </layout>

@@ -1,6 +1,6 @@
 package com.example.messageapp.viewmodel
 
-import androidx.lifecycle.ViewModel
+import com.example.messageapp.base.BaseViewModel
 
-class DiaryFragmentViewModel : ViewModel() {
+class DiaryFragmentViewModel : BaseViewModel() {
 }

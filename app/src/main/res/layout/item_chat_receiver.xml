@@ -13,6 +13,8 @@
             android:layout_height="25dp"/>
 
         <LinearLayout
+            android:id="@+id/layoutMessage"
+            android:layout_marginEnd="100dp"
             android:layout_marginStart="5dp"
             android:layout_toEndOf="@+id/avatarReceiver"
             android:layout_width="wrap_content"
@@ -31,6 +33,7 @@
                 android:textSize="14sp" />
 
             <TextView
+                android:id="@+id/tvTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
@@ -38,5 +41,12 @@
                 android:textColor="@color/text_sender"
                 android:textSize="10sp" />
         </LinearLayout>
+
+        <View
+            android:id="@+id/viewBottom"
+            android:layout_below="@+id/layoutMessage"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:visibility="gone"/>
     </RelativeLayout>
 </layout>
