@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.Rating
 import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
@@ -14,10 +15,20 @@ import androidx.core.app.RemoteInput
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.broadcast.NotificationReply
+import com.example.messageapp.utils.SharePreferenceRepository
+import com.example.messageapp.utils.SharePreferenceRepositoryImpl
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import dagger.hilt.android.AndroidEntryPoint
+import java.util.Random
+import java.util.UUID
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class ReceiverMessageService : FirebaseMessagingService() {
+
+    @Inject
+    lateinit var shared: SharePreferenceRepository
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -32,20 +43,22 @@ class ReceiverMessageService : FirebaseMessagingService() {
         Log.d(TAG, "From: ${remoteMessage.from}")
 
         // Check if message contains a data payload.
-//        remoteMessage.data.isNotEmpty().let {
-//            Log.d(TAG, "Message data payload: ${remoteMessage.data}")
-//            sendNotification(remoteMessage.data["title"], remoteMessage.data["body"])
-//        }
+        var senderId = ""
+        remoteMessage.data.isNotEmpty().let {
+            Log.d(TAG, "Message data payload: ${remoteMessage.data}")
+            senderId = remoteMessage.data["senderId"] ?: ""
+        }
 
 //      Check if message contains a notification payload.
         remoteMessage.notification?.let {
             Log.d(TAG, "Message Notification Body: ${it.body}")
-            sendNotification(it.title, it.body)
+            sendNotification(it.title, it.body, senderId)
         }
     }
 
     @SuppressLint("ServiceCast")
-    private fun sendNotification(title: String?, messageBody: String?) {
+    private fun sendNotification(title: String?, messageBody: String?, senderId: String) {
+        val channelId = Random().nextInt()
         val intent = Intent(this, MainActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent,
@@ -58,6 +71,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
 
         // Create a PendingIntent for the reply action
         val replyIntent = Intent(this, NotificationReply::class.java)
+        replyIntent.putExtra(SENDER_ID, senderId)
 
         val replyPendingIntent = PendingIntent.getBroadcast(this, 0, replyIntent, PendingIntent.FLAG_MUTABLE)
 
@@ -68,9 +82,8 @@ class ReceiverMessageService : FirebaseMessagingService() {
             replyPendingIntent
         ).addRemoteInput(remoteInput).build()
 
-        val channelId = getString(R.string.title_app)
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+        val notificationBuilder = NotificationCompat.Builder(this, getString(R.string.title_app))
             .setSmallIcon(R.drawable.ic_chat)
             .setContentTitle(title)
             .setContentText(messageBody)
@@ -82,15 +95,21 @@ class ReceiverMessageService : FirebaseMessagingService() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Channel human readable title", NotificationManager.IMPORTANCE_HIGH)
+            val channel = NotificationChannel(
+                getString(R.string.title_app),
+                "Channel human readable title",
+                NotificationManager.IMPORTANCE_HIGH
+            )
             notificationManager.createNotificationChannel(channel)
         }
 
-        notificationManager.notify(0, notificationBuilder.build())
+        shared.saveChannelId(channelId)
+        notificationManager.notify(channelId, notificationBuilder.build())
     }
 
     companion object {
         private const val TAG = "MyFirebaseMsgService"
-        private const val KEY_REPLY_TEXT = "KEY_REPLY_TEXT"
+        const val KEY_REPLY_TEXT = "KEY_REPLY_TEXT"
+        const val SENDER_ID = "SENDER_ID"
     }
 }

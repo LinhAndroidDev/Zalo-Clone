@@ -8,6 +8,7 @@ interface SharePreferenceRepository {
         const val KEY_AUTH = "KEY_AUTH"
         const val NAME_USER = "NAME_USER"
         const val AVATAR_USER = "AVATAR_USER"
+        const val CHANNEL_ID = "CHANNEL_ID"
     }
 
     fun saveLanguageSelected(language: Language)
@@ -25,4 +26,8 @@ interface SharePreferenceRepository {
     fun saveAvatarUser(avatar: String)
 
     fun getAvatarUser(): String
+
+    fun saveChannelId(channelId: Int)
+
+    fun getChannelId(): Int
 }

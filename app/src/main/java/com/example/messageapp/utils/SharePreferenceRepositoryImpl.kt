@@ -39,4 +39,12 @@ class SharePreferenceRepositoryImpl(private val ctx: Context) : SharePreferenceR
     override fun getAvatarUser(): String {
         return prefs[SharePreferenceRepository.AVATAR_USER] ?: ""
     }
+
+    override fun saveChannelId(channelId: Int) {
+        prefs[SharePreferenceRepository.CHANNEL_ID] = channelId
+    }
+
+    override fun getChannelId(): Int {
+        return prefs[SharePreferenceRepository.CHANNEL_ID] ?: 0
+    }
 }
