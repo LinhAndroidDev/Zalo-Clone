@@ -35,8 +35,8 @@
             android:layout_height="wrap_content"
             app:menu="@menu/menu_bottom_nav"
             app:backgroundTint="@color/white"
-            app:itemIconTint="@color/blue1"
-            app:itemTextColor="@color/blue1"
+            app:itemIconTint="@color/item_bottom_nav_color"
+            app:itemTextColor="@color/back_common_end"
             app:itemTextAppearanceActive="@style/BottomNavigationTextAppearance"
             app:itemTextAppearanceInactive="@style/BottomNavigationTextAppearance" />
     </LinearLayout>

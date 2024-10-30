@@ -21,9 +21,11 @@
             app:layout_constraintEnd_toEndOf="parent"/>
 
         <ImageView
+            android:id="@+id/imgCover"
             android:layout_marginBottom="40dp"
             android:layout_width="match_parent"
             android:layout_height="200dp"
+            android:scaleType="centerCrop"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

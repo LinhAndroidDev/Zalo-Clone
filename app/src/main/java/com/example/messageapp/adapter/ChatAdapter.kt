@@ -13,12 +13,12 @@ import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.databinding.ItemChatSenderBinding
 import com.example.messageapp.model.Message
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FireBaseInstance
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
 
 class ChatAdapter(
-    private val avatarFriend: String,
     private val friendId: String
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -82,10 +82,12 @@ class ChatAdapter(
                 holder.v.tvReceiver.text = message.message
                 holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
                 holder.v.viewBottom.isVisible = position == messages.size - 1
-                Glide.with(holder.v.root)
-                    .load(avatarFriend)
-                    .error(R.mipmap.ic_launcher)
-                    .into(holder.v.avatarReceiver)
+                FireBaseInstance.getInfoUser(friendId) { user ->
+                    Glide.with(holder.v.root)
+                        .load(user.avatar)
+                        .error(R.mipmap.ic_launcher)
+                        .into(holder.v.avatarReceiver)
+                }
                 holder.v.layoutMessage.setOnLongClickListener {
                     longClickItemReceiver?.invoke(it to message)
                     true

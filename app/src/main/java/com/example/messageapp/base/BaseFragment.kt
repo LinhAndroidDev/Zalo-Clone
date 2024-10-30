@@ -60,6 +60,7 @@ abstract class BaseFragment<VB : ViewDataBinding, VM: BaseViewModel> : Fragment(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             checkPermissionApp(android.Manifest.permission.POST_NOTIFICATIONS)
         }
+        checkPermissionApp(android.Manifest.permission.CAMERA)
         showError()
     }
 

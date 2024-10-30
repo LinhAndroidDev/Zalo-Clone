@@ -1,8 +1,7 @@
 package com.example.messageapp.fragment
 
 import android.content.Intent
-import androidx.navigation.NavOptions
-import androidx.navigation.fragment.findNavController
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
@@ -10,6 +9,8 @@ import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentPersonalBinding
 import com.example.messageapp.viewmodel.PersonalFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentViewModel>() {
@@ -18,14 +19,19 @@ class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentV
     override fun initView() {
         super.initView()
 
-        binding?.let { binding ->
-            Glide.with(requireActivity())
-                .load(viewModel?.shared?.getAvatarUser())
-                .circleCrop()
-                .error(R.mipmap.ic_launcher)
-                .into(binding.avatarUser)
+        viewModel?.getInfoUser()
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.user?.collect { user ->
+                binding?.let { binding ->
+                    Glide.with(requireActivity())
+                        .load(user?.avatar.toString())
+                        .circleCrop()
+                        .error(R.mipmap.ic_launcher)
+                        .into(binding.avatarUser)
 
-            binding.tvNameUser.text = viewModel?.shared?.getNameUser()
+                    binding.tvNameUser.text = user?.name.toString()
+                }
+            }
         }
     }
 

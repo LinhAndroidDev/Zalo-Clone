@@ -73,7 +73,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         friendData = ChatFragmentArgs.fromBundle(requireArguments()).friend
         friendData?.let {
-            chatAdapter = ChatAdapter(friendData?.avatar.toString(), friendData?.keyAuth.toString())
+            chatAdapter = ChatAdapter(friendData?.keyAuth.toString())
             chatAdapter?.longClickItemSender = { data ->
                 showPopupOption(data.first, data.second)
             }

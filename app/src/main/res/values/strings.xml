@@ -79,4 +79,8 @@
     <string name="detail">Chi tiết</string>
     <string name="delete">Xoá</string>
     <string name="update_your_profile">Cập nhật giới thiệu bản thân</string>
+    <string name="view_cover_photo">Xem ảnh bìa</string>
+    <string name="view_profile_picture">Xem ảnh đại diện</string>
+    <string name="take_a_new_photo">Chụp ảnh mới</string>
+    <string name="select_photo_on_device">Chọn ảnh trên máy</string>
 </resources>

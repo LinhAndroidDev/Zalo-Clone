@@ -73,7 +73,7 @@ class PhoneBookFragment : BaseFragment<FragmentPhoneBookBinding, PhoneBookFragme
 
         val phoneBookAdapter = PhoneBookAdapter()
         phoneBookAdapter.onClickPhoneBook = {
-            findNavController().navigate(R.id.chatFragment)
+
         }
         phoneBookAdapter.onClickFriendRequest = {
             findNavController().navigate(R.id.friendRequestFragment)

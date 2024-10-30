@@ -2,10 +2,13 @@ package com.example.messageapp.utils
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.graphics.Bitmap
 import android.graphics.Rect
+import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.provider.MediaStore
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
@@ -13,6 +16,7 @@ import androidx.fragment.app.FragmentActivity
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
 
 fun EditText.showKeyboard() {
     this.isFocusable = true
@@ -58,4 +62,11 @@ fun Context?.getFragmentActivity(): FragmentActivity? {
         ctx = ctx.baseContext
     }
     return null
+}
+
+fun Context.compressImage(uri: Uri): ByteArray {
+    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
+    val outputStream = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
+    return outputStream.toByteArray()
 }

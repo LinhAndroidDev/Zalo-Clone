@@ -7,6 +7,7 @@ import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemListChatBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FireBaseInstance
 
 class ListChatAdapter : BaseAdapter<Conversation, ItemListChatBinding>() {
     var onClickView: ((Conversation) -> Unit)? = null
@@ -19,6 +20,13 @@ class ListChatAdapter : BaseAdapter<Conversation, ItemListChatBinding>() {
         holder.v.tvNameFriend.text = conversation.name
         holder.v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         holder.v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
+        FireBaseInstance.getInfoUser(conversation.friendId) { user ->
+            Glide.with(holder.itemView.context)
+                .load(user.avatar)
+                .circleCrop()
+                .error(R.mipmap.ic_launcher)
+                .into(holder.v.avatarFriend)
+        }
         Glide.with(holder.itemView.context)
             .load(conversation.friendImage)
             .circleCrop()

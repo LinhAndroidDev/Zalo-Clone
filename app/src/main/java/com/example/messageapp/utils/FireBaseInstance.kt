@@ -1,5 +1,7 @@
 package com.example.messageapp.utils
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
@@ -13,18 +15,22 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.util.HashMap
+import java.util.UUID
 
 object FireBaseInstance {
     private val db by lazy { Firebase.firestore }
+    private val storage by lazy { Firebase.storage.reference }
 
     private const val PATH_USER = "users"
     private const val PATH_MESSAGE = "messages"
     private const val PATH_CHAT = "chats"
     private const val PATH_TOKEN = "Tokens"
+    private const val PATH_IMAGE = "images"
 
     /**
      * This function is used to check the login of the user
@@ -228,16 +234,37 @@ object FireBaseInstance {
             }
     }
 
-    fun getInfoUser(keyAuth: String, success: (User) -> Unit, failure: (String) -> Unit) {
+    fun getInfoUser(keyAuth: String, success: (User) -> Unit) {
         db.collection(PATH_USER)
             .document(keyAuth)
-            .get()
-            .addOnSuccessListener { result ->
-                result.toObject(User::class.java)?.let { user ->
-                    success.invoke(user)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    Log.e("getInfoUser", error.message.toString())
                 }
-            }.addOnFailureListener { error ->
-                failure.invoke(error.message.toString())
+                if (value != null && value.exists()) {
+                    success.invoke(value.toObject(User::class.java)!!)
+                } else {
+                    Log.e("getInfoUser", "User not found")
+                }
             }
+    }
+
+    fun uploadImage(context: Context, uriPhoto: Uri, success: (String) -> Unit) {
+        storage.child(PATH_IMAGE)
+            .child(UUID.randomUUID().toString())
+            .putBytes(context.compressImage(uriPhoto))
+            .addOnSuccessListener { taskSnapshot->
+                taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
+                    success.invoke(uri.toString())
+                }
+            }.addOnFailureListener {
+                Log.e("Upload Photo", "Fail")
+            }
+    }
+
+    fun updateAvatarUser(avatar: String, keyAuth: String) {
+        db.collection(PATH_USER)
+            .document(keyAuth)
+            .update("avatar", avatar)
     }
 }
