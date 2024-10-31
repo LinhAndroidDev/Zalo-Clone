@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.media.Rating
 import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
@@ -16,12 +15,10 @@ import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.broadcast.NotificationReply
 import com.example.messageapp.utils.SharePreferenceRepository
-import com.example.messageapp.utils.SharePreferenceRepositoryImpl
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Random
-import java.util.UUID
 import javax.inject.Inject
 
 @AndroidEntryPoint
