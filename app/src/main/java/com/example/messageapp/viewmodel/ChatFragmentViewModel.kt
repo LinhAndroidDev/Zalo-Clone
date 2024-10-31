@@ -32,7 +32,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             friend = friend,
             nameSender = shared.getNameUser(),
             avatarSender = shared.getAvatarUser()
-        )
+        ) {}
     }
 
     fun getMessage(friendId: String) = viewModelScope.launch {

@@ -94,6 +94,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
     }
 
+    /**
+     * This function is used to show popup option for each message:
+     * + The position of the popup show depends on the coordinates of each message item.
+     * + When the position of the message item plus its height is greater than the height of the screen,
+     * the popup will show above the message item, otherwise it will show below.
+     * This is how to calculate so that the popup does not lose view when it is near the bottom of the screen.
+     */
     @SuppressLint("MissingInflatedId")
     private fun showPopupOption(anchor: View, message: Message, isItemSender: Boolean = true) {
         // Lấy LayoutInflater để inflate layout của PopupWindow
@@ -168,14 +175,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 REQUEST_CODE_MULTI_PICTURE -> {
                     if (data.clipData != null) {
                         val count: Int = data.clipData!!.itemCount
-//                        if (count + uris.size > 5) {
-//                            show(getString(R.string.choose_a_maximum_of_5_photos))
-//                        } else {
-//                            for (i in 0 until count) {
-//                                uris.add(data.clipData!!.getItemAt(i).uri)
-//                            }
-//                            imageCameraAdapter.notifyDataSetChanged()
-//                        }
                     }
                 }
             }

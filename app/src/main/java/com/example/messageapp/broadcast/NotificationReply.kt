@@ -35,6 +35,7 @@ class NotificationReply : BroadcastReceiver() {
             )
 
             FireBaseInstance.getInfoUser(keyAuth = receiverId.toString()) { user ->
+                user.keyAuth = receiverId.toString()
                 FireBaseInstance.sendMessage(
                     message = message,
                     keyAuth = userId,
@@ -42,17 +43,18 @@ class NotificationReply : BroadcastReceiver() {
                     friend = user,
                     shared.getNameUser(),
                     shared.getAvatarUser()
-                )
+                ) {
+                    val notificationManager =
+                        context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    val repliedNotification =
+                        NotificationCompat
+                            .Builder(context, context.getString(R.string.title_app))
+                            .setSmallIcon(R.drawable.ic_message)
+                            .setContentText(String.format(context.getString(R.string.replied_to_message_of), user.name))
+                            .build()
+                    notificationManager.notify(shared.getChannelId(), repliedNotification)
+                }
             }
-
-            val notificationManager =
-                context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val repliedNotification =
-                NotificationCompat
-                    .Builder(context, context.getString(R.string.title_app))
-                    .setSmallIcon(R.drawable.ic_message)
-                    .setContentText("Đã trả lời").build()
-            notificationManager.notify(shared.getChannelId(), repliedNotification)
         }
     }
 }

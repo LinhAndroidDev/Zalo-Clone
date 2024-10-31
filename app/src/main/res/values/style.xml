@@ -12,4 +12,11 @@
         <item name="android:textSize">10sp</item>
         <item name="android:fontFamily">@font/font_noto_sans</item>
     </style>
+
+    <style name="EditText.CommonApp" parent="Widget.AppCompat.EditText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text_common</item>
+        <item name="hintTextColor">@color/text_hint</item>
+    </style>
 </resources>

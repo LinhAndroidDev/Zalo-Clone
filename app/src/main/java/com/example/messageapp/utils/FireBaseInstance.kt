@@ -10,6 +10,7 @@ import com.example.messageapp.remote.ApiClient
 import com.example.messageapp.remote.Token
 import com.example.messageapp.remote.request.Data
 import com.example.messageapp.remote.request.Notification
+import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
@@ -113,7 +114,8 @@ object FireBaseInstance {
         time: String,
         friend: User,
         nameSender: String,
-        avatarSender: String
+        avatarSender: String,
+        success: () -> Unit
     ) {
         val idRoom = listOf(friend.keyAuth.toString(), keyAuth).sorted()
 
@@ -127,20 +129,21 @@ object FireBaseInstance {
                 //Get token of receiver to send notification message to receiver
                 getTokenMessage(friend.keyAuth.toString(),
                     success = { token ->
-                        val notificationData = NotificationData(
+                        val notificationNotification = NotificationData(
                             token = token,
-                            Data(nameSender, message.message)
+                            notification = Notification(nameSender, message.message),
+                            data = Data(senderId = keyAuth)
                         )
 
-                        ApiClient.api?.sendMessage(Notification(message = notificationData))
-                            ?.enqueue(object : Callback<Notification> {
-                                override fun onFailure(call: Call<Notification>, t: Throwable) {
+                        ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
+                            ?.enqueue(object : Callback<MessageRequest> {
+                                override fun onFailure(call: Call<MessageRequest>, t: Throwable) {
                                     Log.e("Send Message", "Send Fail")
                                 }
 
                                 override fun onResponse(
-                                    call: Call<Notification>,
-                                    response: Response<Notification>
+                                    call: Call<MessageRequest>,
+                                    response: Response<MessageRequest>
                                 ) {
                                     Log.e("Send Message", "Send Successful")
                                 }
@@ -183,6 +186,7 @@ object FireBaseInstance {
                     .document(keyAuth)
                     .set(conversationFriend)
             }
+        success.invoke()
     }
 
     /**

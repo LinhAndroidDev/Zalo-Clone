@@ -8,7 +8,7 @@ data class User(
     val name: String? = "",
     val email: String? = "",
     val avatar: String? = "",
-    val keyAuth: String? = ""
+    var keyAuth: String? = ""
 ) : Parcelable {
     constructor(conversation: Conversation) : this(
         name = conversation.name,
