@@ -114,7 +114,6 @@ object FireBaseInstance {
         time: String,
         friend: User,
         nameSender: String,
-        avatarSender: String,
         success: () -> Unit
     ) {
         val idRoom = listOf(friend.keyAuth.toString(), keyAuth).sorted()
@@ -173,7 +172,6 @@ object FireBaseInstance {
                 //Create Data Conversation For Receiver
                 val conversationFriend = Conversation(
                     friendId = keyAuth,
-                    friendImage = avatarSender,
                     message = message.message,
                     name = nameSender,
                     person = nameSender,

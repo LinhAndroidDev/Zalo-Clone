@@ -1,5 +1,9 @@
 package com.example.messageapp.base
 
+/**
+ * Created by Nguyen Huu Linh in 2024/10/01
+ */
+
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle

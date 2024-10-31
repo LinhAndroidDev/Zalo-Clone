@@ -1,5 +1,9 @@
 package com.example.messageapp.fragment
 
+/**
+ * Created by Nguyen Huu Linh in 2024/10/01
+ */
+
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.ClipData

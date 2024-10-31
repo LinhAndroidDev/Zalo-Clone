@@ -20,6 +20,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     private val _messages: MutableStateFlow<ArrayList<Message>?> = MutableStateFlow(null)
     val messages = _messages.asStateFlow()
 
+    /**
+     * This function used to send message to FireStore
+     * @param message data message
+     * @param time time message sent
+     * @param friend data friend
+     */
     fun sendMessage(
         message: Message,
         time: String,
@@ -31,10 +37,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             time = time,
             friend = friend,
             nameSender = shared.getNameUser(),
-            avatarSender = shared.getAvatarUser()
         ) {}
     }
 
+    /** This function used to get message from FireStore
+     * @param friendId key auth of friend
+     */
     fun getMessage(friendId: String) = viewModelScope.launch {
         val idRoom = listOf(friendId, shared.getAuth()).sorted()
         FireBaseInstance.getMessage(idRoom.toString(),

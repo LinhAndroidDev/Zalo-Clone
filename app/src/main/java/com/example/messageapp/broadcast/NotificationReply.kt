@@ -41,8 +41,7 @@ class NotificationReply : BroadcastReceiver() {
                     keyAuth = userId,
                     time = time,
                     friend = user,
-                    shared.getNameUser(),
-                    shared.getAvatarUser()
+                    shared.getNameUser()
                 ) {
                     val notificationManager =
                         context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

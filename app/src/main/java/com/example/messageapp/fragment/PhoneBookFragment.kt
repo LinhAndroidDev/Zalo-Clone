@@ -1,7 +1,7 @@
 package com.example.messageapp.fragment
 
 /**
- * Create By Nguyen Huu Linh in 13/20/2024
+ * Created by Nguyen Huu Linh in 2024/10/01
  */
 
 import android.annotation.SuppressLint
