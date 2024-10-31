@@ -28,16 +28,19 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
 
         listChatAdapter.onClickView = { conversation ->
             val user = User(conversation)
-            val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(user)
-            findNavController().navigate(action)
+            goToChatFragment(user)
         }
         binding?.rcvListChat?.adapter = listChatAdapter
 
         binding?.rcvSuggestFriend?.adapter = suggestFriendAdapter
         suggestFriendAdapter.onClickItem = { friend ->
-            val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(friend)
-            findNavController().navigate(action)
+            goToChatFragment(friend)
         }
+    }
+
+    private fun goToChatFragment(friend: User) {
+        val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(friend)
+        findNavController().navigate(action)
     }
 
     @SuppressLint("NotifyDataSetChanged")

@@ -43,4 +43,12 @@ class SharePreferenceRepositoryImpl(private val ctx: Context) : SharePreferenceR
     override fun getChannelId(): Int {
         return prefs[SharePreferenceRepository.CHANNEL_ID] ?: 0
     }
+
+    override fun saveStatusLoggedIn(status: Boolean) {
+        prefs[SharePreferenceRepository.STATUS_LOGGED_IN] = status
+    }
+
+    override fun getStatusLoggedIn(): Boolean {
+        return prefs[SharePreferenceRepository.STATUS_LOGGED_IN] ?: false
+    }
 }

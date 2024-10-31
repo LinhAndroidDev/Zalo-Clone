@@ -53,6 +53,7 @@ class LoginFragmentViewModel @Inject constructor() : BaseViewModel() {
                 val data = document.data as Map<*, *>
                 shared.saveAuth(document.id)
                 shared.saveNameUser(data["name"].toString())
+                shared.saveStatusLoggedIn(true)
                 _loginSuccessful.value = true
             }
         }

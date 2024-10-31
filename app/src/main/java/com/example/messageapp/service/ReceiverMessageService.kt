@@ -14,6 +14,8 @@ import androidx.core.app.RemoteInput
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.broadcast.NotificationReply
+import com.example.messageapp.model.User
+import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -29,7 +31,6 @@ class ReceiverMessageService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
@@ -49,14 +50,19 @@ class ReceiverMessageService : FirebaseMessagingService() {
 //      Check if message contains a notification payload.
         remoteMessage.notification?.let {
             Log.d(TAG, "Message Notification Body: ${it.body}")
-            sendNotification(it.title, it.body, senderId)
+            FireBaseInstance.getInfoUser(senderId) { user ->
+                user.keyAuth = senderId
+                sendNotification(it.title, it.body, senderId, user)
+            }
         }
     }
 
     @SuppressLint("ServiceCast")
-    private fun sendNotification(title: String?, messageBody: String?, senderId: String) {
+    private fun sendNotification(title: String?, messageBody: String?, senderId: String, friend: User) {
         val channelId = Random().nextInt()
         val intent = Intent(this, MainActivity::class.java)
+        Log.e("sendNotification", friend.toString())
+        intent.putExtra(OBJECT_FRIEND, friend)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent,
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
@@ -108,5 +114,6 @@ class ReceiverMessageService : FirebaseMessagingService() {
         private const val TAG = "MyFirebaseMsgService"
         const val KEY_REPLY_TEXT = "KEY_REPLY_TEXT"
         const val SENDER_ID = "SENDER_ID"
+        const val OBJECT_FRIEND = "OBJECT_FRIEND"
     }
 }

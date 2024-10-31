@@ -3,6 +3,7 @@ package com.example.messageapp
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
@@ -10,6 +11,10 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.messageapp.databinding.ActivityMainBinding
+import com.example.messageapp.fragment.HomeFragment
+import com.example.messageapp.fragment.SplashFragment
+import com.example.messageapp.model.User
+import com.example.messageapp.service.ReceiverMessageService
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -37,6 +42,19 @@ class MainActivity : AppCompatActivity() {
                 else -> binding?.viewBottomNav?.visibility = View.GONE
             }
         }
+
+        goToChatFragmentFromNotificationMessage()
+    }
+
+    private fun goToChatFragmentFromNotificationMessage() {
+        val friendData: User? = intent.getParcelableExtra(ReceiverMessageService.OBJECT_FRIEND)
+        Log.e("goToChatFragmentFromNotificationMessage", friendData.toString())
+        friendData?.let { friend ->
+            val fragmentCurrent = supportFragmentManager.findFragmentById(R.id.navHostFragment)
+            if(fragmentCurrent is SplashFragment) {
+                fragmentCurrent.goToChatFragment(friend)
+            }
+        }
     }
 
     internal fun getHeightBottomNav(): Int {
@@ -59,6 +77,14 @@ class MainActivity : AppCompatActivity() {
                 || isFragmentCurrent(R.id.diaryFragment)
                 || isFragmentCurrent(R.id.personalFragment)
                 || isFragmentCurrent(R.id.introFragment)
+    }
+
+    private fun backRemoveStack(destinationFragment: Int) {
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        val navController = navHostFragment.navController
+        navController.navigate(destinationFragment,null,
+            NavOptions.Builder().setPopUpTo(navController.graph.startDestinationId, true).build())
     }
 
     @Deprecated("Deprecated in Java")
@@ -86,11 +112,9 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             if (isFragmentCurrent(R.id.loginFragment)) {
-                val navHostFragment =
-                    supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
-                val navController = navHostFragment.navController
-                navController.navigate(R.id.introFragment,null,
-                    NavOptions.Builder().setPopUpTo(navController.graph.startDestinationId, true).build())
+                backRemoveStack(R.id.introFragment)
+            } else if(isFragmentCurrent(R.id.chatFragment)) {
+                backRemoveStack(R.id.homeFragment)
             } else {
                 super.onBackPressed()
             }
