@@ -44,24 +44,29 @@ class ReceiverMessageService : FirebaseMessagingService() {
         var senderId = ""
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Message data payload: ${remoteMessage.data}")
+            val title = remoteMessage.data["title"]
+            val body = remoteMessage.data["body"]
             senderId = remoteMessage.data["senderId"] ?: ""
+            FireBaseInstance.getInfoUser(senderId) { user ->
+                user.keyAuth = senderId
+                sendNotification(title, body, senderId, user)
+            }
         }
 
 //      Check if message contains a notification payload.
-        remoteMessage.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
-            FireBaseInstance.getInfoUser(senderId) { user ->
-                user.keyAuth = senderId
-                sendNotification(it.title, it.body, senderId, user)
-            }
-        }
+//        remoteMessage.notification?.let {
+//            Log.d(TAG, "Message Notification Body: ${it.body}")
+//            FireBaseInstance.getInfoUser(senderId) { user ->
+//                user.keyAuth = senderId
+//                sendNotification(it.title, it.body, senderId, user)
+//            }
+//        }
     }
 
     @SuppressLint("ServiceCast")
-    private fun sendNotification(title: String?, messageBody: String?, senderId: String, friend: User) {
+    private fun sendNotification(title: String?, messageBody: String?, senderId: String, friend:User) {
         val channelId = Random().nextInt()
         val intent = Intent(this, MainActivity::class.java)
-        Log.e("sendNotification", friend.toString())
         intent.putExtra(OBJECT_FRIEND, friend)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent,

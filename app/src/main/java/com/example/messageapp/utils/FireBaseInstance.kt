@@ -9,7 +9,6 @@ import com.example.messageapp.model.User
 import com.example.messageapp.remote.ApiClient
 import com.example.messageapp.remote.Token
 import com.example.messageapp.remote.request.Data
-import com.example.messageapp.remote.request.Notification
 import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
 import com.google.firebase.firestore.Query
@@ -130,8 +129,7 @@ object FireBaseInstance {
                     success = { token ->
                         val notificationNotification = NotificationData(
                             token = token,
-                            notification = Notification(nameSender, message.message),
-                            data = Data(senderId = keyAuth)
+                            data = Data(title = nameSender, body = message.message, senderId = keyAuth)
                         )
 
                         ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
