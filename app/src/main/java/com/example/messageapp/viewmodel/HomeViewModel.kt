@@ -65,9 +65,7 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
                 val conversationData = arrayListOf<Conversation>()
                 result?.forEach { document ->
                     val conversation = document.toObject(Conversation::class.java)
-                    if (conversation.sender == shared.getAuth()) {
-                        conversationData.add(conversation)
-                    }
+                    conversationData.add(conversation)
                 }
                 _conversation.value = conversationData
             },
