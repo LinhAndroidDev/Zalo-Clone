@@ -9,6 +9,7 @@ import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.databinding.CustomHeaderViewBinding
+import com.example.messageapp.model.ActionBottomBar
 import com.example.messageapp.utils.getFragmentActivity
 import com.example.messageapp.utils.showKeyboard
 

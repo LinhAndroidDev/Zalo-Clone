@@ -2,8 +2,8 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
-import com.example.messageapp.model.User
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,18 +24,18 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
      * This function used to send message to FireStore
      * @param message data message
      * @param time time message sent
-     * @param friend data friend
+     * @param conversation data friend
      */
     fun sendMessage(
         message: Message,
         time: String,
-        friend: User,
+        conversation: Conversation,
     ) = viewModelScope.launch {
         FireBaseInstance.sendMessage(
             message = message,
             keyAuth = shared.getAuth(),
             time = time,
-            friend = friend,
+            conversation = conversation,
             nameSender = shared.getNameUser(),
         ) {}
     }

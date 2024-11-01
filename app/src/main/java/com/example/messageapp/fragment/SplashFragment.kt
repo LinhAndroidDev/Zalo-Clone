@@ -3,12 +3,12 @@ package com.example.messageapp.fragment
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.View
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentSplashBinding
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.User
 import com.example.messageapp.viewmodel.SplashFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,7 +19,7 @@ class SplashFragment : BaseFragment<FragmentSplashBinding, SplashFragmentViewMod
     private val handler by lazy { Handler(Looper.getMainLooper()) }
     private var runnable: Runnable? = null
 
-    private var dataFromMainActivity: User? = null
+    private var dataFromMainActivity: Conversation? = null
     companion object {
         const val DATA_FRIEND = "DATA_FRIEND"
     }
@@ -27,7 +27,10 @@ class SplashFragment : BaseFragment<FragmentSplashBinding, SplashFragmentViewMod
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        dataFromMainActivity = arguments?.getParcelable(DATA_FRIEND)
+        val friendData: User? = arguments?.getParcelable(DATA_FRIEND)
+        friendData?.let {
+            dataFromMainActivity = Conversation(friendData)
+        }
 
         runnable = Runnable {
             if (dataFromMainActivity != null) {
@@ -43,8 +46,8 @@ class SplashFragment : BaseFragment<FragmentSplashBinding, SplashFragmentViewMod
         runnable?.let { handler.postDelayed(it, 2000) }
     }
 
-    private fun goToChatFragment(friend: User) {
-        val action = SplashFragmentDirections.actionSplashFragmentToChatFragment(friend)
+    private fun goToChatFragment(conversation: Conversation) {
+        val action = SplashFragmentDirections.actionSplashFragmentToChatFragment(conversation)
         findNavController().navigate(action)
     }
 

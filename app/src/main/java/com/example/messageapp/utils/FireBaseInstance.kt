@@ -111,11 +111,11 @@ object FireBaseInstance {
         message: Message,
         keyAuth: String,
         time: String,
-        friend: User,
+        conversation: Conversation,
         nameSender: String,
         success: () -> Unit
     ) {
-        val idRoom = listOf(friend.keyAuth.toString(), keyAuth).sorted()
+        val idRoom = listOf(conversation.friendId, keyAuth).sorted()
 
         db.collection(PATH_MESSAGE)
             .document(idRoom.toString())
@@ -125,7 +125,8 @@ object FireBaseInstance {
             .addOnCompleteListener {
 
                 //Get token of receiver to send notification message to receiver
-                getTokenMessage(friend.keyAuth.toString(),
+                getTokenMessage(
+                    conversation.friendId,
                     success = { token ->
                         val notificationNotification = NotificationData(
                             token = token,
@@ -153,10 +154,10 @@ object FireBaseInstance {
 
                 //Create Data Conversation For Sender
                 val conversationData = Conversation(
-                    friendId = friend.keyAuth.toString(),
-                    friendImage = friend.avatar.toString(),
+                    friendId = conversation.friendId,
+                    friendImage = conversation.friendImage,
                     message = message.message,
-                    name = friend.name.toString(),
+                    name = conversation.name,
                     person = "Bạn",
                     sender = keyAuth,
                     time = time
@@ -164,7 +165,7 @@ object FireBaseInstance {
 
                 //Create Conversation For Sender
                 db.collection("Conversation${keyAuth}")
-                    .document(friend.keyAuth.toString())
+                    .document(conversation.friendId)
                     .set(conversationData)
 
                 //Create Data Conversation For Receiver
@@ -173,12 +174,12 @@ object FireBaseInstance {
                     message = message.message,
                     name = nameSender,
                     person = nameSender,
-                    sender = friend.keyAuth.toString(),
+                    sender = keyAuth,
                     time = time
                 )
 
                 //Create Conversation For Receiver
-                db.collection("Conversation${friend.keyAuth.toString()}")
+                db.collection("Conversation${conversation.friendId}")
                     .document(keyAuth)
                     .set(conversationFriend)
             }

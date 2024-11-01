@@ -10,7 +10,7 @@ import com.example.messageapp.adapter.ListChatAdapter
 import com.example.messageapp.adapter.SuggestFriendAdapter
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentHomeBinding
-import com.example.messageapp.model.User
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -27,19 +27,18 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         super.onViewCreated(view, savedInstanceState)
 
         listChatAdapter.onClickView = { conversation ->
-            val user = User(conversation)
-            goToChatFragment(user)
+            goToChatFragment(conversation)
         }
         binding?.rcvListChat?.adapter = listChatAdapter
 
         binding?.rcvSuggestFriend?.adapter = suggestFriendAdapter
         suggestFriendAdapter.onClickItem = { friend ->
-            goToChatFragment(friend)
+            goToChatFragment(Conversation(friend))
         }
     }
 
-    private fun goToChatFragment(friend: User) {
-        val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(friend)
+    private fun goToChatFragment(conversation: Conversation) {
+        val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(conversation)
         findNavController().navigate(action)
     }
 

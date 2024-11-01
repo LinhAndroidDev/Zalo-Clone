@@ -29,8 +29,8 @@ import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
-import com.example.messageapp.model.User
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_chat
 
-    private var friendData: User? = null
+    private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
     private var scrollPosition = 0
 
@@ -75,9 +75,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             }
         }
 
-        friendData = ChatFragmentArgs.fromBundle(requireArguments()).friend
-        friendData?.let {
-            chatAdapter = ChatAdapter(friendData?.keyAuth.toString())
+        conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
+        conversation?.let {
+            chatAdapter = ChatAdapter(conversation?.friendId.toString())
             chatAdapter?.longClickItemSender = { data ->
                 showPopupOption(data.first, data.second)
             }
@@ -85,7 +85,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 showPopupOption(data.first, data.second, false)
             }
             binding?.rcvChat?.adapter = chatAdapter
-            binding?.header?.setTitleChatView(friendData?.name ?: "")
+            binding?.header?.setTitleChatView(conversation?.name ?: "")
         }
         binding?.edtMessage?.doOnTextChanged { text, _, _, _ ->
             if (text?.isNotEmpty() == true) {
@@ -188,8 +188,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     override fun bindData() {
         super.bindData()
 
-        friendData?.let { friend ->
-            viewModel?.getMessage(friendId = friend.keyAuth.toString())
+        conversation?.let { cvt->
+            viewModel?.getMessage(friendId = cvt.friendId)
 
             lifecycleScope.launch(Dispatchers.Main) {
                 viewModel?.messages?.collect { messages ->
@@ -207,13 +207,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         super.onClickView()
 
         binding?.btnSend?.setOnClickListener {
-            friendData?.let { friend ->
+            conversation?.let { cvt ->
                 val msg = binding?.edtMessage?.text.toString()
-                val receiver = friend.keyAuth.toString()
+                val receiver = cvt.friendId
                 val sender = viewModel?.shared?.getAuth().toString()
                 val time = DateUtils.getTimeCurrent()
                 val message = Message(msg, receiver, sender, time)
-                viewModel?.sendMessage(message = message, time = time, friend = friend)
+                viewModel?.sendMessage(message = message, time = time, conversation = cvt)
                 binding?.edtMessage?.setText("")
             }
         }

@@ -84,8 +84,8 @@
         android:label="ChatFragment"
         tools:layout="@layout/fragment_chat">
 
-        <argument android:name="friend"
-            app:argType="com.example.messageapp.model.User"/>
+        <argument android:name="conversation"
+            app:argType="com.example.messageapp.model.Conversation"/>
     </fragment>
     <fragment
         android:id="@+id/searchFragment"

@@ -12,4 +12,14 @@ data class Conversation(
     val person: String = "",
     val sender: String = "",
     val time: String = ""
-) : Parcelable
+) : Parcelable {
+    constructor(user: User) : this (
+        friendId = user.keyAuth ?: "",
+        friendImage = user.avatar ?: "",
+        message = "",
+        name = user.name ?: "",
+        person = "",
+        sender = "",
+        time = "",
+    )
+}

@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.example.messageapp.R
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
 import com.example.messageapp.service.ReceiverMessageService
 import com.example.messageapp.utils.DateUtils
@@ -40,7 +41,7 @@ class NotificationReply : BroadcastReceiver() {
                     message = message,
                     keyAuth = userId,
                     time = time,
-                    friend = user,
+                    conversation = Conversation(user),
                     shared.getNameUser()
                 ) {
                     val notificationManager =
