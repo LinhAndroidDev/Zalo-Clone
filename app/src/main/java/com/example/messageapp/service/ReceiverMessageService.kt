@@ -36,31 +36,19 @@ class ReceiverMessageService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        // Handle FCM messages here.
-        // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        Log.d(TAG, "From: ${remoteMessage.from}")
-
-        // Check if message contains a data payload.
-        var senderId = ""
-        remoteMessage.data.isNotEmpty().let {
-            Log.d(TAG, "Message data payload: ${remoteMessage.data}")
-            val title = remoteMessage.data["title"]
-            val body = remoteMessage.data["body"]
-            senderId = remoteMessage.data["senderId"] ?: ""
-            FireBaseInstance.getInfoUser(senderId) { user ->
-                user.keyAuth = senderId
-                sendNotification(title, body, senderId, user)
+        if (shared.getStatusLoggedIn()) {
+            var senderId = ""
+            remoteMessage.data.isNotEmpty().let {
+                Log.d(TAG, "Message data payload: ${remoteMessage.data}")
+                val title = remoteMessage.data["title"]
+                val body = remoteMessage.data["body"]
+                senderId = remoteMessage.data["senderId"] ?: ""
+                FireBaseInstance.getInfoUser(senderId) { user ->
+                    user.keyAuth = senderId
+                    sendNotification(title, body, senderId, user)
+                }
             }
         }
-
-//      Check if message contains a notification payload.
-//        remoteMessage.notification?.let {
-//            Log.d(TAG, "Message Notification Body: ${it.body}")
-//            FireBaseInstance.getInfoUser(senderId) { user ->
-//                user.keyAuth = senderId
-//                sendNotification(it.title, it.body, senderId, user)
-//            }
-//        }
     }
 
     @SuppressLint("ServiceCast")

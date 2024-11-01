@@ -3,15 +3,12 @@ package com.example.messageapp
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
-import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.messageapp.databinding.ActivityMainBinding
-import com.example.messageapp.fragment.HomeFragment
 import com.example.messageapp.fragment.SplashFragment
 import com.example.messageapp.model.User
 import com.example.messageapp.service.ReceiverMessageService
@@ -30,6 +27,12 @@ class MainActivity : AppCompatActivity() {
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
+        val navGraph = navController.navInflater.inflate(R.navigation.navigation_main)
+        navGraph.setStartDestination(R.id.splashFragment)
+        val friendData: User? = intent.getParcelableExtra(ReceiverMessageService.OBJECT_FRIEND)
+        val bundle = Bundle()
+        bundle.putParcelable(SplashFragment.DATA_FRIEND, friendData)
+        navController.setGraph(navGraph, bundle)
 
         binding?.bottomNav?.setupWithNavController(navController)
 
@@ -43,18 +46,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        goToChatFragmentFromNotificationMessage()
-    }
-
-    private fun goToChatFragmentFromNotificationMessage() {
-        val friendData: User? = intent.getParcelableExtra(ReceiverMessageService.OBJECT_FRIEND)
-        Log.e("goToChatFragmentFromNotificationMessage", friendData.toString())
-        friendData?.let { friend ->
-            val fragmentCurrent = supportFragmentManager.findFragmentById(R.id.navHostFragment)
-            if(fragmentCurrent is SplashFragment) {
-                fragmentCurrent.goToChatFragment(friend)
-            }
-        }
     }
 
     internal fun getHeightBottomNav(): Int {
@@ -79,45 +70,48 @@ class MainActivity : AppCompatActivity() {
                 || isFragmentCurrent(R.id.introFragment)
     }
 
-    private fun backRemoveStack(destinationFragment: Int) {
+    private fun backToFragment(destinationFragment: Int) {
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
-        navController.navigate(destinationFragment,null,
-            NavOptions.Builder().setPopUpTo(navController.graph.startDestinationId, true).build())
+        navController.navigate(destinationFragment)
     }
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (isFragmentNav()) {
-            if (!isDoubleTab) {
-                isDoubleTab = true
-                Toast.makeText(
-                    this@MainActivity,
-                    "Nhấn nút Back lần nữa để thoát",
-                    Toast.LENGTH_SHORT
-                ).show()
-                object : CountDownTimer(2000, 2000) {
-                    override fun onTick(millisUntilFinished: Long) {
-
-                    }
-
-                    override fun onFinish() {
-                        isDoubleTab = false
-                    }
-
-                }.start()
-            } else {
-                finish()
-            }
+            handleDoubleTabBackPress()
         } else {
             if (isFragmentCurrent(R.id.loginFragment)) {
-                backRemoveStack(R.id.introFragment)
+                backToFragment(R.id.introFragment)
             } else if(isFragmentCurrent(R.id.chatFragment)) {
-                backRemoveStack(R.id.homeFragment)
+                backToFragment(R.id.homeFragment)
             } else {
                 super.onBackPressed()
             }
+        }
+    }
+
+    private fun handleDoubleTabBackPress() {
+        if (!isDoubleTab) {
+            isDoubleTab = true
+            Toast.makeText(
+                this@MainActivity,
+                "Nhấn nút Back lần nữa để thoát",
+                Toast.LENGTH_SHORT
+            ).show()
+            object : CountDownTimer(2000, 2000) {
+                override fun onTick(millisUntilFinished: Long) {
+
+                }
+
+                override fun onFinish() {
+                    isDoubleTab = false
+                }
+
+            }.start()
+        } else {
+            finish()
         }
     }
 }

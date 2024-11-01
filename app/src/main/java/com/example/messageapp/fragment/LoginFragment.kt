@@ -3,11 +3,11 @@ package com.example.messageapp.fragment
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentLoginBinding
+import com.example.messageapp.utils.backRemoveFragmentCurrent
 import com.example.messageapp.utils.showKeyboard
 import com.example.messageapp.utils.showViewAboveKeyBoard
 import com.example.messageapp.viewmodel.LoginFragmentViewModel
@@ -69,8 +69,7 @@ class LoginFragment : BaseFragment<FragmentLoginBinding, LoginFragmentViewModel>
         super.onClickView()
 
         binding?.btnBack?.setOnClickListener {
-            findNavController().navigate(R.id.introFragment,null,
-                NavOptions.Builder().setPopUpTo(findNavController().graph.startDestinationId, true).build())
+            backRemoveFragmentCurrent(R.id.introFragment)
         }
 
         binding?.btnLogin?.setOnClickListener {
