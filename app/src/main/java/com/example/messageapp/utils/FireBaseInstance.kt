@@ -160,6 +160,7 @@ object FireBaseInstance {
                     name = conversation.name,
                     person = "Bạn",
                     sender = userId,
+                    seen = false,
                     time = time,
                 )
 
@@ -176,6 +177,7 @@ object FireBaseInstance {
                     person = nameSender,
                     sender = userId,
                     time = time,
+                    seen = false,
                     numberUnSeen = 1
                 )
 
