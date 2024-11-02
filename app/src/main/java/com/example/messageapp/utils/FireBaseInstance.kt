@@ -168,46 +168,21 @@ object FireBaseInstance {
                     .document(conversation.friendId)
                     .set(conversationData)
 
-                if (conversation.sender.isNotEmpty()) {
-                    getConversation(
-                        friendId = conversation.friendId,
-                        userId = userId,
-                        success = { cvt ->
-                            val number = cvt.numberUnSeen + 1
-                            //Create Data Conversation For Receiver
-                            val conversationFriend = Conversation(
-                                friendId = userId,
-                                message = message.message,
-                                name = nameSender,
-                                person = nameSender,
-                                sender = userId,
-                                time = time,
-                                numberUnSeen = 1
-                            )
+                //Create Data Conversation For Receiver
+                val conversationFriend = Conversation(
+                    friendId = userId,
+                    message = message.message,
+                    name = nameSender,
+                    person = nameSender,
+                    sender = userId,
+                    time = time,
+                    numberUnSeen = 1
+                )
 
-                            //Create Conversation For Receiver
-                            db.collection("Conversation${conversation.friendId}")
-                                .document(userId)
-                                .set(conversationFriend)
-                        }
-                    )
-                } else {
-                    //Create Data Conversation For Receiver
-                    val conversationFriend = Conversation(
-                        friendId = userId,
-                        message = message.message,
-                        name = nameSender,
-                        person = nameSender,
-                        sender = userId,
-                        time = time,
-                        numberUnSeen = 1
-                    )
-
-                    //Create Conversation For Receiver
-                    db.collection("Conversation${conversation.friendId}")
-                        .document(userId)
-                        .set(conversationFriend)
-                }
+                //Create Conversation For Receiver
+                db.collection("Conversation${conversation.friendId}")
+                    .document(userId)
+                    .set(conversationFriend)
             }
         success.invoke()
     }
