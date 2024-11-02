@@ -173,15 +173,16 @@ object FireBaseInstance {
                         friendId = conversation.friendId,
                         userId = userId,
                         success = { cvt ->
+                            val number = cvt.numberUnSeen + 1
                             //Create Data Conversation For Receiver
                             val conversationFriend = Conversation(
-                                friendId = conversation.friendId,
+                                friendId = userId,
                                 message = message.message,
-                                name = conversation.name,
+                                name = nameSender,
                                 person = nameSender,
                                 sender = userId,
                                 time = time,
-                                numberUnSeen = cvt.numberUnSeen + 1
+                                numberUnSeen = 1
                             )
 
                             //Create Conversation For Receiver
@@ -193,9 +194,9 @@ object FireBaseInstance {
                 } else {
                     //Create Data Conversation For Receiver
                     val conversationFriend = Conversation(
-                        friendId = conversation.friendId,
+                        friendId = userId,
                         message = message.message,
-                        name = conversation.name,
+                        name = nameSender,
                         person = nameSender,
                         sender = userId,
                         time = time,
