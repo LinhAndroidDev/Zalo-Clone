@@ -109,13 +109,13 @@ object FireBaseInstance {
      */
     fun sendMessage(
         message: Message,
-        keyAuth: String,
+        userId: String,
         time: String,
         conversation: Conversation,
         nameSender: String,
         success: () -> Unit
     ) {
-        val idRoom = listOf(conversation.friendId, keyAuth).sorted()
+        val idRoom = listOf(conversation.friendId, userId).sorted()
 
         db.collection(PATH_MESSAGE)
             .document(idRoom.toString())
@@ -130,7 +130,7 @@ object FireBaseInstance {
                     success = { token ->
                         val notificationNotification = NotificationData(
                             token = token,
-                            data = Data(title = nameSender, body = message.message, senderId = keyAuth)
+                            data = Data(title = nameSender, body = message.message, senderId = userId)
                         )
 
                         ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
@@ -159,29 +159,54 @@ object FireBaseInstance {
                     message = message.message,
                     name = conversation.name,
                     person = "Bạn",
-                    sender = keyAuth,
-                    time = time
+                    sender = userId,
+                    time = time,
                 )
 
                 //Create Conversation For Sender
-                db.collection("Conversation${keyAuth}")
+                db.collection("Conversation${userId}")
                     .document(conversation.friendId)
                     .set(conversationData)
 
-                //Create Data Conversation For Receiver
-                val conversationFriend = Conversation(
-                    friendId = keyAuth,
-                    message = message.message,
-                    name = nameSender,
-                    person = nameSender,
-                    sender = keyAuth,
-                    time = time
-                )
+                if (conversation.sender.isNotEmpty()) {
+                    getConversation(
+                        friendId = conversation.friendId,
+                        userId = userId,
+                        success = { cvt ->
+                            //Create Data Conversation For Receiver
+                            val conversationFriend = Conversation(
+                                friendId = conversation.friendId,
+                                message = message.message,
+                                name = conversation.name,
+                                person = nameSender,
+                                sender = userId,
+                                time = time,
+                                numberUnSeen = cvt.numberUnSeen + 1
+                            )
 
-                //Create Conversation For Receiver
-                db.collection("Conversation${conversation.friendId}")
-                    .document(keyAuth)
-                    .set(conversationFriend)
+                            //Create Conversation For Receiver
+                            db.collection("Conversation${conversation.friendId}")
+                                .document(userId)
+                                .set(conversationFriend)
+                        }
+                    )
+                } else {
+                    //Create Data Conversation For Receiver
+                    val conversationFriend = Conversation(
+                        friendId = conversation.friendId,
+                        message = message.message,
+                        name = conversation.name,
+                        person = nameSender,
+                        sender = userId,
+                        time = time,
+                        numberUnSeen = 1
+                    )
+
+                    //Create Conversation For Receiver
+                    db.collection("Conversation${conversation.friendId}")
+                        .document(userId)
+                        .set(conversationFriend)
+                }
             }
         success.invoke()
     }
@@ -190,11 +215,11 @@ object FireBaseInstance {
      * This function is used to get all conversations from the FireStore database
      */
     fun getListConversation(
-        keyAuth: String,
+        userId: String,
         success: (QuerySnapshot?) -> Unit,
         failure: (String) -> Unit
     ) {
-        db.collection("Conversation${keyAuth}")
+        db.collection("Conversation${userId}")
             .orderBy("time", Query.Direction.DESCENDING)
             .addSnapshotListener { value, error ->
                 if (error != null) {
@@ -208,8 +233,8 @@ object FireBaseInstance {
     /**
      * This function is used to save token of user to the FireStore database
      */
-    fun saveTokenMessage(keyAuth: String, data: HashMap<String, String>) {
-        db.collection(PATH_TOKEN).document(keyAuth).set(data).addOnSuccessListener {
+    fun saveTokenMessage(userId: String, data: HashMap<String, String>) {
+        db.collection(PATH_TOKEN).document(userId).set(data).addOnSuccessListener {
         }
     }
 
@@ -238,9 +263,9 @@ object FireBaseInstance {
     /**
      * This function is used to get information user from the FireStore database
      */
-    fun getInfoUser(keyAuth: String, success: (User) -> Unit) {
+    fun getInfoUser(userId: String, success: (User) -> Unit) {
         db.collection(PATH_USER)
-            .document(keyAuth)
+            .document(userId)
             .addSnapshotListener { value, error ->
                 if (error != null) {
                     Log.e("getInfoUser", error.message.toString())
@@ -272,9 +297,29 @@ object FireBaseInstance {
     /**
      * This function is used to update avatar of user to the FireStore database
      */
-    fun updateAvatarUser(avatar: String, keyAuth: String) {
+    fun updateAvatarUser(avatar: String, userId: String) {
         db.collection(PATH_USER)
-            .document(keyAuth)
+            .document(userId)
             .update("avatar", avatar)
+    }
+
+    fun getConversation(friendId: String, userId: String, success: (Conversation) -> Unit) {
+        db.collection("Conversation${friendId}")
+            .document(userId)
+            .addSnapshotListener { value, error ->
+                if (value != null) {
+                    val conversation = value.toObject(Conversation::class.java)
+                    conversation?.let { success.invoke(it) }
+                }
+            }
+    }
+
+    fun seenMessage(userId: String, conversation: Conversation) {
+        db.collection("Conversation${conversation.friendId}")
+            .document(userId)
+            .update(
+                "seen", true,
+                "numberUnSeen", 0
+            )
     }
 }

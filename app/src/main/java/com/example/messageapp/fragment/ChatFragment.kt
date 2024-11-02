@@ -77,12 +77,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
-            chatAdapter = ChatAdapter(conversation?.friendId.toString())
+            chatAdapter =
+                ChatAdapter(conversation?.friendId.toString(), viewModel?.shared?.getAuth() ?: "")
             chatAdapter?.longClickItemSender = { data ->
                 showPopupOption(data.first, data.second)
             }
             chatAdapter?.longClickItemReceiver = { data ->
                 showPopupOption(data.first, data.second, false)
+            }
+            chatAdapter?.seenMessage = {
+                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
             }
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
@@ -105,7 +109,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
      * the popup will show above the message item, otherwise it will show below.
      * This is how to calculate so that the popup does not lose view when it is near the bottom of the screen.
      */
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint("MissingInflatedId", "InflateParams")
     private fun showPopupOption(anchor: View, message: Message, isItemSender: Boolean = true) {
         // Lấy LayoutInflater để inflate layout của PopupWindow
         val inflater = requireActivity().getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -193,9 +197,10 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
             lifecycleScope.launch(Dispatchers.Main) {
                 viewModel?.messages?.collect { messages ->
-                    messages?.let {
-                        chatAdapter?.setMessage(it)
+                    messages?.let { msg ->
+                        chatAdapter?.setMessage(msg)
                         binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+                        conversation?.let {  viewModel?.updateSeenMessage(msg, it) }
                     }
                 }
             }

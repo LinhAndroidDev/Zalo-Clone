@@ -7,11 +7,13 @@ import kotlinx.parcelize.Parcelize
 data class Conversation(
     val friendId: String = "",
     val friendImage: String = "",
-    val message: String = "",
+    var message: String = "",
     val name: String = "",
-    val person: String = "",
-    val sender: String = "",
-    val time: String = ""
+    var person: String = "",
+    var sender: String = "",
+    var time: String = "",
+    var seen: Boolean = false,
+    var numberUnSeen: Int = 0
 ) : Parcelable {
     constructor(user: User) : this (
         friendId = user.keyAuth ?: "",
@@ -21,5 +23,6 @@ data class Conversation(
         person = "",
         sender = "",
         time = "",
+        seen = false,
     )
 }

@@ -33,7 +33,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     ) = viewModelScope.launch {
         FireBaseInstance.sendMessage(
             message = message,
-            keyAuth = shared.getAuth(),
+            userId = shared.getAuth(),
             time = time,
             conversation = conversation,
             nameSender = shared.getNameUser(),
@@ -69,5 +69,11 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     private fun isOfThisConversation(message: Message, friendId: String): Boolean {
         return message.sender == shared.getAuth() && message.receiver == friendId
                 || message.receiver == shared.getAuth() && message.sender == friendId
+    }
+
+    fun updateSeenMessage(messages: ArrayList<Message>, conversation: Conversation) {
+        if (messages[messages.lastIndex].sender != shared.getAuth()) {
+            FireBaseInstance.seenMessage(shared.getAuth(), conversation)
+        }
     }
 }

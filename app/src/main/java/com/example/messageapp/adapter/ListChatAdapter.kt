@@ -1,15 +1,17 @@
 package com.example.messageapp.adapter
 
 import android.annotation.SuppressLint
-import com.bumptech.glide.Glide
+import androidx.core.view.isVisible
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemListChatBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.loadImg
 
 class ListChatAdapter : BaseAdapter<Conversation, ItemListChatBinding>() {
+
     var onClickView: ((Conversation) -> Unit)? = null
 
     override fun getLayout(): Int = R.layout.item_list_chat
@@ -18,20 +20,19 @@ class ListChatAdapter : BaseAdapter<Conversation, ItemListChatBinding>() {
     override fun onBindViewHolder(holder: BaseViewHolder<ItemListChatBinding>, position: Int) {
         val conversation = items[position]
         holder.v.tvNameFriend.text = conversation.name
+        if (conversation.numberUnSeen > 0) {
+            holder.v.tvMessage.setTextColor(holder.itemView.context.getColor(R.color.text_common))
+        } else {
+            holder.v.tvMessage.setTextColor(holder.itemView.context.getColor(R.color.grey_1))
+        }
         holder.v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         holder.v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
+        holder.v.avtSeen.isVisible = conversation.seen
+        holder.v.newMessage.isVisible = !conversation.seen
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
-            Glide.with(holder.itemView.context)
-                .load(user.avatar)
-                .circleCrop()
-                .error(R.mipmap.ic_launcher)
-                .into(holder.v.avatarFriend)
+            holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avatarFriend)
+            holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avtSeen)
         }
-        Glide.with(holder.itemView.context)
-            .load(conversation.friendImage)
-            .circleCrop()
-            .error(R.mipmap.ic_launcher)
-            .into(holder.v.avatarFriend)
         holder.itemView.setOnClickListener {
             onClickView?.invoke(conversation)
         }

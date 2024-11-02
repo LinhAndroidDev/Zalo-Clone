@@ -7,32 +7,31 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.messageapp.R
 import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.databinding.ItemChatSenderBinding
 import com.example.messageapp.model.Message
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.loadImg
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
 
 class ChatAdapter(
-    private val friendId: String
+    private val friendId: String,
+    private val userId: String,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
     private var messages = arrayListOf<Message>()
     var longClickItemSender: ((Pair<View, Message>) -> Unit)? = null
     var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
+    var seenMessage: (() -> Unit)? = null
 
     @SuppressLint("NotifyDataSetChanged")
     fun setMessage(list: ArrayList<Message>) {
-        val startIndex = messages.size
         messages.clear()
         messages.addAll(list)
         notifyDataSetChanged()
-//        notifyItemRangeChanged(startIndex, list.size)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -75,6 +74,24 @@ class ChatAdapter(
                     longClickItemSender?.invoke(it to message)
                     true
                 }
+                FireBaseInstance.getConversation(
+                    friendId = friendId,
+                    userId = userId,
+                    success = { cvt ->
+                        if(cvt.seen && position == messages.size - 1) {
+                            holder.v.avtSeen.isVisible = true
+                            FireBaseInstance.getInfoUser(friendId) { user ->
+                                holder.itemView.context.loadImg(
+                                    user.avatar.toString(),
+                                    holder.v.avtSeen
+                                )
+                                seenMessage?.invoke()
+                            }
+                        } else {
+                            holder.v.avtSeen.isVisible = false
+                        }
+                    }
+                )
             }
 
             else -> {
@@ -83,10 +100,10 @@ class ChatAdapter(
                 holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
                 holder.v.viewBottom.isVisible = position == messages.size - 1
                 FireBaseInstance.getInfoUser(friendId) { user ->
-                    Glide.with(holder.v.root)
-                        .load(user.avatar)
-                        .error(R.mipmap.ic_launcher)
-                        .into(holder.v.avatarReceiver)
+                    holder.itemView.context.loadImg(
+                        user.avatar.toString(),
+                        holder.v.avatarReceiver
+                    )
                 }
                 holder.v.layoutMessage.setOnLongClickListener {
                     longClickItemReceiver?.invoke(it to message)
