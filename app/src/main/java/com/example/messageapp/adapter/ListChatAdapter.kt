@@ -27,8 +27,10 @@ class ListChatAdapter : BaseAdapter<Conversation, ItemListChatBinding>() {
         }
         holder.v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         holder.v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
-        holder.v.avtSeen.isVisible = conversation.seen
-        holder.v.newMessage.isVisible = !conversation.seen && conversation.friendId == conversation.sender
+        if (conversation.friendId == conversation.sender) {
+            holder.v.avtSeen.isVisible = conversation.seen
+            holder.v.newMessage.isVisible = !conversation.seen
+        }
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
             holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avatarFriend)
             holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avtSeen)
