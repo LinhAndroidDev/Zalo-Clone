@@ -299,13 +299,13 @@ object FireBaseInstance {
         db.collection("Conversation${friendId}")
             .document(userId)
             .update(
-                "seen", true,
+                "seen", 1,
                 "numberUnSeen", 0
             )
         db.collection("Conversation${userId}")
             .document(friendId)
             .update(
-                "seen", true,
+                "seen", 1,
                 "numberUnSeen", 0
             )
     }
