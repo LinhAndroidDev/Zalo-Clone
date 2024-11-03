@@ -6,6 +6,7 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.messageapp.databinding.ActivityMainBinding
@@ -74,7 +75,11 @@ class MainActivity : AppCompatActivity() {
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
-        navController.navigate(destinationFragment)
+        navController.navigate(
+            destinationFragment, null,
+            NavOptions.Builder().setPopUpTo(navController.graph.startDestinationId, true)
+                .build()
+        )
     }
 
     @Deprecated("Deprecated in Java")
