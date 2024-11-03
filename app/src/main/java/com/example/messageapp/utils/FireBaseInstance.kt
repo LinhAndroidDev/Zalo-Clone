@@ -284,7 +284,7 @@ object FireBaseInstance {
     fun getConversation(friendId: String, userId: String, success: (Conversation) -> Unit) {
         db.collection("Conversation${friendId}")
             .document(userId)
-            .addSnapshotListener { value, error ->
+            .addSnapshotListener { value, _ ->
                 if (value != null) {
                     val conversation = value.toObject(Conversation::class.java)
                     conversation?.let { success.invoke(it) }
