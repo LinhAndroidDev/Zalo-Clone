@@ -292,8 +292,8 @@ object FireBaseInstance {
             }
     }
 
-    fun seenMessage(userId: String, conversation: Conversation) {
-        db.collection("Conversation${conversation.friendId}")
+    fun seenMessage(userId: String, friendId: String) {
+        db.collection("Conversation${friendId}")
             .document(userId)
             .update(
                 "seen", true,

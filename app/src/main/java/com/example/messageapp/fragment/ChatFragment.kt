@@ -200,7 +200,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                     messages?.let { msg ->
                         chatAdapter?.setMessage(msg)
                         binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-                        conversation?.let {  viewModel?.updateSeenMessage(msg, it) }
+                        conversation?.let {  viewModel?.updateSeenMessage(it) }
                     }
                 }
             }
