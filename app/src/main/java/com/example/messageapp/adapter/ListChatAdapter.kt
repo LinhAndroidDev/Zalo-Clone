@@ -29,7 +29,9 @@ class ListChatAdapter : BaseAdapter<Conversation, ItemListChatBinding>() {
         holder.v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
         if (conversation.friendId == conversation.sender) {
             holder.v.newMessage.isVisible = !conversation.seen
+            holder.v.avtSeen.isVisible = false
         } else {
+            holder.v.newMessage.isVisible = false
             holder.v.avtSeen.isVisible = conversation.seen
         }
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
