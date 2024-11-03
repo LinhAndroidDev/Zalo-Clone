@@ -76,26 +76,26 @@ class ChatAdapter(
                     longClickItemSender?.invoke(it to message)
                     true
                 }
-//                FireBaseInstance.getConversation(
-//                    friendId = friendId,
-//                    userId = userId,
-//                    success = { cvt ->
-//                        if(cvt.seen == 1 && position == messages.size - 1) {
-//                            seen = true
-//                            FireBaseInstance.getInfoUser(friendId) { user ->
-//                                holder.itemView.context.loadImg(
-//                                    user.avatar.toString(),
-//                                    holder.v.avtSeen
-//                                )
-//                                seenMessage?.invoke()
-//                            }
-//                        } else {
-//                            seen = false
-//                        }
-//                        notifyDataSetChanged()
-//                    }
-//                )
-//                holder.v.avtSeen.isVisible = seen
+                FireBaseInstance.getConversationRlt(
+                    friendId = friendId,
+                    userId = userId,
+                    success = { cvt ->
+                        if(cvt.seen == "1" && position == messages.size - 1) {
+                            seen = true
+                            FireBaseInstance.getInfoUser(friendId) { user ->
+                                holder.itemView.context.loadImg(
+                                    user.avatar.toString(),
+                                    holder.v.avtSeen
+                                )
+                                seenMessage?.invoke()
+                            }
+                        } else {
+                            seen = false
+                        }
+                        notifyDataSetChanged()
+                    }
+                )
+                holder.v.avtSeen.isVisible = seen
             }
 
             else -> {

@@ -170,24 +170,27 @@ object FireBaseInstance {
                 //Create Conversation For Sender
                 db.collection("Conversation${userId}")
                     .document(conversation.friendId)
-                    .set(conversationData, SetOptions.merge())
+                    .set(conversationData)
 
-                //Create Data Conversation For Receiver
-                val conversationFriend = Conversation(
-                    friendId = userId,
-                    message = message.message,
-                    name = nameSender,
-                    person = nameSender,
-                    sender = userId,
-                    time = time,
-                    seen = "0",
-                    numberUnSeen = 1
-                )
+                getConversation(conversation.friendId, userId) { cvt ->
+                    val num = cvt.numberUnSeen + 1
+                    //Create Data Conversation For Receiver
+                    val conversationFriend = Conversation(
+                        friendId = userId,
+                        message = message.message,
+                        name = nameSender,
+                        person = nameSender,
+                        sender = userId,
+                        time = time,
+                        seen = "0",
+                        numberUnSeen = num
+                    )
 
-                //Create Conversation For Receiver
-                db.collection("Conversation${conversation.friendId}")
-                    .document(userId)
-                    .set(conversationFriend, SetOptions.merge())
+                    //Create Conversation For Receiver
+                    db.collection("Conversation${conversation.friendId}")
+                        .document(userId)
+                        .set(conversationFriend, SetOptions.merge())
+                }
             }
         success.invoke()
     }
@@ -287,8 +290,18 @@ object FireBaseInstance {
     fun getConversation(friendId: String, userId: String, success: (Conversation) -> Unit) {
         db.collection("Conversation${friendId}")
             .document(userId)
+            .get()
+            .addOnSuccessListener { result ->
+                val conversation = result.toObject(Conversation::class.java)
+                conversation?.let { success.invoke(it) }
+            }
+    }
+
+    fun getConversationRlt(friendId: String, userId: String, success: (Conversation) -> Unit) {
+        db.collection("Conversation${friendId}")
+            .document(userId)
             .addSnapshotListener { value, _ ->
-                if (value != null) {
+                if(value != null) {
                     val conversation = value.toObject(Conversation::class.java)
                     conversation?.let { success.invoke(it) }
                 }
@@ -298,21 +311,15 @@ object FireBaseInstance {
     fun seenMessage(userId: String, friendId: String) {
         db.collection("Conversation${friendId}")
             .document(userId)
-            .set(
-                mapOf(
-                    "seen" to "1",
-                    "numberUnSeen" to 0
-                ),
-                SetOptions.merge()
+            .update(
+                "seen", "1",
+                "numberUnSeen", 0
             )
         db.collection("Conversation${userId}")
             .document(friendId)
-            .set(
-                mapOf(
-                    "seen" to "1",
-                    "numberUnSeen" to 0
-                ),
-                SetOptions.merge()
+            .update(
+                "seen", "1",
+                "numberUnSeen", 0
             )
     }
 }
