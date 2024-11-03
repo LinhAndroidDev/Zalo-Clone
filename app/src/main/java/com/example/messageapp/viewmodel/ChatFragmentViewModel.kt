@@ -1,6 +1,5 @@
 package com.example.messageapp.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
@@ -74,8 +73,6 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     fun updateSeenMessage(msg: ArrayList<Message> ,conversation: Conversation) {
         if (msg[msg.lastIndex].sender != shared.getAuth()) {
-            Log.e("ChatFragmentViewModel", "sender: ${msg[msg.lastIndex]}")
-            Log.e("ChatFragmentViewModel", "userId: ${shared.getAuth()}")
             FireBaseInstance.getConversation(
                 friendId = shared.getAuth(),
                 userId = conversation.friendId,

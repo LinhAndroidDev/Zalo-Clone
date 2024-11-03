@@ -298,15 +298,21 @@ object FireBaseInstance {
     fun seenMessage(userId: String, friendId: String) {
         db.collection("Conversation${friendId}")
             .document(userId)
-            .update(
-                "seen", 1,
-                "numberUnSeen", 0
+            .set(
+                mapOf(
+                    "seen" to 1,
+                    "numberUnSeen" to 0
+                ),
+                SetOptions.merge()
             )
         db.collection("Conversation${userId}")
             .document(friendId)
-            .update(
-                "seen", 1,
-                "numberUnSeen", 0
+            .set(
+                mapOf(
+                    "seen" to 1,
+                    "numberUnSeen" to 0
+                ),
+                SetOptions.merge()
             )
     }
 }
