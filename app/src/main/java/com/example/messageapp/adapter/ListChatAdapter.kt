@@ -31,7 +31,7 @@ class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, It
             holder.v.newMessage.isVisible = !conversation.seen
             holder.v.avtSeen.isVisible = false
         } else {
-            if (conversation.sender != userId) {
+            if (conversation.sender == userId) {
                 holder.v.newMessage.isVisible = false
                 holder.v.avtSeen.isVisible = conversation.seen
             }
