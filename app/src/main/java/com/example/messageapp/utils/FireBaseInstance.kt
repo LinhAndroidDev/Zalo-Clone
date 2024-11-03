@@ -161,7 +161,7 @@ object FireBaseInstance {
                     name = conversation.name,
                     person = "Bạn",
                     sender = userId,
-                    seen = 0,
+                    seen = "0",
                     time = time,
                 )
 
@@ -180,7 +180,7 @@ object FireBaseInstance {
                     person = nameSender,
                     sender = userId,
                     time = time,
-                    seen = 0,
+                    seen = "0",
                     numberUnSeen = 1
                 )
 
@@ -300,7 +300,7 @@ object FireBaseInstance {
             .document(userId)
             .set(
                 mapOf(
-                    "seen" to 1,
+                    "seen" to "1",
                     "numberUnSeen" to 0
                 ),
                 SetOptions.merge()
@@ -309,7 +309,7 @@ object FireBaseInstance {
             .document(friendId)
             .set(
                 mapOf(
-                    "seen" to 1,
+                    "seen" to "1",
                     "numberUnSeen" to 0
                 ),
                 SetOptions.merge()

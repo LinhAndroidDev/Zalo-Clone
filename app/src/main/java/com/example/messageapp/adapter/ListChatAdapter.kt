@@ -28,12 +28,12 @@ class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, It
         holder.v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         holder.v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
         if (conversation.friendId == conversation.sender) {
-            holder.v.newMessage.isVisible = conversation.seen == 0
+            holder.v.newMessage.isVisible = conversation.seen == "0"
             holder.v.avtSeen.isVisible = false
         } else {
             if (conversation.sender == userId) {
                 holder.v.newMessage.isVisible = false
-                holder.v.avtSeen.isVisible = conversation.seen == 1
+                holder.v.avtSeen.isVisible = conversation.seen == "1"
             }
         }
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
