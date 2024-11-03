@@ -32,6 +32,8 @@ import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.loadImg
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -85,9 +87,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             chatAdapter?.longClickItemReceiver = { data ->
                 showPopupOption(data.first, data.second, false)
             }
-            chatAdapter?.seenMessage = {
-                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-            }
+//            chatAdapter?.seenMessage = {
+//                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+//            }
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
         }
@@ -200,6 +202,18 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                     messages?.let { msg ->
                         chatAdapter?.setMessage(msg)
                         binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+                        FireBaseInstance.getConversationRlt(
+                            friendId = conversation?.friendId ?: "",
+                            userId = viewModel?.shared?.getAuth() ?: "",
+                            success = { cvt ->
+                                if(cvt.seen == "1") {
+                                    FireBaseInstance.getInfoUser(conversation?.friendId ?: "") { user ->
+                                        chatAdapter?.seen = true
+                                        chatAdapter?.notifyItemChanged(msg.lastIndex)
+                                    }
+                                }
+                            }
+                        )
                         conversation?.let {  viewModel?.updateSeenMessage(msg, it) }
                     }
                 }

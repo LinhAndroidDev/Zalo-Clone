@@ -26,7 +26,7 @@ class ChatAdapter(
     var longClickItemSender: ((Pair<View, Message>) -> Unit)? = null
     var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
     var seenMessage: (() -> Unit)? = null
-    private var seen: Boolean = false
+    var seen: Boolean = false
 
     @SuppressLint("NotifyDataSetChanged")
     fun setMessage(list: ArrayList<Message>) {
@@ -76,26 +76,17 @@ class ChatAdapter(
                     longClickItemSender?.invoke(it to message)
                     true
                 }
-                FireBaseInstance.getConversationRlt(
-                    friendId = friendId,
-                    userId = userId,
-                    success = { cvt ->
-                        if(cvt.seen == "1" && position == messages.size - 1) {
-                            seen = true
-                            FireBaseInstance.getInfoUser(friendId) { user ->
-                                holder.itemView.context.loadImg(
-                                    user.avatar.toString(),
-                                    holder.v.avtSeen
-                                )
-                                seenMessage?.invoke()
-                            }
-                        } else {
-                            seen = false
-                        }
-                        notifyDataSetChanged()
+                if (position == messages.lastIndex) {
+                    FireBaseInstance.getInfoUser(friendId) { user ->
+                        holder.itemView.context.loadImg(
+                            user.avatar.toString(),
+                            holder.v.avtSeen
+                        )
                     }
-                )
-                holder.v.avtSeen.isVisible = seen
+                    holder.v.avtSeen.isVisible = seen
+                } else {
+                    holder.v.avtSeen.isVisible = false
+                }
             }
 
             else -> {
