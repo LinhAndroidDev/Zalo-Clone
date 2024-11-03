@@ -12,7 +12,7 @@ data class Conversation(
     var person: String = "",
     var sender: String = "",
     var time: String = "",
-    var seen: Boolean = false,
+    var seen: Int = 0,
     var numberUnSeen: Int = 0
 ) : Parcelable {
     constructor(user: User) : this (
@@ -23,6 +23,6 @@ data class Conversation(
         person = "",
         sender = "",
         time = "",
-        seen = false,
+        seen = 0,
     )
 }
