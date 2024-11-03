@@ -10,7 +10,7 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.loadImg
 
-class ListChatAdapter : BaseAdapter<Conversation, ItemListChatBinding>() {
+class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, ItemListChatBinding>() {
 
     var onClickView: ((Conversation) -> Unit)? = null
 
@@ -31,8 +31,10 @@ class ListChatAdapter : BaseAdapter<Conversation, ItemListChatBinding>() {
             holder.v.newMessage.isVisible = !conversation.seen
             holder.v.avtSeen.isVisible = false
         } else {
-            holder.v.newMessage.isVisible = false
-            holder.v.avtSeen.isVisible = conversation.seen
+            if (conversation.sender != userId) {
+                holder.v.newMessage.isVisible = false
+                holder.v.avtSeen.isVisible = conversation.seen
+            }
         }
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
             holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avatarFriend)

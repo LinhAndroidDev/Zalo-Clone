@@ -21,12 +21,13 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override val layoutResId: Int = R.layout.fragment_home
 
     private val suggestFriendAdapter by lazy { SuggestFriendAdapter() }
-    private val listChatAdapter by lazy { ListChatAdapter() }
+    private var listChatAdapter: ListChatAdapter? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        listChatAdapter.onClickView = { conversation ->
+        listChatAdapter = ListChatAdapter(viewModel?.shared?.getAuth() ?: "")
+        listChatAdapter?.onClickView = { conversation ->
             goToChatFragment(conversation)
         }
         binding?.rcvListChat?.adapter = listChatAdapter
@@ -53,8 +54,8 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.conversation?.collect { conversations ->
                 conversations?.let {
-                    listChatAdapter.items = conversations
-                    listChatAdapter.notifyDataSetChanged()
+                    listChatAdapter?.items = conversations
+                    listChatAdapter?.notifyDataSetChanged()
                 }
             }
         }
