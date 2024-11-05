@@ -23,7 +23,9 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.base.BaseFragment
@@ -33,7 +35,6 @@ import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.loadImg
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -198,23 +199,25 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             viewModel?.getMessage(friendId = cvt.friendId)
 
             lifecycleScope.launch(Dispatchers.Main) {
-                viewModel?.messages?.collect { messages ->
-                    messages?.let { msg ->
-                        chatAdapter?.setMessage(msg)
-                        binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-                        FireBaseInstance.getConversationRlt(
-                            friendId = conversation?.friendId ?: "",
-                            userId = viewModel?.shared?.getAuth() ?: "",
-                            success = { cvt ->
-                                if(cvt.seen == "1") {
-                                    FireBaseInstance.getInfoUser(conversation?.friendId ?: "") { user ->
-                                        chatAdapter?.seen = true
-                                        chatAdapter?.notifyItemChanged(msg.lastIndex)
+                viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel?.messages?.collect { messages ->
+                        messages?.let { msg ->
+                            chatAdapter?.setMessage(msg)
+                            binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+                            FireBaseInstance.getConversationRlt(
+                                friendId = conversation?.friendId ?: "",
+                                userId = viewModel?.shared?.getAuth() ?: "",
+                                success = { cvt ->
+                                    if(cvt.seen == "1") {
+                                        FireBaseInstance.getInfoUser(conversation?.friendId ?: "") { user ->
+                                            chatAdapter?.seen = true
+                                            chatAdapter?.notifyItemChanged(msg.lastIndex)
+                                        }
                                     }
                                 }
-                            }
-                        )
-                        conversation?.let {  viewModel?.updateSeenMessage(msg, it) }
+                            )
+                            conversation?.let {  viewModel?.updateSeenMessage(msg, it) }
+                        }
                     }
                 }
             }
