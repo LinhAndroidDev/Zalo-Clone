@@ -16,6 +16,12 @@ import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -125,68 +131,90 @@ object FireBaseInstance {
             .addOnCompleteListener {
 
                 getConversation(conversation.friendId, userId) { cvt ->
-                    //Get token of receiver to send notification message to receiver
-                    getTokenMessage(
-                        conversation.friendId,
-                        success = { token ->
-                            val notificationNotification = NotificationData(
-                                token = token,
-                                data = Data(title = nameSender, body = message.message, senderId = userId)
+                    CoroutineScope(Dispatchers.IO).launch {
+                        coroutineScope {
+                            // Luồng thứ nhất: Gửi thông báo
+                            val sendMessageJob = async {
+                                getTokenMessage(
+                                    conversation.friendId,
+                                    success = { token ->
+                                        val notificationNotification = NotificationData(
+                                            token = token,
+                                            data = Data(
+                                                title = nameSender,
+                                                body = message.message,
+                                                senderId = userId
+                                            )
+                                        )
+
+                                        ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
+                                            ?.enqueue(object : Callback<MessageRequest> {
+                                                override fun onFailure(
+                                                    call: Call<MessageRequest>,
+                                                    t: Throwable
+                                                ) {
+                                                    Log.e("Send Message", "Send Fail")
+                                                }
+
+                                                override fun onResponse(
+                                                    call: Call<MessageRequest>,
+                                                    response: Response<MessageRequest>
+                                                ) {
+                                                    Log.e("Send Message", "Send Successful")
+                                                }
+                                            })
+                                    },
+                                    failure = {
+                                        Log.e("Send Message", "Token retrieval failed")
+                                    }
+                                )
+                            }
+
+                            // Luồng thứ hai: Tạo dữ liệu hội thoại cho người gửi
+                            val createSenderConversationJob = async {
+                                val conversationData = Conversation(
+                                    friendId = conversation.friendId,
+                                    friendImage = conversation.friendImage,
+                                    message = message.message,
+                                    name = conversation.name,
+                                    person = "Bạn",
+                                    sender = userId,
+                                    seen = "0",
+                                    time = time,
+                                )
+
+                                db.collection("Conversation${userId}")
+                                    .document(conversation.friendId)
+                                    .set(conversationData)
+                            }
+
+                            // Luồng thứ ba: Tạo dữ liệu hội thoại cho người nhận
+                            val createReceiverConversationJob = async {
+                                val num = cvt.numberUnSeen + 1
+                                val conversationFriend = Conversation(
+                                    friendId = userId,
+                                    message = message.message,
+                                    name = nameSender,
+                                    person = nameSender,
+                                    sender = userId,
+                                    time = time,
+                                    seen = "0",
+                                    numberUnSeen = num
+                                )
+
+                                db.collection("Conversation${conversation.friendId}")
+                                    .document(userId)
+                                    .set(conversationFriend)
+                            }
+
+                            // Chờ cả ba luồng hoàn thành
+                            awaitAll(
+                                sendMessageJob,
+                                createSenderConversationJob,
+                                createReceiverConversationJob
                             )
-
-                            ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
-                                ?.enqueue(object : Callback<MessageRequest> {
-                                    override fun onFailure(call: Call<MessageRequest>, t: Throwable) {
-                                        Log.e("Send Message", "Send Fail")
-                                    }
-
-                                    override fun onResponse(
-                                        call: Call<MessageRequest>,
-                                        response: Response<MessageRequest>
-                                    ) {
-                                        Log.e("Send Message", "Send Successful")
-                                    }
-
-                                })
-                        },
-                        failure = {
-
-                        })
-
-                    //Create Data Conversation For Sender
-                    val conversationData = Conversation(
-                        friendId = conversation.friendId,
-                        friendImage = conversation.friendImage,
-                        message = message.message,
-                        name = conversation.name,
-                        person = "Bạn",
-                        sender = userId,
-                        seen = "0",
-                        time = time,
-                    )
-
-                    //Create Conversation For Sender
-                    db.collection("Conversation${userId}")
-                        .document(conversation.friendId)
-                        .set(conversationData)
-
-                    val num = cvt.numberUnSeen + 1
-                    //Create Data Conversation For Receiver
-                    val conversationFriend = Conversation(
-                        friendId = userId,
-                        message = message.message,
-                        name = nameSender,
-                        person = nameSender,
-                        sender = userId,
-                        time = time,
-                        seen = "0",
-                        numberUnSeen = num
-                    )
-
-                    //Create Conversation For Receiver
-                    db.collection("Conversation${conversation.friendId}")
-                        .document(userId)
-                        .set(conversationFriend)
+                        }
+                    }
                 }
             }
         success.invoke()
