@@ -202,13 +202,15 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
+                            conversation?.let {  viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
                             chatAdapter?.setMessage(msg)
                             binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+                            val userId = viewModel?.shared?.getAuth() ?: ""
                             FireBaseInstance.getConversationRlt(
                                 friendId = conversation?.friendId ?: "",
-                                userId = viewModel?.shared?.getAuth() ?: "",
+                                userId = userId,
                                 success = { cvt ->
-                                    if(cvt.seen == "1") {
+                                    if(cvt.seen == "1" && msg[msg.lastIndex].sender == userId) {
                                         FireBaseInstance.getInfoUser(conversation?.friendId ?: "") { user ->
                                             chatAdapter?.seen = true
                                             chatAdapter?.notifyItemChanged(msg.lastIndex)
@@ -216,7 +218,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                                     }
                                 }
                             )
-                            conversation?.let {  viewModel?.updateSeenMessage(msg, it) }
                         }
                     }
                 }

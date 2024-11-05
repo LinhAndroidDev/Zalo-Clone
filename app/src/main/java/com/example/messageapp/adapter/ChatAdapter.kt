@@ -30,6 +30,7 @@ class ChatAdapter(
 
     @SuppressLint("NotifyDataSetChanged")
     fun setMessage(list: ArrayList<Message>) {
+        seen = false
         messages.clear()
         messages.addAll(list)
         notifyDataSetChanged()

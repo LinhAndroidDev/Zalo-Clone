@@ -13,7 +13,6 @@ import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
-import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -165,8 +164,6 @@ object FireBaseInstance {
                     time = time,
                 )
 
-                Log.d("FirestoreDebug", "Data to be saved: $conversationData")
-
                 //Create Conversation For Sender
                 db.collection("Conversation${userId}")
                     .document(conversation.friendId)
@@ -189,7 +186,7 @@ object FireBaseInstance {
                     //Create Conversation For Receiver
                     db.collection("Conversation${conversation.friendId}")
                         .document(userId)
-                        .set(conversationFriend, SetOptions.merge())
+                        .set(conversationFriend)
                 }
             }
         success.invoke()
