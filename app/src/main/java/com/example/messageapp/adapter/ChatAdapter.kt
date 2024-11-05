@@ -20,12 +20,10 @@ const val VIEW_RECEIVER = 1
 
 class ChatAdapter(
     private val friendId: String,
-    private val userId: String,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
     var longClickItemSender: ((Pair<View, Message>) -> Unit)? = null
     var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
-    var seenMessage: (() -> Unit)? = null
     var seen: Boolean = false
 
     @SuppressLint("NotifyDataSetChanged")
@@ -77,17 +75,7 @@ class ChatAdapter(
                     longClickItemSender?.invoke(it to message)
                     true
                 }
-                if (position == messages.lastIndex) {
-                    FireBaseInstance.getInfoUser(friendId) { user ->
-                        holder.itemView.context.loadImg(
-                            user.avatar.toString(),
-                            holder.v.avtSeen
-                        )
-                    }
-                    holder.v.avtSeen.isVisible = seen
-                } else {
-                    holder.v.avtSeen.isVisible = false
-                }
+                checkShowSeenMessage(holder, position)
             }
 
             else -> {
@@ -106,6 +94,22 @@ class ChatAdapter(
                     true
                 }
             }
+        }
+    }
+
+    private fun checkShowSeenMessage(holder: SenderViewHolder, position: Int) {
+        if (position == messages.lastIndex) {
+            FireBaseInstance.getInfoUser(friendId) { user ->
+                holder.itemView.context.loadImg(
+                    user.avatar.toString(),
+                    holder.v.avtSeen
+                )
+            }
+            holder.v.avtSeen.isVisible = seen
+            holder.v.viewReceived.isVisible = !seen
+        } else {
+            holder.v.avtSeen.isVisible = false
+            holder.v.viewReceived.isVisible = false
         }
     }
 

@@ -80,8 +80,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
-            chatAdapter =
-                ChatAdapter(conversation?.friendId.toString(), viewModel?.shared?.getAuth() ?: "")
+            chatAdapter = ChatAdapter(conversation?.friendId ?: "")
             chatAdapter?.longClickItemSender = { data ->
                 showPopupOption(data.first, data.second)
             }
@@ -205,24 +204,34 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                             conversation?.let {  viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
                             chatAdapter?.setMessage(msg)
                             binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-                            val userId = viewModel?.shared?.getAuth() ?: ""
-                            FireBaseInstance.getConversationRlt(
-                                friendId = conversation?.friendId ?: "",
-                                userId = userId,
-                                success = { cvt ->
-                                    if(cvt.seen == "1" && msg[msg.lastIndex].sender == userId) {
-                                        FireBaseInstance.getInfoUser(conversation?.friendId ?: "") { user ->
-                                            chatAdapter?.seen = true
-                                            chatAdapter?.notifyItemChanged(msg.lastIndex)
-                                        }
-                                    }
-                                }
-                            )
+                            updateSeenMessage(msg)
                         }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * This function update seen message from friend of user:
+     * + Show avatar friend seen when item last message is from user
+     * and friend seen message
+     */
+    private fun updateSeenMessage(msg: ArrayList<Message>) {
+        val userId = viewModel?.shared?.getAuth() ?: ""
+        FireBaseInstance.getConversationRlt(
+            friendId = conversation?.friendId ?: "",
+            userId = userId,
+            success = { cvt ->
+                if(cvt.seen == "1" && msg[msg.lastIndex].sender == userId) {
+                    chatAdapter?.seen = true
+                    chatAdapter?.notifyItemChanged(msg.lastIndex)
+                } else {
+                    chatAdapter?.seen = false
+                    chatAdapter?.notifyItemChanged(msg.lastIndex)
+                }
+            }
+        )
     }
 
     @SuppressLint("SetTextI18n")

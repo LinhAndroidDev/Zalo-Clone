@@ -41,6 +41,35 @@
             </LinearLayout>
         </RelativeLayout>
 
+        <LinearLayout
+            android:id="@+id/viewReceived"
+            android:layout_marginTop="3dp"
+            android:layout_marginEnd="15dp"
+            android:layout_gravity="end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_corner_25_blue_light"
+            android:backgroundTint="#BABABA"
+            android:gravity="center_vertical"
+            android:paddingVertical="1dp"
+            android:paddingHorizontal="5dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:src="@drawable/ic_done"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                app:tint="@color/white" />
+
+            <TextView
+                android:layout_marginStart="2dp"
+                android:text="@string/received"
+                android:textSize="10sp"
+                android:textColor="@color/white"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/avtSeen"
             android:src="@mipmap/ic_launcher"
