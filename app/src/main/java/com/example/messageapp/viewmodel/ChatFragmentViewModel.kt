@@ -78,8 +78,8 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                 friendId = shared.getAuth(),
                 userId = conversation.friendId,
                 success = { cvt ->
-                    Log.e("FireBaseInstance", cvt.toString())
                     if (cvt.seen == "0" && cvt.sender == conversation.friendId) {
+                        Log.e("FireBaseInstance", cvt.toString())
                         FireBaseInstance.seenMessage(shared.getAuth(), friendId = conversation.friendId)
                     }
                 }

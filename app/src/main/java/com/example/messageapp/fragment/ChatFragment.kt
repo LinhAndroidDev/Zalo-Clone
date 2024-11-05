@@ -47,6 +47,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
     private var scrollPosition = 0
+    private var listMessages: ArrayList<Message>? = null
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -201,9 +202,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
-                            chatAdapter?.setMessage(msg)
-                            binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-                            updateSeenMessage(msg)
+                            val time = listMessages?.get(listMessages?.lastIndex ?: 0)?.time
+                            if(time != msg[msg.lastIndex].time) {
+                                chatAdapter?.setMessage(msg)
+                                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+                                updateSeenMessage(msg)
+                                listMessages = msg
+                            }
                         }
                     }
                 }
