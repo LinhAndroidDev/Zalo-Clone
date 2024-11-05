@@ -201,7 +201,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
-                            conversation?.let {  viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
                             chatAdapter?.setMessage(msg)
                             binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
                             updateSeenMessage(msg)
@@ -231,6 +230,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                     chatAdapter?.seen = false
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
                 }
+                conversation?.let {  viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
             }
         )
     }
