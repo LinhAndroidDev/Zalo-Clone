@@ -99,18 +99,26 @@ class ChatAdapter(
 
     private fun checkShowSeenMessage(holder: SenderViewHolder, position: Int) {
         if (position == messages.lastIndex) {
-            FireBaseInstance.getInfoUser(friendId) { user ->
-                holder.itemView.context.loadImg(
-                    user.avatar.toString(),
-                    holder.v.avtSeen
-                )
+            if(seen) {
+                FireBaseInstance.getInfoUser(friendId) { user ->
+                    holder.itemView.context.loadImg(
+                        user.avatar.toString(),
+                        holder.v.avtSeen
+                    )
+                }
+                holder.showSeen(true)
+            } else {
+                holder.showSeen(false)
             }
-            holder.v.avtSeen.isVisible = seen
-            holder.v.viewReceived.isVisible = !seen
         } else {
             holder.v.avtSeen.isVisible = false
             holder.v.viewReceived.isVisible = false
         }
+    }
+
+    private fun SenderViewHolder.showSeen(seen: Boolean) {
+        this.v.avtSeen.isVisible = seen
+        this.v.viewReceived.isVisible = !seen
     }
 
     override fun getItemViewType(position: Int): Int {

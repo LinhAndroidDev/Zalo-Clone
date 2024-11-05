@@ -223,6 +223,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             friendId = conversation?.friendId ?: "",
             userId = userId,
             success = { cvt ->
+                Log.e("bindData", cvt.toString())
                 if(cvt.seen == "1" && msg[msg.lastIndex].sender == userId) {
                     chatAdapter?.seen = true
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
