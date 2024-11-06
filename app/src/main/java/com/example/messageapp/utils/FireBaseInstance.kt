@@ -122,81 +122,79 @@ object FireBaseInstance {
             .collection(PATH_CHAT)
             .document(time)
             .set(message)
-            .addOnCompleteListener {
 
-                getConversation(conversation.friendId, userId) { cvt ->
+        getConversation(conversation.friendId, userId) { cvt ->
 
-                    //Get token of receiver to send notification message to receiver
-                    getTokenMessage(
-                        conversation.friendId,
-                        success = { token ->
-                            val notificationNotification = NotificationData(
-                                token = token,
-                                data = Data(
-                                    title = nameSender,
-                                    body = message.message,
-                                    senderId = userId
-                                )
-                            )
-
-                            ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
-                                ?.enqueue(object : Callback<MessageRequest> {
-                                    override fun onFailure(
-                                        call: Call<MessageRequest>,
-                                        t: Throwable
-                                    ) {
-                                        Log.e("Send Message", "Send Fail")
-                                    }
-
-                                    override fun onResponse(
-                                        call: Call<MessageRequest>,
-                                        response: Response<MessageRequest>
-                                    ) {
-                                        Log.e("Send Message", "Send Successful")
-                                    }
-                                })
-                        },
-                        failure = {
-                            Log.e("Send Message", "Token retrieval failed")
-                        }
+            //Get token of receiver to send notification message to receiver
+            getTokenMessage(
+                conversation.friendId,
+                success = { token ->
+                    val notificationNotification = NotificationData(
+                        token = token,
+                        data = Data(
+                            title = nameSender,
+                            body = message.message,
+                            senderId = userId
+                        )
                     )
 
-                    //Create Data Conversation For Sender
-                    val conversationData = Conversation(
-                        friendId = conversation.friendId,
-                        friendImage = conversation.friendImage,
-                        message = message.message,
-                        name = conversation.name,
-                        person = "Bạn",
-                        sender = userId,
-                        seen = "0",
-                        time = time,
-                    )
+                    ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
+                        ?.enqueue(object : Callback<MessageRequest> {
+                            override fun onFailure(
+                                call: Call<MessageRequest>,
+                                t: Throwable
+                            ) {
+                                Log.e("Send Message", "Send Fail")
+                            }
 
-                    //Create Conversation For Sender
-                    db.collection("Conversation${userId}")
-                        .document(conversation.friendId)
-                        .set(conversationData)
-
-                    //Create Data Conversation For Receiver
-                    val num = cvt.numberUnSeen + 1
-                    val conversationFriend = Conversation(
-                        friendId = userId,
-                        message = message.message,
-                        name = nameSender,
-                        person = nameSender,
-                        sender = userId,
-                        time = time,
-                        seen = "0",
-                        numberUnSeen = num
-                    )
-
-                    //Create Conversation For Receiver
-                    db.collection("Conversation${conversation.friendId}")
-                        .document(userId)
-                        .set(conversationFriend)
+                            override fun onResponse(
+                                call: Call<MessageRequest>,
+                                response: Response<MessageRequest>
+                            ) {
+                                Log.e("Send Message", "Send Successful")
+                            }
+                        })
+                },
+                failure = {
+                    Log.e("Send Message", "Token retrieval failed")
                 }
-            }
+            )
+
+            //Create Data Conversation For Sender
+            val conversationData = Conversation(
+                friendId = conversation.friendId,
+                friendImage = conversation.friendImage,
+                message = message.message,
+                name = conversation.name,
+                person = "Bạn",
+                sender = userId,
+                seen = "0",
+                time = time,
+            )
+
+            //Create Conversation For Sender
+            db.collection("Conversation${userId}")
+                .document(conversation.friendId)
+                .set(conversationData)
+
+            //Create Data Conversation For Receiver
+            val num = cvt.numberUnSeen + 1
+            val conversationFriend = Conversation(
+                friendId = userId,
+                message = message.message,
+                name = nameSender,
+                person = nameSender,
+                sender = userId,
+                time = time,
+                seen = "0",
+                numberUnSeen = num
+            )
+
+            //Create Conversation For Receiver
+            db.collection("Conversation${conversation.friendId}")
+                .document(userId)
+                .set(conversationFriend)
+        }
         success.invoke()
     }
 
