@@ -290,6 +290,9 @@ object FireBaseInstance {
             .update("avatar", avatar)
     }
 
+    /**
+     * This function is used to get conversation from the FireStore database
+     */
     fun getConversation(friendId: String, userId: String, success: (Conversation) -> Unit) {
         db.collection("Conversation${friendId}")
             .document(userId)
@@ -300,6 +303,9 @@ object FireBaseInstance {
             }
     }
 
+    /**
+     * This function is used to get conversation from the FireStore database with Realtime
+     */
     fun getConversationRlt(friendId: String, userId: String, success: (Conversation) -> Unit) {
         db.collection("Conversation${friendId}")
             .document(userId)
@@ -311,6 +317,9 @@ object FireBaseInstance {
             }
     }
 
+    /**
+     * This function is used to update seen message for conversation user and friend
+     */
     fun seenMessage(userId: String, friendId: String) {
         db.collection("Conversation${friendId}")
             .document(userId)
