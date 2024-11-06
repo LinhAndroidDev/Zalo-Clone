@@ -46,7 +46,7 @@ class PhoneBookFragment : BaseFragment<FragmentPhoneBookBinding, PhoneBookFragme
         val groupPhoneBooks = arrayListOf<GroupPhoneBook>()
         var indexGroupHeader = 1
         capitalLetters.forEach { letter ->
-            val namePhoneBooks = names.filter { name -> letter == name[0].toString() }
+            val namePhoneBooks = names.filter { name -> name.startsWith(letter, true) }
             if(namePhoneBooks.isNotEmpty()) {
                 val phoneBooks = arrayListOf<PhoneBook>()
                 phoneBooks.add(PhoneBook(letter, "", TypePhoneBook.HEADER_GROUP_PHONE_BOOK, indexGroupHeader))

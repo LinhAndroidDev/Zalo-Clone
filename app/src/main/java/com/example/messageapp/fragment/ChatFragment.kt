@@ -47,7 +47,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
     private var scrollPosition = 0
-    private var listMessages: ArrayList<Message>? = null
+    private var isDestroyFragment: Boolean = false
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -202,12 +202,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
-                            val time = listMessages?.get(listMessages?.lastIndex ?: 0)?.time
-                            if(time != msg[msg.lastIndex].time) {
+                            if (!isDestroyFragment) {
                                 chatAdapter?.setMessage(msg)
-                                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+                                binding?.rcvChat?.scrollToPosition(
+                                    chatAdapter?.itemCount?.minus(1) ?: 0
+                                )
                                 updateSeenMessage(msg)
-                                listMessages = msg
                             }
                         }
                     }
@@ -227,7 +227,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             friendId = conversation?.friendId ?: "",
             userId = userId,
             success = { cvt ->
-                Log.e("bindData", cvt.toString())
                 if(cvt.seen == "1" && msg[msg.lastIndex].sender == userId) {
                     chatAdapter?.seen = true
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
@@ -267,5 +266,10 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 REQUEST_CODE_MULTI_PICTURE
             )
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        isDestroyFragment = true
     }
 }
