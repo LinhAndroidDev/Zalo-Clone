@@ -1,5 +1,5 @@
 package com.example.messageapp.remote.request
 
-data class Notification(
+data class MessageRequest(
     val message: NotificationData? = null
 )

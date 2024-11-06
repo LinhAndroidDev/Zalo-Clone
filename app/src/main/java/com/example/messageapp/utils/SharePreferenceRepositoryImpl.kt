@@ -1,5 +1,9 @@
 package com.example.messageapp.utils
 
+/**
+ * Create by Nguyen Huu Linh in 2024/10/13
+ */
+
 import android.content.Context
 import com.example.messageapp.fragment.Language
 
@@ -32,11 +36,19 @@ class SharePreferenceRepositoryImpl(private val ctx: Context) : SharePreferenceR
         return prefs[SharePreferenceRepository.NAME_USER] ?: ""
     }
 
-    override fun saveAvatarUser(avatar: String) {
-        prefs[SharePreferenceRepository.AVATAR_USER] = avatar
+    override fun saveChannelId(channelId: Int) {
+        prefs[SharePreferenceRepository.CHANNEL_ID] = channelId
     }
 
-    override fun getAvatarUser(): String {
-        return prefs[SharePreferenceRepository.AVATAR_USER] ?: ""
+    override fun getChannelId(): Int {
+        return prefs[SharePreferenceRepository.CHANNEL_ID] ?: 0
+    }
+
+    override fun saveStatusLoggedIn(status: Boolean) {
+        prefs[SharePreferenceRepository.STATUS_LOGGED_IN] = status
+    }
+
+    override fun getStatusLoggedIn(): Boolean {
+        return prefs[SharePreferenceRepository.STATUS_LOGGED_IN] ?: false
     }
 }

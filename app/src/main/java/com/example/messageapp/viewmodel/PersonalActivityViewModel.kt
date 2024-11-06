@@ -41,8 +41,8 @@ class PersonalActivityViewModel @Inject constructor() : BaseViewModel() {
     }
 
     /** This function is used to update avatar of user */
-    private fun updateAvatarUser(avatar: String, keyAuth: String) =
+    private fun updateAvatarUser(avatar: String, userId: String) =
         viewModelScope.launch(Dispatchers.IO) {
-            FireBaseInstance.updateAvatarUser(avatar = avatar, keyAuth = keyAuth)
+            FireBaseInstance.updateAvatarUser(avatar = avatar, userId = userId)
         }
 }

@@ -36,10 +36,8 @@
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edtName"
-            android:textColor="@color/text_common"
             android:textSize="16sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/EditText.CommonApp"
             android:paddingVertical="12dp"
             android:hint="@string/full_name"
             android:inputType="textEmailAddress">
@@ -58,10 +56,8 @@
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edtEmail"
-            android:textColor="@color/text_common"
             android:textSize="16sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/EditText.CommonApp"
             android:paddingVertical="12dp"
             android:inputType="textEmailAddress"
             android:hint="@string/email">
@@ -82,10 +78,8 @@
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edtPassword"
-            android:textColor="@color/text_common"
             android:textSize="16sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/EditText.CommonApp"
             android:paddingVertical="12dp"
             android:hint="@string/password"
             android:inputType="textPassword">
@@ -106,10 +100,8 @@
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edtPasswordAgain"
-            android:textColor="@color/text_common"
             android:textSize="16sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/EditText.CommonApp"
             android:paddingVertical="12dp"
             android:hint="@string/enter_password_again"
             android:inputType="textPassword">

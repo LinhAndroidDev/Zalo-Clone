@@ -1,5 +1,9 @@
 package com.example.messageapp.fragment
 
+/**
+ * Created by Nguyen Huu Linh in 2024/10/01
+ */
+
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.ClipData
@@ -19,15 +23,18 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
-import com.example.messageapp.model.User
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +44,7 @@ import kotlinx.coroutines.launch
 class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_chat
 
-    private var friendData: User? = null
+    private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
     private var scrollPosition = 0
 
@@ -71,17 +78,20 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             }
         }
 
-        friendData = ChatFragmentArgs.fromBundle(requireArguments()).friend
-        friendData?.let {
-            chatAdapter = ChatAdapter(friendData?.keyAuth.toString())
+        conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
+        conversation?.let {
+            chatAdapter = ChatAdapter(conversation?.friendId ?: "")
             chatAdapter?.longClickItemSender = { data ->
                 showPopupOption(data.first, data.second)
             }
             chatAdapter?.longClickItemReceiver = { data ->
                 showPopupOption(data.first, data.second, false)
             }
+//            chatAdapter?.seenMessage = {
+//                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+//            }
             binding?.rcvChat?.adapter = chatAdapter
-            binding?.header?.setTitleChatView(friendData?.name ?: "")
+            binding?.header?.setTitleChatView(conversation?.name ?: "")
         }
         binding?.edtMessage?.doOnTextChanged { text, _, _, _ ->
             if (text?.isNotEmpty() == true) {
@@ -94,7 +104,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
     }
 
-    @SuppressLint("MissingInflatedId")
+    /**
+     * This function is used to show popup option for each message:
+     * + The position of the popup show depends on the coordinates of each message item.
+     * + When the position of the message item plus its height is greater than the height of the screen,
+     * the popup will show above the message item, otherwise it will show below.
+     * This is how to calculate so that the popup does not lose view when it is near the bottom of the screen.
+     */
+    @SuppressLint("MissingInflatedId", "InflateParams")
     private fun showPopupOption(anchor: View, message: Message, isItemSender: Boolean = true) {
         // Lấy LayoutInflater để inflate layout của PopupWindow
         val inflater = requireActivity().getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -168,14 +185,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 REQUEST_CODE_MULTI_PICTURE -> {
                     if (data.clipData != null) {
                         val count: Int = data.clipData!!.itemCount
-//                        if (count + uris.size > 5) {
-//                            show(getString(R.string.choose_a_maximum_of_5_photos))
-//                        } else {
-//                            for (i in 0 until count) {
-//                                uris.add(data.clipData!!.getItemAt(i).uri)
-//                            }
-//                            imageCameraAdapter.notifyDataSetChanged()
-//                        }
                     }
                 }
             }
@@ -185,18 +194,46 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     override fun bindData() {
         super.bindData()
 
-        friendData?.let { friend ->
-            viewModel?.getMessage(friendId = friend.keyAuth.toString())
+        conversation?.let { cvt->
+            viewModel?.getMessage(friendId = cvt.friendId)
 
-            lifecycleScope.launch(Dispatchers.Main) {
-                viewModel?.messages?.collect { messages ->
-                    messages?.let {
-                        chatAdapter?.setMessage(it)
-                        binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel?.messages?.collect { messages ->
+                        messages?.let { msg ->
+                            chatAdapter?.setMessage(msg)
+                            binding?.rcvChat?.scrollToPosition(
+                                chatAdapter?.itemCount?.minus(1) ?: 0
+                            )
+                            updateSeenMessage(msg)
+                        }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * This function update seen message from friend of user:
+     * + Show avatar friend seen when item last message is from user
+     * and friend seen message
+     */
+    private fun updateSeenMessage(msg: ArrayList<Message>) {
+        val userId = viewModel?.shared?.getAuth() ?: ""
+        FireBaseInstance.getConversationRlt(
+            friendId = conversation?.friendId ?: "",
+            userId = userId,
+            success = { cvt ->
+                if(cvt.seen == "1" && msg[msg.lastIndex].sender == userId) {
+                    chatAdapter?.seen = true
+                    chatAdapter?.notifyItemChanged(msg.lastIndex)
+                } else {
+                    chatAdapter?.seen = false
+                    chatAdapter?.notifyItemChanged(msg.lastIndex)
+                }
+                conversation?.let {  viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
+            }
+        )
     }
 
     @SuppressLint("SetTextI18n")
@@ -204,13 +241,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         super.onClickView()
 
         binding?.btnSend?.setOnClickListener {
-            friendData?.let { friend ->
+            conversation?.let { cvt ->
                 val msg = binding?.edtMessage?.text.toString()
-                val receiver = friend.keyAuth.toString()
+                val receiver = cvt.friendId
                 val sender = viewModel?.shared?.getAuth().toString()
                 val time = DateUtils.getTimeCurrent()
                 val message = Message(msg, receiver, sender, time)
-                viewModel?.sendMessage(message = message, time = time, friend = friend)
+                viewModel?.sendMessage(message = message, time = time, conversation = cvt)
                 binding?.edtMessage?.setText("")
             }
         }

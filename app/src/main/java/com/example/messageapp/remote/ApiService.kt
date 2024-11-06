@@ -1,6 +1,6 @@
 package com.example.messageapp.remote
 
-import com.example.messageapp.remote.request.Notification
+import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.utils.AccessToken
 import retrofit2.Call
 import retrofit2.http.Body
@@ -15,7 +15,7 @@ interface ApiService {
         "Accept: application/json"
         )
     fun sendMessage(
-        @Body message: Notification,
+        @Body message: MessageRequest,
         @Header("Authorization") accessToken: String = "Bearer ${AccessToken.getAccessToken()}"
-    ): Call<Notification>
+    ): Call<MessageRequest>
 }

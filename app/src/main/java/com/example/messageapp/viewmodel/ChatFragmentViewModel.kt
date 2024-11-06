@@ -2,8 +2,8 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
-import com.example.messageapp.model.User
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,21 +20,29 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     private val _messages: MutableStateFlow<ArrayList<Message>?> = MutableStateFlow(null)
     val messages = _messages.asStateFlow()
 
+    /**
+     * This function used to send message to FireStore
+     * @param message data message
+     * @param time time message sent
+     * @param conversation data friend
+     */
     fun sendMessage(
         message: Message,
         time: String,
-        friend: User,
+        conversation: Conversation,
     ) = viewModelScope.launch {
         FireBaseInstance.sendMessage(
             message = message,
-            keyAuth = shared.getAuth(),
+            userId = shared.getAuth(),
             time = time,
-            friend = friend,
+            conversation = conversation,
             nameSender = shared.getNameUser(),
-            avatarSender = shared.getAvatarUser()
-        )
+        ) {}
     }
 
+    /** This function used to get message from FireStore
+     * @param friendId key auth of friend
+     */
     fun getMessage(friendId: String) = viewModelScope.launch {
         val idRoom = listOf(friendId, shared.getAuth()).sorted()
         FireBaseInstance.getMessage(idRoom.toString(),
@@ -61,5 +69,24 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     private fun isOfThisConversation(message: Message, friendId: String): Boolean {
         return message.sender == shared.getAuth() && message.receiver == friendId
                 || message.receiver == shared.getAuth() && message.sender == friendId
+    }
+
+    /**
+     * This function used to update seen message for conversation friend
+     * @param msg data message
+     * @param conversation data friend
+     */
+    fun updateSeenMessage(msg: Message ,conversation: Conversation) = viewModelScope.launch {
+        if (msg.sender != shared.getAuth()) {
+            FireBaseInstance.getConversation(
+                friendId = shared.getAuth(),
+                userId = conversation.friendId,
+                success = { cvt ->
+                    if (cvt.seen == "0" && cvt.sender == conversation.friendId) {
+                        FireBaseInstance.seenMessage(shared.getAuth(), friendId = conversation.friendId)
+                    }
+                }
+            )
+        }
     }
 }

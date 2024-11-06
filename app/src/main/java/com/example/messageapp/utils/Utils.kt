@@ -12,10 +12,13 @@ import android.provider.MediaStore
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.navOptions
+import com.bumptech.glide.Glide
+import com.example.messageapp.R
+import de.hdodenhof.circleimageview.CircleImageView
 import java.io.ByteArrayOutputStream
 
 fun EditText.showKeyboard() {
@@ -69,4 +72,23 @@ fun Context.compressImage(uri: Uri): ByteArray {
     val outputStream = ByteArrayOutputStream()
     bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
     return outputStream.toByteArray()
+}
+
+fun Fragment.backRemoveFragmentCurrent(toId: Int) {
+    val navController = findNavController()
+    val currentDestination = navController.currentDestination
+    currentDestination?.let { cDes ->
+        findNavController().navigate(toId,null,
+            navOptions {
+                popUpTo(cDes.id) { inclusive = true }
+            })
+    }
+}
+
+fun Context.loadImg(url: String, cir: CircleImageView) {
+    Glide.with(this)
+        .load(url)
+        .placeholder(R.mipmap.ic_launcher)
+        .error(R.mipmap.ic_launcher)
+        .into(cir)
 }

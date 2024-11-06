@@ -6,14 +6,10 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.view.isVisible
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.findNavController
-import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.databinding.CustomHeaderViewBinding
-import com.example.messageapp.fragment.ChatFragment
-import com.example.messageapp.fragment.DiscoverFragment
+import com.example.messageapp.model.ActionBottomBar
 import com.example.messageapp.utils.getFragmentActivity
 import com.example.messageapp.utils.showKeyboard
 

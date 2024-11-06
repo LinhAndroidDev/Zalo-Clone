@@ -5,6 +5,7 @@ import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,7 +54,7 @@ class LoginFragmentViewModel @Inject constructor() : BaseViewModel() {
                 val data = document.data as Map<*, *>
                 shared.saveAuth(document.id)
                 shared.saveNameUser(data["name"].toString())
-                shared.saveAvatarUser(data["avatar"].toString())
+                shared.saveStatusLoggedIn(true)
                 _loginSuccessful.value = true
             }
         }

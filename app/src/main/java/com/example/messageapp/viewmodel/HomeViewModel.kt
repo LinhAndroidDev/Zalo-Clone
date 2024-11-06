@@ -1,6 +1,5 @@
 package com.example.messageapp.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
@@ -8,7 +7,6 @@ import com.example.messageapp.model.User
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.google.firebase.firestore.QuerySnapshot
-import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,9 +65,7 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
                 val conversationData = arrayListOf<Conversation>()
                 result?.forEach { document ->
                     val conversation = document.toObject(Conversation::class.java)
-                    if (conversation.sender == shared.getAuth()) {
-                        conversationData.add(conversation)
-                    }
+                    conversationData.add(conversation)
                 }
                 _conversation.value = conversationData
             },
@@ -79,14 +75,9 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun generateToken() {
-        val firebaseInstance = FirebaseInstallations.getInstance()
-        firebaseInstance.id.addOnSuccessListener {
-            FirebaseMessaging.getInstance().token.addOnSuccessListener { gettocken ->
-                val hasHamp = hashMapOf<String, String>("token" to gettocken)
-                FireBaseInstance.saveTokenMessage(shared.getAuth(), hasHamp)
-            }
-        }.addOnFailureListener {
-            Log.e("GenerateToken", "Fail")
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { gettocken ->
+            val hasHamp = hashMapOf<String, String>("token" to gettocken)
+            FireBaseInstance.saveTokenMessage(shared.getAuth(), hasHamp)
         }
     }
 }
