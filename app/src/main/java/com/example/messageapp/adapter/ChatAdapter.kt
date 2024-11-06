@@ -7,32 +7,31 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.messageapp.R
 import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.databinding.ItemChatSenderBinding
 import com.example.messageapp.model.Message
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.loadImg
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
 
 class ChatAdapter(
-    private val friendId: String
+    private val friendId: String,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
     private var messages = arrayListOf<Message>()
     var longClickItemSender: ((Pair<View, Message>) -> Unit)? = null
     var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
+    var seen: Boolean = false
 
     @SuppressLint("NotifyDataSetChanged")
     fun setMessage(list: ArrayList<Message>) {
-        val startIndex = messages.size
+        seen = false
         messages.clear()
         messages.addAll(list)
         notifyDataSetChanged()
-//        notifyItemRangeChanged(startIndex, list.size)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -63,6 +62,7 @@ class ChatAdapter(
 
     override fun getItemCount(): Int = messages.size
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val message = messages[position]
         when (holder.itemViewType) {
@@ -75,6 +75,7 @@ class ChatAdapter(
                     longClickItemSender?.invoke(it to message)
                     true
                 }
+                checkShowSeenMessage(holder, position)
             }
 
             else -> {
@@ -83,10 +84,10 @@ class ChatAdapter(
                 holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
                 holder.v.viewBottom.isVisible = position == messages.size - 1
                 FireBaseInstance.getInfoUser(friendId) { user ->
-                    Glide.with(holder.v.root)
-                        .load(user.avatar)
-                        .error(R.mipmap.ic_launcher)
-                        .into(holder.v.avatarReceiver)
+                    holder.itemView.context.loadImg(
+                        user.avatar.toString(),
+                        holder.v.avatarReceiver
+                    )
                 }
                 holder.v.layoutMessage.setOnLongClickListener {
                     longClickItemReceiver?.invoke(it to message)
@@ -94,6 +95,35 @@ class ChatAdapter(
                 }
             }
         }
+    }
+
+    /**
+     * This function used to check if the message is seen or not
+     * @param holder view holder of sender
+     * @param position position of message
+     */
+    private fun checkShowSeenMessage(holder: SenderViewHolder, position: Int) {
+        if (position == messages.lastIndex) {
+            if(seen) {
+                FireBaseInstance.getInfoUser(friendId) { user ->
+                    holder.itemView.context.loadImg(
+                        user.avatar.toString(),
+                        holder.v.avtSeen
+                    )
+                }
+                holder.showSeen(true)
+            } else {
+                holder.showSeen(false)
+            }
+        } else {
+            holder.v.avtSeen.isVisible = false
+            holder.v.viewReceived.isVisible = false
+        }
+    }
+
+    private fun SenderViewHolder.showSeen(seen: Boolean) {
+        this.v.avtSeen.isVisible = seen
+        this.v.viewReceived.isVisible = !seen
     }
 
     override fun getItemViewType(position: Int): Int {

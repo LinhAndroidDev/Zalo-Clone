@@ -23,7 +23,9 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.base.BaseFragment
@@ -32,6 +34,7 @@ import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -77,13 +80,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
-            chatAdapter = ChatAdapter(conversation?.friendId.toString())
+            chatAdapter = ChatAdapter(conversation?.friendId ?: "")
             chatAdapter?.longClickItemSender = { data ->
                 showPopupOption(data.first, data.second)
             }
             chatAdapter?.longClickItemReceiver = { data ->
                 showPopupOption(data.first, data.second, false)
             }
+//            chatAdapter?.seenMessage = {
+//                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+//            }
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
         }
@@ -105,7 +111,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
      * the popup will show above the message item, otherwise it will show below.
      * This is how to calculate so that the popup does not lose view when it is near the bottom of the screen.
      */
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint("MissingInflatedId", "InflateParams")
     private fun showPopupOption(anchor: View, message: Message, isItemSender: Boolean = true) {
         // Lấy LayoutInflater để inflate layout của PopupWindow
         val inflater = requireActivity().getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -191,15 +197,43 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         conversation?.let { cvt->
             viewModel?.getMessage(friendId = cvt.friendId)
 
-            lifecycleScope.launch(Dispatchers.Main) {
-                viewModel?.messages?.collect { messages ->
-                    messages?.let {
-                        chatAdapter?.setMessage(it)
-                        binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel?.messages?.collect { messages ->
+                        messages?.let { msg ->
+                            chatAdapter?.setMessage(msg)
+                            binding?.rcvChat?.scrollToPosition(
+                                chatAdapter?.itemCount?.minus(1) ?: 0
+                            )
+                            updateSeenMessage(msg)
+                        }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * This function update seen message from friend of user:
+     * + Show avatar friend seen when item last message is from user
+     * and friend seen message
+     */
+    private fun updateSeenMessage(msg: ArrayList<Message>) {
+        val userId = viewModel?.shared?.getAuth() ?: ""
+        FireBaseInstance.getConversationRlt(
+            friendId = conversation?.friendId ?: "",
+            userId = userId,
+            success = { cvt ->
+                if(cvt.seen == "1" && msg[msg.lastIndex].sender == userId) {
+                    chatAdapter?.seen = true
+                    chatAdapter?.notifyItemChanged(msg.lastIndex)
+                } else {
+                    chatAdapter?.seen = false
+                    chatAdapter?.notifyItemChanged(msg.lastIndex)
+                }
+                conversation?.let {  viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
+            }
+        )
     }
 
     @SuppressLint("SetTextI18n")

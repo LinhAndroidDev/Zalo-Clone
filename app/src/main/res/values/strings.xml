@@ -84,4 +84,5 @@
     <string name="take_a_new_photo">Chụp ảnh mới</string>
     <string name="select_photo_on_device">Chọn ảnh trên máy</string>
     <string name="replied_to_message_of">Đã trả lời tin nhắn của %s</string>
+    <string name="received">Đã nhận</string>
 </resources>

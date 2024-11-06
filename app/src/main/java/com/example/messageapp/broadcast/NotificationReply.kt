@@ -35,11 +35,11 @@ class NotificationReply : BroadcastReceiver() {
                 time = time
             )
 
-            FireBaseInstance.getInfoUser(keyAuth = receiverId.toString()) { user ->
+            FireBaseInstance.getInfoUser(userId = receiverId.toString()) { user ->
                 user.keyAuth = receiverId.toString()
                 FireBaseInstance.sendMessage(
                     message = message,
-                    keyAuth = userId,
+                    userId = userId,
                     time = time,
                     conversation = Conversation(user),
                     shared.getNameUser()

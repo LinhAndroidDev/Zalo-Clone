@@ -16,6 +16,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
+import com.bumptech.glide.Glide
+import com.example.messageapp.R
+import de.hdodenhof.circleimageview.CircleImageView
 import java.io.ByteArrayOutputStream
 
 fun EditText.showKeyboard() {
@@ -80,4 +83,12 @@ fun Fragment.backRemoveFragmentCurrent(toId: Int) {
                 popUpTo(cDes.id) { inclusive = true }
             })
     }
+}
+
+fun Context.loadImg(url: String, cir: CircleImageView) {
+    Glide.with(this)
+        .load(url)
+        .placeholder(R.mipmap.ic_launcher)
+        .error(R.mipmap.ic_launcher)
+        .into(cir)
 }

@@ -109,80 +109,92 @@ object FireBaseInstance {
      */
     fun sendMessage(
         message: Message,
-        keyAuth: String,
+        userId: String,
         time: String,
         conversation: Conversation,
         nameSender: String,
         success: () -> Unit
     ) {
-        val idRoom = listOf(conversation.friendId, keyAuth).sorted()
+        val idRoom = listOf(conversation.friendId, userId).sorted()
 
         db.collection(PATH_MESSAGE)
             .document(idRoom.toString())
             .collection(PATH_CHAT)
             .document(time)
             .set(message)
-            .addOnCompleteListener {
 
-                //Get token of receiver to send notification message to receiver
-                getTokenMessage(
-                    conversation.friendId,
-                    success = { token ->
-                        val notificationNotification = NotificationData(
-                            token = token,
-                            data = Data(title = nameSender, body = message.message, senderId = keyAuth)
+        getConversation(conversation.friendId, userId) { cvt ->
+
+            //Get token of receiver to send notification message to receiver
+            getTokenMessage(
+                conversation.friendId,
+                success = { token ->
+                    val notificationNotification = NotificationData(
+                        token = token,
+                        data = Data(
+                            title = nameSender,
+                            body = message.message,
+                            senderId = userId
                         )
+                    )
 
-                        ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
-                            ?.enqueue(object : Callback<MessageRequest> {
-                                override fun onFailure(call: Call<MessageRequest>, t: Throwable) {
-                                    Log.e("Send Message", "Send Fail")
-                                }
+                    ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
+                        ?.enqueue(object : Callback<MessageRequest> {
+                            override fun onFailure(
+                                call: Call<MessageRequest>,
+                                t: Throwable
+                            ) {
+                                Log.e("Send Message", "Send Fail")
+                            }
 
-                                override fun onResponse(
-                                    call: Call<MessageRequest>,
-                                    response: Response<MessageRequest>
-                                ) {
-                                    Log.e("Send Message", "Send Successful")
-                                }
+                            override fun onResponse(
+                                call: Call<MessageRequest>,
+                                response: Response<MessageRequest>
+                            ) {
+                                Log.e("Send Message", "Send Successful")
+                            }
+                        })
+                },
+                failure = {
+                    Log.e("Send Message", "Token retrieval failed")
+                }
+            )
 
-                            })
-                    },
-                    failure = {
+            //Create Data Conversation For Sender
+            val conversationData = Conversation(
+                friendId = conversation.friendId,
+                friendImage = conversation.friendImage,
+                message = message.message,
+                name = conversation.name,
+                person = "Bạn",
+                sender = userId,
+                seen = "0",
+                time = time,
+            )
 
-                    })
+            //Create Conversation For Sender
+            db.collection("Conversation${userId}")
+                .document(conversation.friendId)
+                .set(conversationData)
 
-                //Create Data Conversation For Sender
-                val conversationData = Conversation(
-                    friendId = conversation.friendId,
-                    friendImage = conversation.friendImage,
-                    message = message.message,
-                    name = conversation.name,
-                    person = "Bạn",
-                    sender = keyAuth,
-                    time = time
-                )
+            //Create Data Conversation For Receiver
+            val num = cvt.numberUnSeen + 1
+            val conversationFriend = Conversation(
+                friendId = userId,
+                message = message.message,
+                name = nameSender,
+                person = nameSender,
+                sender = userId,
+                time = time,
+                seen = "0",
+                numberUnSeen = num
+            )
 
-                //Create Conversation For Sender
-                db.collection("Conversation${keyAuth}")
-                    .document(conversation.friendId)
-                    .set(conversationData)
-
-                //Create Data Conversation For Receiver
-                val conversationFriend = Conversation(
-                    friendId = keyAuth,
-                    message = message.message,
-                    name = nameSender,
-                    person = nameSender,
-                    sender = keyAuth,
-                    time = time
-                )
-
-                //Create Conversation For Receiver
-                db.collection("Conversation${conversation.friendId}")
-                    .document(keyAuth)
-                    .set(conversationFriend)
-            }
+            //Create Conversation For Receiver
+            db.collection("Conversation${conversation.friendId}")
+                .document(userId)
+                .set(conversationFriend)
+        }
         success.invoke()
     }
 
@@ -190,11 +202,11 @@ object FireBaseInstance {
      * This function is used to get all conversations from the FireStore database
      */
     fun getListConversation(
-        keyAuth: String,
+        userId: String,
         success: (QuerySnapshot?) -> Unit,
         failure: (String) -> Unit
     ) {
-        db.collection("Conversation${keyAuth}")
+        db.collection("Conversation${userId}")
             .orderBy("time", Query.Direction.DESCENDING)
             .addSnapshotListener { value, error ->
                 if (error != null) {
@@ -208,8 +220,8 @@ object FireBaseInstance {
     /**
      * This function is used to save token of user to the FireStore database
      */
-    fun saveTokenMessage(keyAuth: String, data: HashMap<String, String>) {
-        db.collection(PATH_TOKEN).document(keyAuth).set(data).addOnSuccessListener {
+    fun saveTokenMessage(userId: String, data: HashMap<String, String>) {
+        db.collection(PATH_TOKEN).document(userId).set(data).addOnSuccessListener {
         }
     }
 
@@ -238,9 +250,9 @@ object FireBaseInstance {
     /**
      * This function is used to get information user from the FireStore database
      */
-    fun getInfoUser(keyAuth: String, success: (User) -> Unit) {
+    fun getInfoUser(userId: String, success: (User) -> Unit) {
         db.collection(PATH_USER)
-            .document(keyAuth)
+            .document(userId)
             .addSnapshotListener { value, error ->
                 if (error != null) {
                     Log.e("getInfoUser", error.message.toString())
@@ -272,9 +284,54 @@ object FireBaseInstance {
     /**
      * This function is used to update avatar of user to the FireStore database
      */
-    fun updateAvatarUser(avatar: String, keyAuth: String) {
+    fun updateAvatarUser(avatar: String, userId: String) {
         db.collection(PATH_USER)
-            .document(keyAuth)
+            .document(userId)
             .update("avatar", avatar)
+    }
+
+    /**
+     * This function is used to get conversation from the FireStore database
+     */
+    fun getConversation(friendId: String, userId: String, success: (Conversation) -> Unit) {
+        db.collection("Conversation${friendId}")
+            .document(userId)
+            .get()
+            .addOnSuccessListener { result ->
+                val conversation = result.toObject(Conversation::class.java)
+                conversation?.let { success.invoke(it) }
+            }
+    }
+
+    /**
+     * This function is used to get conversation from the FireStore database with Realtime
+     */
+    fun getConversationRlt(friendId: String, userId: String, success: (Conversation) -> Unit) {
+        db.collection("Conversation${friendId}")
+            .document(userId)
+            .addSnapshotListener { value, _ ->
+                if(value != null) {
+                    val conversation = value.toObject(Conversation::class.java)
+                    conversation?.let { success.invoke(it) }
+                }
+            }
+    }
+
+    /**
+     * This function is used to update seen message for conversation user and friend
+     */
+    fun seenMessage(userId: String, friendId: String) {
+        db.collection("Conversation${friendId}")
+            .document(userId)
+            .update(
+                "seen", "1",
+                "numberUnSeen", 0
+            )
+        db.collection("Conversation${userId}")
+            .document(friendId)
+            .update(
+                "seen", "1",
+                "numberUnSeen", 0
+            )
     }
 }
