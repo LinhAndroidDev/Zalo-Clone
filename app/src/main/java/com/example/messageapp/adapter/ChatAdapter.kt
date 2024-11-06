@@ -97,6 +97,11 @@ class ChatAdapter(
         }
     }
 
+    /**
+     * This function used to check if the message is seen or not
+     * @param holder view holder of sender
+     * @param position position of message
+     */
     private fun checkShowSeenMessage(holder: SenderViewHolder, position: Int) {
         if (position == messages.lastIndex) {
             if(seen) {

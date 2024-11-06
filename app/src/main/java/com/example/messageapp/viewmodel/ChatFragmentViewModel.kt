@@ -71,6 +71,11 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                 || message.receiver == shared.getAuth() && message.sender == friendId
     }
 
+    /**
+     * This function used to update seen message for conversation friend
+     * @param msg data message
+     * @param conversation data friend
+     */
     fun updateSeenMessage(msg: Message ,conversation: Conversation) = viewModelScope.launch {
         if (msg.sender != shared.getAuth()) {
             FireBaseInstance.getConversation(

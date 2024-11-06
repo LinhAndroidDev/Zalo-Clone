@@ -47,7 +47,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
     private var scrollPosition = 0
-    private var isDestroyFragment: Boolean = false
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -198,17 +197,15 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         conversation?.let { cvt->
             viewModel?.getMessage(friendId = cvt.friendId)
 
-            lifecycleScope.launch(Dispatchers.Main) {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
-                            if (!isDestroyFragment) {
-                                chatAdapter?.setMessage(msg)
-                                binding?.rcvChat?.scrollToPosition(
-                                    chatAdapter?.itemCount?.minus(1) ?: 0
-                                )
-                                updateSeenMessage(msg)
-                            }
+                            chatAdapter?.setMessage(msg)
+                            binding?.rcvChat?.scrollToPosition(
+                                chatAdapter?.itemCount?.minus(1) ?: 0
+                            )
+                            updateSeenMessage(msg)
                         }
                     }
                 }
@@ -266,10 +263,5 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 REQUEST_CODE_MULTI_PICTURE
             )
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        isDestroyFragment = true
     }
 }
