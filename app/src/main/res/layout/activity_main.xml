@@ -24,18 +24,23 @@
         android:visibility="gone">
 
         <View
-            android:background="@color/grey_1"
+            android:background="#C8C8C8"
             android:layout_width="match_parent"
-            android:layout_height="0.5dp"/>
+            android:layout_height="0.1dp"/>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="?attr/actionBarSize"
             app:menu="@menu/menu_bottom_nav"
             app:backgroundTint="@color/white"
             app:itemIconTint="@color/item_bottom_nav_color"
-            app:itemTextColor="@color/back_common_end"
+            app:itemTextColor="@color/blue2"
+            app:itemIconSize="25dp"
+            app:itemPaddingTop="12dp"
+            app:itemPaddingBottom="12dp"
+            app:itemActiveIndicatorStyle="@color/white"
+            app:itemRippleColor="@android:color/transparent"
             app:itemTextAppearanceActive="@style/BottomNavigationTextAppearance"
             app:itemTextAppearanceInactive="@style/BottomNavigationTextAppearance" />
     </LinearLayout>

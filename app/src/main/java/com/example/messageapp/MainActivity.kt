@@ -6,8 +6,6 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
-import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
@@ -15,16 +13,12 @@ import com.example.messageapp.databinding.ActivityMainBinding
 import com.example.messageapp.fragment.SplashFragment
 import com.example.messageapp.model.User
 import com.example.messageapp.service.ReceiverMessageService
-import com.example.messageapp.viewmodel.MainActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private var binding: ActivityMainBinding? = null
     private var isDoubleTab = false
-    private val viewModel by viewModels<MainActivityViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,23 +52,12 @@ class MainActivity : AppCompatActivity() {
                 else -> binding?.viewBottomNav?.visibility = View.GONE
             }
         }
-
-        getDataNumberUnSeen()
-    }
-
-    private fun getDataNumberUnSeen() {
-        viewModel.getNumberUnSeen()
-        lifecycleScope.launch(Dispatchers.Main) {
-            viewModel.numberMsgUnSeen.collect { num ->
-                setUpNumberMessage(num)
-            }
-        }
     }
 
     /**
      * This function used to set up number message unread for item message screen home
      */
-    private fun setUpNumberMessage(num: Int) {
+    internal fun setUpNumberMessage(num: Int) {
         val badge = binding?.bottomNav?.getOrCreateBadge(R.id.homeFragment)
         badge?.isVisible = num > 0
         badge?.text = if (num <= 5) num.toString() else "+5"

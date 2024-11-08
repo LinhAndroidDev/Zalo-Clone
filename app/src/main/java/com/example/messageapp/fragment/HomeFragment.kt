@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ListChatAdapter
 import com.example.messageapp.adapter.SuggestFriendAdapter
@@ -66,6 +67,13 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
                     suggestFriendAdapter.items = friends
                     suggestFriendAdapter.notifyDataSetChanged()
                 }
+            }
+        }
+
+        viewModel?.getNumberUnSeen()
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.numberMsgUnSeen?.collect { num ->
+                (activity as MainActivity).setUpNumberMessage(num)
             }
         }
     }

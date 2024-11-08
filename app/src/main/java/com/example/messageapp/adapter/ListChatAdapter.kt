@@ -10,7 +10,7 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.loadImg
 
-class ListChatAdapter() :
+class ListChatAdapter :
     BaseAdapter<Conversation, ItemListChatBinding>() {
 
     var onClickView: ((Conversation) -> Unit)? = null
