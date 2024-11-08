@@ -12,10 +12,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.Glide
 import com.example.messageapp.bottom_sheet.BottomSheetSelectImage
 import com.example.messageapp.databinding.ActivityPersonalBinding
 import com.example.messageapp.model.User
+import com.example.messageapp.utils.loadImg
 import com.example.messageapp.viewmodel.PersonalActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -80,10 +80,7 @@ class PersonalActivity : AppCompatActivity() {
 
     private fun handleDataUser(user: User) {
         binding.nameUser.text = user.name
-        Glide.with(this)
-            .load(user.avatar)
-            .error(R.mipmap.ic_launcher)
-            .into(binding.avatarUser)
+        loadImg(user.avatar.toString(), binding.avatarUser)
     }
 
     private fun initView() {
@@ -106,8 +103,6 @@ class PersonalActivity : AppCompatActivity() {
             data?.data?.let { uri ->
                 viewModel.uploadPhoto(this, uri)
             }
-//            val imageBitmap = data?.extras?.get("data") as Bitmap
-//            binding.avatarUser.setImageBitmap(imageBitmap)
         }
     }
 
