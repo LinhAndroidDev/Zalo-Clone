@@ -333,6 +333,9 @@ object FireBaseInstance {
             )
     }
 
+    /**
+     * This function is used to get number of unread messages from the FireStore database
+     */
     fun getNumberUnreadMessages(userId: String, number: (Int) -> Unit) {
         db.collection("Conversation${userId}")
             .addSnapshotListener { value, _ ->

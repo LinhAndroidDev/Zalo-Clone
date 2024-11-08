@@ -18,6 +18,9 @@ class MainActivityViewModel @Inject constructor() : BaseViewModel() {
     private var _numberMsgUnSeen: MutableStateFlow<Int> = MutableStateFlow(0)
     val numberMsgUnSeen = _numberMsgUnSeen.asStateFlow()
 
+    /**
+     * This function used to get number of message unread
+     */
     fun getNumberUnSeen() = viewModelScope.launch {
         FireBaseInstance.getNumberUnreadMessages(shared.getAuth()) {
             _numberMsgUnSeen.value = it

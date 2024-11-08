@@ -71,6 +71,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * This function used to set up number message unread for item message screen home
+     */
     private fun setUpNumberMessage(num: Int) {
         val badge = binding?.bottomNav?.getOrCreateBadge(R.id.homeFragment)
         badge?.isVisible = num > 0

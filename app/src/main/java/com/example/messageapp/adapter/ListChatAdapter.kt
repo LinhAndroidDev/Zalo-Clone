@@ -10,7 +10,8 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.loadImg
 
-class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, ItemListChatBinding>() {
+class ListChatAdapter() :
+    BaseAdapter<Conversation, ItemListChatBinding>() {
 
     var onClickView: ((Conversation) -> Unit)? = null
 
@@ -20,28 +21,9 @@ class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, It
     override fun onBindViewHolder(holder: BaseViewHolder<ItemListChatBinding>, position: Int) {
         val conversation = items[position]
         holder.v.tvNameFriend.text = conversation.name
-        if (conversation.numberUnSeen > 0) {
-            holder.v.tvMessage.setTextColor(holder.itemView.context.getColor(R.color.text_common))
-        } else {
-            holder.v.tvMessage.setTextColor(holder.itemView.context.getColor(R.color.grey_1))
-        }
         holder.v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         holder.v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
-        if (conversation.friendId == conversation.sender) {
-            holder.v.newMessage.isVisible = !conversation.isSeenMessage()
-            if (!conversation.isSeenMessage()) {
-                holder.showMultiMessage(conversation.numberUnSeen > 1)
-                holder.v.tvMultiMessage.text = conversation.numberUnSeen.toString()
-            } else {
-                holder.hideNewMessage()
-            }
-            holder.v.avtSeen.isVisible = false
-        } else {
-            if (conversation.sender == userId) {
-                holder.hideNewMessage()
-                holder.v.avtSeen.isVisible = conversation.isSeenMessage()
-            }
-        }
+        holder.handleWhenConversationIsChanged(conversation)
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
             holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avatarFriend)
             holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avtSeen)
@@ -51,11 +33,42 @@ class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, It
         }
     }
 
+    /**
+     * This function is used to handle the change in the conversation
+     */
+    private fun BaseViewHolder<ItemListChatBinding>.handleWhenConversationIsChanged(conversation: Conversation) {
+        if (conversation.numberUnSeen > 0) {
+            v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
+        } else {
+            v.tvMessage.setTextColor(itemView.context.getColor(R.color.grey_1))
+        }
+
+        if (conversation.isMessageFromFriend()) {
+            v.newMessage.isVisible = !conversation.isSeenMessage()
+            if (!conversation.isSeenMessage()) {
+                showMultiMessage(conversation.numberUnSeen > 1)
+                v.tvMultiMessage.text = conversation.numberUnSeen.toString()
+            } else {
+                hideNewMessage()
+            }
+            this.v.avtSeen.isVisible = false
+        } else {
+            hideNewMessage()
+            v.avtSeen.isVisible = conversation.isSeenMessage()
+        }
+    }
+
+    /**
+     * This function is used to show or hide text multiple unread messages
+     */
     private fun BaseViewHolder<ItemListChatBinding>.showMultiMessage(isShow: Boolean) {
         this.v.tvMultiMessage.isVisible = isShow
         this.v.singMessage.isVisible = !isShow
     }
 
+    /**
+     * This function is used to hide view new message
+     */
     private fun BaseViewHolder<ItemListChatBinding>.hideNewMessage() {
         this.v.tvMultiMessage.isVisible = false
         this.v.singMessage.isVisible = false
