@@ -224,7 +224,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             friendId = conversation?.friendId ?: "",
             userId = userId,
             success = { cvt ->
-                if(cvt.seen == "1" && msg[msg.lastIndex].sender == userId) {
+                if(cvt.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
                     chatAdapter?.seen = true
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
                 } else {

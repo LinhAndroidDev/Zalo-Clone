@@ -25,4 +25,8 @@ data class Conversation(
         time = "",
         seen = "0",
     )
+
+    fun isSeenMessage(): Boolean {
+        return seen == "1"
+    }
 }

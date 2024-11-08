@@ -28,12 +28,17 @@ class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, It
         holder.v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         holder.v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
         if (conversation.friendId == conversation.sender) {
-            holder.v.newMessage.isVisible = conversation.seen == "0"
+            holder.v.newMessage.isVisible = !conversation.isSeenMessage()
+            if (!conversation.isSeenMessage()) {
+                holder.showMultiMessage(conversation.numberUnSeen > 1)
+            } else {
+                holder.hideNewMessage()
+            }
             holder.v.avtSeen.isVisible = false
         } else {
             if (conversation.sender == userId) {
-                holder.v.newMessage.isVisible = false
-                holder.v.avtSeen.isVisible = conversation.seen == "1"
+                holder.hideNewMessage()
+                holder.v.avtSeen.isVisible = conversation.isSeenMessage()
             }
         }
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
@@ -43,5 +48,15 @@ class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, It
         holder.itemView.setOnClickListener {
             onClickView?.invoke(conversation)
         }
+    }
+
+    private fun BaseViewHolder<ItemListChatBinding>.showMultiMessage(isShow: Boolean) {
+        this.v.tvMultiMessage.isVisible = isShow
+        this.v.singMessage.isVisible = !isShow
+    }
+
+    private fun BaseViewHolder<ItemListChatBinding>.hideNewMessage() {
+        this.v.tvMultiMessage.isVisible = false
+        this.v.singMessage.isVisible = false
     }
 }
