@@ -12,5 +12,7 @@ class SettingFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     fun actionLogout() {
         shared.saveStatusLoggedIn(false)
+        shared.saveNameUser("")
+        shared.saveAuth("")
     }
 }

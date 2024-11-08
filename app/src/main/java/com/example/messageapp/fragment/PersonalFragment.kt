@@ -2,11 +2,11 @@ package com.example.messageapp.fragment
 
 import android.content.Intent
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.Glide
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentPersonalBinding
+import com.example.messageapp.utils.loadImg
 import com.example.messageapp.viewmodel.PersonalFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -23,12 +23,7 @@ class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentV
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.user?.collect { user ->
                 binding?.let { binding ->
-                    Glide.with(requireActivity())
-                        .load(user?.avatar.toString())
-                        .circleCrop()
-                        .error(R.mipmap.ic_launcher)
-                        .into(binding.avatarUser)
-
+                    activity?.loadImg(user?.avatar.toString(), binding.avatarUser)
                     binding.tvNameUser.text = user?.name.toString()
                 }
             }

@@ -23,6 +23,8 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
     val friends = _friends.asStateFlow()
     private val _conversation: MutableStateFlow<ArrayList<Conversation>?> = MutableStateFlow(null)
     val conversation = _conversation.asStateFlow()
+    private var _numberMsgUnSeen: MutableStateFlow<Int> = MutableStateFlow(0)
+    val numberMsgUnSeen = _numberMsgUnSeen.asStateFlow()
 
     fun getSuggestFriend() = viewModelScope.launch {
         showLoading(true)
@@ -78,6 +80,15 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
         FirebaseMessaging.getInstance().token.addOnSuccessListener { gettocken ->
             val hasHamp = hashMapOf<String, String>("token" to gettocken)
             FireBaseInstance.saveTokenMessage(shared.getAuth(), hasHamp)
+        }
+    }
+
+    /**
+     * This function used to get number of message unread
+     */
+    fun getNumberUnSeen() = viewModelScope.launch {
+        FireBaseInstance.getNumberUnreadMessages(shared.getAuth()) {
+            _numberMsgUnSeen.value = it
         }
     }
 }

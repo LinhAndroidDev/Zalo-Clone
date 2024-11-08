@@ -168,7 +168,6 @@ object FireBaseInstance {
                 name = conversation.name,
                 person = "Bạn",
                 sender = userId,
-                seen = "0",
                 time = time,
             )
 
@@ -186,7 +185,6 @@ object FireBaseInstance {
                 person = nameSender,
                 sender = userId,
                 time = time,
-                seen = "0",
                 numberUnSeen = num
             )
 
@@ -333,5 +331,22 @@ object FireBaseInstance {
                 "seen", "1",
                 "numberUnSeen", 0
             )
+    }
+
+    /**
+     * This function is used to get number of unread messages from the FireStore database
+     */
+    fun getNumberUnreadMessages(userId: String, number: (Int) -> Unit) {
+        db.collection("Conversation${userId}")
+            .addSnapshotListener { value, _ ->
+                if (value != null) {
+                    var num = 0
+                    value.forEach { document ->
+                        val conversation = document.toObject(Conversation::class.java)
+                        num += conversation.numberUnSeen
+                    }
+                    number.invoke(num)
+                }
+            }
     }
 }
