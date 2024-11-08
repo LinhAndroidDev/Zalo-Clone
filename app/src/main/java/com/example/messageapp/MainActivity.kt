@@ -74,9 +74,10 @@ class MainActivity : AppCompatActivity() {
     private fun setUpNumberMessage(num: Int) {
         val badge = binding?.bottomNav?.getOrCreateBadge(R.id.homeFragment)
         badge?.isVisible = num > 0
-        badge?.number = num
+        badge?.text = if (num <= 5) num.toString() else "+5"
         badge?.backgroundColor = getColor(R.color.red)
         badge?.badgeTextColor = getColor(R.color.text_white)
+        badge?.horizontalOffset = 10
     }
 
     internal fun getHeightBottomNav(): Int {
