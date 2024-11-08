@@ -31,6 +31,7 @@ class ListChatAdapter(private val userId: String) : BaseAdapter<Conversation, It
             holder.v.newMessage.isVisible = !conversation.isSeenMessage()
             if (!conversation.isSeenMessage()) {
                 holder.showMultiMessage(conversation.numberUnSeen > 1)
+                holder.v.tvMultiMessage.text = conversation.numberUnSeen.toString()
             } else {
                 holder.hideNewMessage()
             }
