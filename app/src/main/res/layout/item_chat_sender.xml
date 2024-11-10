@@ -1,91 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="5dp">
+        android:layout_marginTop="5dp"
+        android:orientation="vertical">
 
         <RelativeLayout
+            android:id="@+id/viewMessage"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:visibility="gone">
 
             <LinearLayout
                 android:id="@+id/layoutMessage"
-                android:layout_marginStart="100dp"
-                android:layout_marginEnd="15dp"
-                android:paddingHorizontal="15dp"
-                android:paddingVertical="7dp"
-                android:layout_alignParentEnd="true"
-                android:background="@drawable/bg_sender"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_alignParentEnd="true"
+                android:layout_marginStart="100dp"
+                android:layout_marginEnd="15dp"
+                android:background="@drawable/bg_sender"
+                android:orientation="vertical"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="7dp">
 
                 <TextView
                     android:id="@+id/tvSender"
-                    android:text="Toi anh co ve ko?"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_common"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:text="Toi anh co ve ko?"
+                    android:textColor="@color/text_common"
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/tvTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="11:09"
-                    android:textSize="10sp"
                     android:textColor="@color/text_sender"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="10sp" />
             </LinearLayout>
         </RelativeLayout>
 
-        <LinearLayout
-            android:id="@+id/viewReceived"
-            android:layout_marginTop="3dp"
-            android:layout_marginEnd="15dp"
-            android:layout_gravity="end"
+        <androidx.cardview.widget.CardView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginEnd="15dp"
+            app:cardBackgroundColor="@color/grey_bg"
+            app:cardCornerRadius="5dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:id="@+id/viewPhotos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone" />
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:id="@+id/viewReceived"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="3dp"
+            android:layout_marginEnd="15dp"
             android:background="@drawable/bg_corner_25_blue_light"
             android:backgroundTint="#BABABA"
             android:gravity="center_vertical"
-            android:paddingVertical="1dp"
             android:paddingHorizontal="5dp"
+            android:paddingVertical="1dp"
             android:visibility="gone">
 
             <ImageView
-                android:src="@drawable/ic_done"
                 android:layout_width="10dp"
                 android:layout_height="10dp"
+                android:src="@drawable/ic_done"
                 app:tint="@color/white" />
 
             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="2dp"
                 android:text="@string/received"
-                android:textSize="10sp"
                 android:textColor="@color/white"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:textSize="10sp" />
         </LinearLayout>
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/avtSeen"
-            android:src="@mipmap/ic_launcher"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:layout_gravity="end"
             android:layout_marginTop="3dp"
             android:layout_marginEnd="15dp"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            app:civ_border_width="1dp"
+            android:src="@mipmap/ic_launcher"
+            android:visibility="gone"
             app:civ_border_color="@color/white"
-            android:visibility="gone"/>
+            app:civ_border_width="1dp" />
 
         <View
             android:id="@+id/viewBottom"
             android:layout_width="match_parent"
             android:layout_height="30dp"
-            android:visibility="gone"/>
+            android:visibility="gone" />
+
     </LinearLayout>
 </layout>

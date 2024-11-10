@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.User
 import com.example.messageapp.remote.ApiClient
 import com.example.messageapp.remote.Token
@@ -16,11 +17,19 @@ import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.util.HashMap
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 object FireBaseInstance {
     private val db by lazy { Firebase.firestore }
@@ -113,7 +122,8 @@ object FireBaseInstance {
         time: String,
         conversation: Conversation,
         nameSender: String,
-        success: () -> Unit
+        type: TypeMessage = TypeMessage.MESSAGE,
+        success: () -> Unit,
     ) {
         val idRoom = listOf(conversation.friendId, userId).sorted()
 
@@ -133,7 +143,19 @@ object FireBaseInstance {
                         token = token,
                         data = Data(
                             title = nameSender,
-                            body = message.message,
+                            body = when (type) {
+                                TypeMessage.MESSAGE -> {
+                                    message.message
+                                }
+
+                                TypeMessage.PHOTOS -> {
+                                    "$nameSender đã gửi ảnh cho bạn"
+                                }
+
+                                TypeMessage.SINGLE_PHOTO -> {
+                                    "$nameSender đã gửi 1 ảnh cho bạn"
+                                }
+                            },
                             senderId = userId
                         )
                     )
@@ -164,7 +186,19 @@ object FireBaseInstance {
             val conversationData = Conversation(
                 friendId = conversation.friendId,
                 friendImage = conversation.friendImage,
-                message = message.message,
+                message = when (type) {
+                    TypeMessage.MESSAGE -> {
+                        message.message
+                    }
+
+                    TypeMessage.PHOTOS -> {
+                        "Bạn đã gửi ảnh cho ${conversation.name}"
+                    }
+
+                    TypeMessage.SINGLE_PHOTO -> {
+                        "Bạn đã gửi 1 ảnh cho ${conversation.name}"
+                    }
+                },
                 name = conversation.name,
                 person = "Bạn",
                 sender = userId,
@@ -180,7 +214,7 @@ object FireBaseInstance {
             val num = cvt.numberUnSeen + 1
             val conversationFriend = Conversation(
                 friendId = userId,
-                message = message.message,
+                message = if (type == TypeMessage.MESSAGE) message.message else "$nameSender đã gửi ảnh cho bạn",
                 name = nameSender,
                 person = nameSender,
                 sender = userId,
@@ -348,5 +382,45 @@ object FireBaseInstance {
                     number.invoke(num)
                 }
             }
+    }
+
+    fun uploadListPhoto(
+        context: Context,
+        uris: ArrayList<Uri>,
+        friendId: String,
+        userId: String,
+        process: (Pair<Int, Double>) -> Unit,
+        success: (ArrayList<String>) -> Unit
+    ) = CoroutineScope(Dispatchers.IO).launch {
+            val idRoom = listOf(friendId, userId).sorted()
+            val photos = arrayListOf<String>()
+            val deferredList = uris.map { uri ->
+                async {
+                    val photoUrl = uploadPhoto(context, uri, idRoom)
+                    photoUrl?.let { photos.add(it) }
+                }
+            }
+            deferredList.awaitAll()
+            success.invoke(photos)
+        }
+
+    private suspend fun uploadPhoto(context: Context, uri: Uri, idRoom: List<String>): String? {
+        return suspendCoroutine { continuation ->
+            val storageRef = storage.child("photo")
+                .child(idRoom.toString())
+                .child(UUID.randomUUID().toString())
+
+            storageRef.putBytes(context.compressImage(uri))
+                .addOnSuccessListener { taskSnapshot ->
+                    taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
+                        continuation.resume(uri.toString())  // Trả về URL của ảnh
+                    }.addOnFailureListener {
+                        continuation.resumeWithException(it)  // Đảm bảo xử lý lỗi
+                    }
+                }
+                .addOnFailureListener {
+                    continuation.resumeWithException(it)  // Đảm bảo xử lý lỗi
+                }
+        }
     }
 }

@@ -1,24 +1,36 @@
 package com.example.messageapp.adapter
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewGroup.MarginLayoutParams
+import android.widget.ImageView
+import android.widget.LinearLayout
+import androidx.appcompat.app.ActionBar.LayoutParams
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.messageapp.R
 import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.databinding.ItemChatSenderBinding
+import com.example.messageapp.helper.screenHeight
+import com.example.messageapp.helper.screenWidth
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.loadImg
+import kotlin.math.ceil
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
 
 class ChatAdapter(
+    private val context: Context,
     private val friendId: String,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
@@ -68,31 +80,77 @@ class ChatAdapter(
         when (holder.itemViewType) {
             VIEW_SENDER -> {
                 holder as SenderViewHolder
-                holder.v.tvSender.text = message.message
-                holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
-                holder.v.viewBottom.isVisible = position == messages.size - 1
-                holder.v.layoutMessage.setOnLongClickListener {
-                    longClickItemSender?.invoke(it to message)
-                    true
+                when (TypeMessage.of(message.type)) {
+                    TypeMessage.MESSAGE -> {
+                        holder.showViewMessage(true)
+                        holder.v.tvSender.text = message.message
+                        holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
+                        holder.v.layoutMessage.setOnLongClickListener {
+                            longClickItemSender?.invoke(it to message)
+                            true
+                        }
+                    }
+
+                    TypeMessage.PHOTOS -> {
+                        holder.showViewMessage(false)
+                        holder.v.viewMessage.isVisible = false
+                        holder.v.viewPhotos.isVisible = true
+                        drawViewPhoto(holder.v.viewPhotos, message.photos)
+                    }
+
+                    TypeMessage.SINGLE_PHOTO -> {
+                        holder.showViewMessage(false)
+                        holder.v.viewMessage.isVisible = false
+                        holder.v.viewPhotos.isVisible = true
+
+                        val photo = message.singlePhoto[0]
+                        val width = message.singlePhoto[1].toInt()
+                        val height = message.singlePhoto[2].toInt()
+                        loadSinglePhoto(holder.v.viewPhotos, photo, width, height)
+                    }
                 }
                 checkShowSeenMessage(holder, position)
+                holder.v.viewBottom.isVisible = position == messages.size - 1
             }
 
             else -> {
                 holder as ReceiverViewHolder
-                holder.v.tvReceiver.text = message.message
-                holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
-                holder.v.viewBottom.isVisible = position == messages.size - 1
                 FireBaseInstance.getInfoUser(friendId) { user ->
-                    holder.itemView.context.loadImg(
+                    context.loadImg(
                         user.avatar.toString(),
                         holder.v.avatarReceiver
                     )
                 }
-                holder.v.layoutMessage.setOnLongClickListener {
-                    longClickItemReceiver?.invoke(it to message)
-                    true
+                when (TypeMessage.of(message.type)) {
+                    TypeMessage.MESSAGE -> {
+                        holder.showViewMessage(true)
+                        holder.v.tvReceiver.text = message.message
+                        holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
+                        holder.v.layoutMessage.setOnLongClickListener {
+                            longClickItemReceiver?.invoke(it to message)
+                            true
+                        }
+                    }
+
+                    TypeMessage.PHOTOS -> {
+                        holder.showViewMessage(false)
+                        holder.v.viewMessage.isVisible = false
+                        holder.v.viewPhotos.isVisible = true
+                        drawViewPhoto(holder.v.viewPhotos, message.photos)
+                    }
+
+                    TypeMessage.SINGLE_PHOTO -> {
+                        holder.showViewMessage(false)
+                        holder.v.viewMessage.isVisible = false
+                        holder.v.viewPhotos.isVisible = true
+
+                        val photo = message.singlePhoto[0]
+                        val width = message.singlePhoto[1].toInt()
+                        val height = message.singlePhoto[2].toInt()
+                        loadSinglePhoto(holder.v.viewPhotos, photo, width, height)
+                    }
                 }
+                holder.v.viewBottom.isVisible = position == messages.size - 1
             }
         }
     }
@@ -104,9 +162,9 @@ class ChatAdapter(
      */
     private fun checkShowSeenMessage(holder: SenderViewHolder, position: Int) {
         if (position == messages.lastIndex) {
-            if(seen) {
+            if (seen) {
                 FireBaseInstance.getInfoUser(friendId) { user ->
-                    holder.itemView.context.loadImg(
+                    context.loadImg(
                         user.avatar.toString(),
                         holder.v.avtSeen
                     )
@@ -121,16 +179,73 @@ class ChatAdapter(
         }
     }
 
-    private fun SenderViewHolder.showSeen(seen: Boolean) {
-        this.v.avtSeen.isVisible = seen
-        this.v.viewReceived.isVisible = !seen
+    private fun loadSinglePhoto(viewPhoto: LinearLayout, photo: String, width: Int, height: Int) {
+        viewPhoto.removeAllViews()
+        Log.e("Chat Adapter: ", "photo: $photo")
+        val imageView = ImageView(context)
+        val scale = if (width > height) {
+            (screenWidth * 3 / 4 - 120) / width.toFloat()
+        } else {
+            screenHeight / (2 * height).toFloat()
+        }
+        imageView.layoutParams =
+            ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
+        viewPhoto.addView(imageView)
+        Glide.with(context)
+            .load(photo)
+            .placeholder(if (width < height) R.drawable.bg_grey else R.drawable.bg_grey_horizontal)
+            .error(if (width < height) R.drawable.bg_grey else R.drawable.bg_grey_horizontal)
+            .into(imageView)
+    }
+
+    private fun drawViewPhoto(viewPhotos: LinearLayout, photos: ArrayList<String>) {
+        viewPhotos.removeAllViews()
+        val row = ceil(photos.size / 3f).toInt()
+        for (i in 0 until row) {
+            val layoutRow = LinearLayout(context)
+            layoutRow.layoutParams =
+                ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+            layoutRow.orientation = LinearLayout.HORIZONTAL
+            for (j in 3 * i until 3 * i + 3) {
+                if (j < photos.size) {
+                    val imgPhoto = ImageView(context)
+                    imgPhoto.layoutParams =
+                        MarginLayoutParams(screenWidth / 4 - 40, screenWidth / 4 - 40).apply {
+                            bottomMargin = if (i == row - 1) 0 else 8
+                            rightMargin = if (j == 3 * i + 2) 0 else 8
+                        }
+                    imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+                    context.loadImg(photos[j], imgPhoto)
+                    layoutRow.addView(imgPhoto)
+                } else {
+                    break
+                }
+            }
+            viewPhotos.addView(layoutRow)
+        }
+
     }
 
     override fun getItemViewType(position: Int): Int {
         return if (messages[position].sender != friendId) VIEW_SENDER else VIEW_RECEIVER
     }
 
-    class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root)
+    class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root) {
+        fun showSeen(seen: Boolean) {
+            this.v.avtSeen.isVisible = seen
+            this.v.viewReceived.isVisible = !seen
+        }
 
-    class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root)
+        fun showViewMessage(show: Boolean) {
+            v.viewMessage.isVisible = show
+            v.viewPhotos.isVisible = !show
+        }
+    }
+
+    class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root) {
+        fun showViewMessage(show: Boolean) {
+            v.viewMessage.isVisible = show
+            v.viewPhotos.isVisible = !show
+        }
+    }
 }

@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.Intent
 import android.graphics.Rect
+import android.net.Uri
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -80,16 +81,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
-            chatAdapter = ChatAdapter(conversation?.friendId ?: "")
+            chatAdapter = ChatAdapter(requireActivity(), conversation?.friendId ?: "")
             chatAdapter?.longClickItemSender = { data ->
                 showPopupOption(data.first, data.second)
             }
             chatAdapter?.longClickItemReceiver = { data ->
                 showPopupOption(data.first, data.second, false)
             }
-//            chatAdapter?.seenMessage = {
-//                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-//            }
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
         }
@@ -184,7 +182,20 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             when (requestCode) {
                 REQUEST_CODE_MULTI_PICTURE -> {
                     if (data.clipData != null) {
+                        val uris = arrayListOf<Uri>()
                         val count: Int = data.clipData!!.itemCount
+                        for (i in 0 until count) {
+                            uris.add(data.clipData!!.getItemAt(i).uri)
+                        }
+
+                        conversation?.let {
+                            viewModel?.uploadListPhoto(
+                                context = requireActivity(),
+                                uris = uris,
+                                conversation = it,
+                                time = DateUtils.getTimeCurrent()
+                            )
+                        }
                     }
                 }
             }

@@ -3,6 +3,7 @@ package com.example.messageapp.utils
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
@@ -12,6 +13,7 @@ import android.provider.MediaStore
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.findNavController
@@ -85,10 +87,26 @@ fun Fragment.backRemoveFragmentCurrent(toId: Int) {
     }
 }
 
-fun Context.loadImg(url: String, cir: CircleImageView) {
+fun Context.loadImg(url: String, cir: ImageView) {
     Glide.with(this)
         .load(url)
         .placeholder(R.mipmap.ic_launcher)
         .error(R.mipmap.ic_launcher)
         .into(cir)
+}
+
+fun getImageDimensions(context: Context, imageUri: Uri): Pair<Int, Int>? {
+    val inputStream = context.contentResolver.openInputStream(imageUri) ?: return null
+    return try {
+        // Chỉ lấy thông tin kích thước của ảnh
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeStream(inputStream, null, options)
+
+        // Trả về chiều rộng và chiều cao của ảnh
+        Pair(options.outWidth, options.outHeight)
+    } finally {
+        inputStream.close()
+    }
 }
