@@ -6,11 +6,11 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:name=".MyApplication"
@@ -24,6 +24,9 @@
         android:theme="@style/Theme.MessageApp"
         tools:targetApi="31">
         <activity
+            android:name=".PreviewPhotoActivity"
+            android:exported="false" />
+        <activity
             android:name=".PersonalActivity"
             android:exported="false" />
         <activity
@@ -36,10 +39,11 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.ReceiverMessageService"
+        <service
+            android:name=".service.ReceiverMessageService"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
 

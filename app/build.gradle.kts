@@ -88,4 +88,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+
+    //Zoom layout
+    implementation("com.otaliastudios:zoomlayout:1.9.0")
 }

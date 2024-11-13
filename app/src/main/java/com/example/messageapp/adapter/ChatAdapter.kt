@@ -2,7 +2,6 @@ package com.example.messageapp.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +12,6 @@ import androidx.appcompat.app.ActionBar.LayoutParams
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.messageapp.R
 import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.databinding.ItemChatSenderBinding
@@ -37,6 +35,7 @@ class ChatAdapter(
     var longClickItemSender: ((Pair<View, Message>) -> Unit)? = null
     var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
     var seen: Boolean = false
+    var clickPhoto: ((Pair<Pair<Message, String>, Boolean>) -> Unit)? = null
 
     @SuppressLint("NotifyDataSetChanged")
     fun setMessage(list: ArrayList<Message>) {
@@ -95,18 +94,14 @@ class ChatAdapter(
                         holder.showViewMessage(false)
                         holder.v.viewMessage.isVisible = false
                         holder.v.viewPhotos.isVisible = true
-                        drawViewPhoto(holder.v.viewPhotos, message.photos)
+                        drawViewPhoto(holder.v.viewPhotos, message)
                     }
 
                     TypeMessage.SINGLE_PHOTO -> {
                         holder.showViewMessage(false)
                         holder.v.viewMessage.isVisible = false
                         holder.v.viewPhotos.isVisible = true
-
-                        val photo = message.singlePhoto[0]
-                        val width = message.singlePhoto[1].toInt()
-                        val height = message.singlePhoto[2].toInt()
-                        loadSinglePhoto(holder.v.viewPhotos, photo, width, height)
+                        loadSinglePhoto(holder.v.viewPhotos, message)
                     }
                 }
                 checkShowSeenMessage(holder, position)
@@ -136,18 +131,14 @@ class ChatAdapter(
                         holder.showViewMessage(false)
                         holder.v.viewMessage.isVisible = false
                         holder.v.viewPhotos.isVisible = true
-                        drawViewPhoto(holder.v.viewPhotos, message.photos)
+                        drawViewPhoto(holder.v.viewPhotos, message, false)
                     }
 
                     TypeMessage.SINGLE_PHOTO -> {
                         holder.showViewMessage(false)
                         holder.v.viewMessage.isVisible = false
                         holder.v.viewPhotos.isVisible = true
-
-                        val photo = message.singlePhoto[0]
-                        val width = message.singlePhoto[1].toInt()
-                        val height = message.singlePhoto[2].toInt()
-                        loadSinglePhoto(holder.v.viewPhotos, photo, width, height)
+                        loadSinglePhoto(holder.v.viewPhotos, message, false)
                     }
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
@@ -179,9 +170,12 @@ class ChatAdapter(
         }
     }
 
-    private fun loadSinglePhoto(viewPhoto: LinearLayout, photo: String, width: Int, height: Int) {
+    private fun loadSinglePhoto(viewPhoto: LinearLayout, message: Message, fromSender: Boolean = true) {
+        val photo = message.singlePhoto[0]
+        val width = message.singlePhoto[1].toInt()
+        val height = message.singlePhoto[2].toInt()
+
         viewPhoto.removeAllViews()
-        Log.e("Chat Adapter: ", "photo: $photo")
         val imageView = ImageView(context)
         val scale = if (width > height) {
             (screenWidth * 3 / 4 - 120) / width.toFloat()
@@ -190,15 +184,19 @@ class ChatAdapter(
         }
         imageView.layoutParams =
             ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
+        imageView.setOnClickListener {
+            clickPhoto?.invoke(Pair(Pair(message, photo), fromSender))
+        }
         viewPhoto.addView(imageView)
-        Glide.with(context)
-            .load(photo)
-            .placeholder(if (width < height) R.drawable.bg_grey else R.drawable.bg_grey_horizontal)
-            .error(if (width < height) R.drawable.bg_grey else R.drawable.bg_grey_horizontal)
-            .into(imageView)
+        context.loadImg(
+            photo,
+            imageView,
+            imgDefault = if (width < height) R.drawable.bg_grey else R.drawable.bg_grey_horizontal
+        )
     }
 
-    private fun drawViewPhoto(viewPhotos: LinearLayout, photos: ArrayList<String>) {
+    private fun drawViewPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
+        val photos = message.photos
         viewPhotos.removeAllViews()
         val row = ceil(photos.size / 3f).toInt()
         for (i in 0 until row) {
@@ -214,8 +212,11 @@ class ChatAdapter(
                             bottomMargin = if (i == row - 1) 0 else 8
                             rightMargin = if (j == 3 * i + 2) 0 else 8
                         }
+                    imgPhoto.setOnClickListener {
+                        clickPhoto?.invoke(Pair(Pair(message, photos[j]), fromSender))
+                    }
                     imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
-                    context.loadImg(photos[j], imgPhoto)
+                    context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
                     layoutRow.addView(imgPhoto)
                 } else {
                     break

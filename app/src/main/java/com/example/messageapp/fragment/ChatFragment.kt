@@ -27,6 +27,7 @@ import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.base.BaseFragment
@@ -48,6 +49,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
     private var scrollPosition = 0
+    private var stateScrollable = true
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -87,6 +89,15 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             }
             chatAdapter?.longClickItemReceiver = { data ->
                 showPopupOption(data.first, data.second, false)
+            }
+            chatAdapter?.clickPhoto = { pair ->
+                val fromSender = pair.second
+                val keyId = if (fromSender) viewModel?.shared?.getAuth().toString() else conversation?.friendId.toString()
+                val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
+                intent.putExtra(PreviewPhotoActivity.OBJECT_MESSAGE, pair.first.first)
+                intent.putExtra(PreviewPhotoActivity.PHOTO_DATA, pair.first.second)
+                intent.putExtra(PreviewPhotoActivity.KEY_ID, keyId)
+                activity?.startActivity(intent)
             }
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
@@ -196,6 +207,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                                 time = DateUtils.getTimeCurrent()
                             )
                         }
+                        stateScrollable = true
                     }
                 }
             }
@@ -213,9 +225,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
                             chatAdapter?.setMessage(msg)
-                            binding?.rcvChat?.scrollToPosition(
-                                chatAdapter?.itemCount?.minus(1) ?: 0
-                            )
+                            if (stateScrollable) {
+                                binding?.rcvChat?.scrollToPosition(
+                                    chatAdapter?.itemCount?.minus(1) ?: 0
+                                )
+                                stateScrollable = false
+                            }
                             updateSeenMessage(msg)
                         }
                     }
@@ -261,6 +276,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewModel?.sendMessage(message = message, time = time, conversation = cvt)
                 binding?.edtMessage?.setText("")
             }
+            stateScrollable = true
         }
 
         binding?.btnSelectImage?.setOnClickListener {
