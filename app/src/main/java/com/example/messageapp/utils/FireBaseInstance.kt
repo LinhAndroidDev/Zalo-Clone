@@ -423,4 +423,13 @@ object FireBaseInstance {
                 }
         }
     }
+
+    fun removeMessage(conversation: Conversation, userId: String, time: String) {
+        val idRoom = listOf(conversation.friendId, userId).sorted()
+        db.collection(PATH_MESSAGE)
+            .document(idRoom.toString())
+            .collection(PATH_CHAT)
+            .document(time)
+            .delete()
+    }
 }

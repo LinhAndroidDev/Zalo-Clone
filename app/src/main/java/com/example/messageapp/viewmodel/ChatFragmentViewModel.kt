@@ -141,4 +141,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             }
         )
     }
+
+    fun removeMessage(conversation: Conversation, time: String) = viewModelScope.launch {
+        FireBaseInstance.removeMessage(
+            conversation = conversation,
+            userId = shared.getAuth(),
+            time = time
+        )
+    }
 }

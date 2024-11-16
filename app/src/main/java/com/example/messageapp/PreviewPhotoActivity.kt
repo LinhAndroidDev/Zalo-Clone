@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.messageapp.databinding.ActivityPreviewPhotoBinding
 import com.example.messageapp.model.Message
+import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.loadImg
 import com.example.messageapp.viewmodel.PreviewPhotoActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 class PreviewPhotoActivity : AppCompatActivity() {
     private val binding by lazy { ActivityPreviewPhotoBinding.inflate(layoutInflater) }
     private val viewModel by viewModels<PreviewPhotoActivityViewModel>()
+    private var isShowHeader = true
     companion object {
         const val OBJECT_MESSAGE = "OBJECT_MESSAGE"
         const val PHOTO_DATA = "PHOTO_DATA"
@@ -29,7 +31,11 @@ class PreviewPhotoActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         setUpFullScreen()
+        initView()
+        onClickView()
+    }
 
+    private fun initView() {
         val photoData = intent.getStringExtra(PHOTO_DATA)
         photoData?.let {
             Glide.with(this)
@@ -49,8 +55,19 @@ class PreviewPhotoActivity : AppCompatActivity() {
                 binding.tvName.text = user?.name.toString()
             }
         }
+    }
 
+    private fun onClickView() {
         binding.backPreview.setOnClickListener { onBackPressed() }
+
+        binding.photo.setOnClickListener {
+            if (isShowHeader) {
+                AnimatorUtils.fadeOut(binding.header)
+            } else {
+                AnimatorUtils.fadeIn(binding.header)
+            }
+            isShowHeader = !isShowHeader
+        }
     }
 
     private fun setUpFullScreen() {

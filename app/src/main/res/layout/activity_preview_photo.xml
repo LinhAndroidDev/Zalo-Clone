@@ -17,6 +17,9 @@
         app:zoomEnabled="true"
         app:scrollEnabled="true"
         app:oneFingerScrollEnabled="true"
+        app:overScrollHorizontal="false"
+        app:overScrollVertical="false"
+        app:overPinchable="false"
         app:minZoom="1"
         app:minZoomType="zoom"
         app:maxZoom="2.5"
@@ -63,7 +66,6 @@
 
             <TextView
                 android:id="@+id/tvName"
-                android:text="Nguyen Huu Linh"
                 android:textSize="14sp"
                 android:textColor="@color/text_white"
                 android:layout_width="wrap_content"
@@ -74,7 +76,8 @@
                 android:textSize="10sp"
                 android:textColor="@color/text_white"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                tools:ignore="SmallSp" />
         </LinearLayout>
 
         <ImageView

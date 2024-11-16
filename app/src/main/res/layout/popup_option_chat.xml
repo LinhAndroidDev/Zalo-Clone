@@ -1,40 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layoutPopupOptions"
     android:layout_width="275dp"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/layoutPopupOptions">
+    android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/layoutSender"
-        android:layout_marginEnd="15dp"
-        android:layout_gravity="end"
-        android:layout_marginBottom="10dp"
-        android:paddingHorizontal="15dp"
-        android:paddingVertical="7dp"
-        android:background="@drawable/bg_sender"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginEnd="15dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_sender"
         android:orientation="vertical"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="7dp"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/tvSender"
-            android:text="Toi anh co ve ko?"
-            android:textSize="14sp"
-            android:textColor="@color/text_common"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_common"
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/tvTimeSender"
-            android:layout_marginTop="5dp"
-            android:text="11:09"
-            android:textSize="10sp"
-            android:textColor="@color/text_sender"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:textColor="@color/text_sender"
+            android:textSize="10sp"
+            tools:ignore="SmallSp" />
     </LinearLayout>
 
     <LinearLayout
@@ -53,7 +53,6 @@
             android:id="@+id/tvReceiver"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Toi anh co ve ko?"
             android:textColor="@color/text_common"
             android:textSize="14sp" />
 
@@ -62,222 +61,286 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:text="11:09"
             android:textColor="@color/text_sender"
-            android:textSize="10sp" />
+            android:textSize="10sp"
+            tools:ignore="SmallSp" />
     </LinearLayout>
 
     <LinearLayout
-        android:layout_marginEnd="15dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_white_corner_10"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="15dp">
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/emotion_favourite" />
+
+        <ImageView
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_marginStart="15dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/emotion_like" />
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="10dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/emotion_laugh" />
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="10dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/emotion_cry" />
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="10dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/emotion_angry" />
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="15dp"
         android:background="@drawable/bg_white_corner_10"
         android:orientation="vertical">
 
         <LinearLayout
-            android:layout_marginTop="15dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:baselineAligned="false">
 
             <LinearLayout
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="UseCompoundDrawables">
 
                 <ImageView
-                    android:src="@drawable/ic_share"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
+                    android:importantForAccessibility="no"
                     android:rotationY="180"
-                    app:tint="#7559b8"/>
+                    android:src="@drawable/ic_share"
+                    app:tint="#7559b8" />
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/reply"
-                    android:textSize="14sp"
                     android:textColor="@color/text_common"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="UseCompoundDrawables">
 
                 <ImageView
-                    android:src="@drawable/ic_share"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    app:tint="#3673de"/>
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_share"
+                    app:tint="#3673de" />
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/forward"
-                    android:textSize="14sp"
                     android:textColor="@color/text_common"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/btnCopy"
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="UseCompoundDrawables">
 
                 <ImageView
-                    android:src="@drawable/ic_copy"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    app:tint="#1951cc"/>
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_copy"
+                    app:tint="#1951cc" />
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/copy"
-                    android:textSize="14sp"
                     android:textColor="@color/text_common"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="14sp" />
             </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
-            android:layout_marginTop="20dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:baselineAligned="false">
 
             <LinearLayout
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="UseCompoundDrawables">
 
                 <ImageView
-                    android:src="@drawable/ic_pin"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    app:tint="#f07e34"/>
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_pin"
+                    app:tint="#f07e34" />
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/pin"
-                    android:textSize="14sp"
                     android:textColor="@color/text_common"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="UseCompoundDrawables">
 
                 <ImageView
-                    android:layout_marginEnd="5dp"
-                    android:src="@drawable/ic_alarm"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    app:tint="#970506"/>
+                    android:layout_marginEnd="5dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_alarm"
+                    app:tint="#970506" />
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/appointment_reminder"
-                    android:textSize="14sp"
                     android:textColor="@color/text_common"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="UseCompoundDrawables">
 
                 <ImageView
-                    android:src="@drawable/ic_detail"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    app:tint="#515254"/>
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_detail"
+                    app:tint="#515254" />
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/detail"
-                    android:textSize="14sp"
                     android:textColor="@color/text_common"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="14sp" />
             </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:layout_marginBottom="15dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:baselineAligned="false">
 
             <LinearLayout
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="UseCompoundDrawables">
 
                 <ImageView
-                    android:src="@drawable/ic_sound_speak"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    app:tint="#7046d1"/>
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_sound_speak"
+                    app:tint="#7046d1" />
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginHorizontal="10dp"
                     android:layout_marginTop="5dp"
-                    android:text="@string/read_text"
-                    android:textSize="14sp"
                     android:gravity="center"
+                    android:text="@string/read_text"
                     android:textColor="@color/text_common"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
-                android:layout_weight="1"
+                android:id="@+id/btnRemoveMessage"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="UseCompoundDrawables">
 
                 <ImageView
-                    android:src="@drawable/ic_delete"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    app:tint="#ca0a10"/>
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_delete"
+                    app:tint="#ca0a10" />
 
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/delete"
-                    android:textSize="14sp"
                     android:textColor="@color/text_common"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center_horizontal"/>
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                tools:ignore="UselessLeaf" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

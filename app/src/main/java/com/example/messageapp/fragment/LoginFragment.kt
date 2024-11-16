@@ -27,7 +27,7 @@ class LoginFragment : BaseFragment<FragmentLoginBinding, LoginFragmentViewModel>
                 binding?.edtEnterEmail?.showKeyboard()
             }
             disableBtnLogin()
-            this.let { root -> binding?.btnLogin?.showViewAboveKeyBoard(root) }
+            binding?.btnLogin?.showViewAboveKeyBoard(this)
         }
 
         binding?.edtEnterEmail?.doOnTextChanged { text, _, _, _ ->

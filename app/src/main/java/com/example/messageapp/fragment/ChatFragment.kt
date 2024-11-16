@@ -31,6 +31,7 @@ import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.base.BaseFragment
+import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
@@ -70,8 +71,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                     Log.e("ChatFragment", "Bàn phím đã xuất hiện")
                     // Bàn phím đã xuất hiện
                     val position = binding?.rcvChat?.computeVerticalScrollOffset() ?: 0
-//                    binding?.rcvChat?.scrollBy(0, scrollPosition - position)
-                    binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
+                    binding?.rcvChat?.scrollBy(0, scrollPosition - position)
+//                    binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
                 } else {
                     Log.e("ChatFragment", "Bàn phím đã ẩn")
                     // Bàn phím đã xuất hiện
@@ -92,12 +93,28 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             }
             chatAdapter?.clickPhoto = { pair ->
                 val fromSender = pair.second
-                val keyId = if (fromSender) viewModel?.shared?.getAuth().toString() else conversation?.friendId.toString()
+                val keyId = if (fromSender) viewModel?.shared?.getAuth()
+                    .toString() else conversation?.friendId.toString()
                 val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
                 intent.putExtra(PreviewPhotoActivity.OBJECT_MESSAGE, pair.first.first)
                 intent.putExtra(PreviewPhotoActivity.PHOTO_DATA, pair.first.second)
                 intent.putExtra(PreviewPhotoActivity.KEY_ID, keyId)
                 activity?.startActivity(intent)
+            }
+            chatAdapter?.clickOptionMenuPhoto = { msg ->
+                val bottomSheetOptionPhoto = BottomSheetOptionPhoto()
+                bottomSheetOptionPhoto.show(parentFragmentManager, "")
+                bottomSheetOptionPhoto.setOnClickOptionPho(object :
+                    BottomSheetOptionPhoto.OnClickOptionPhoto {
+                    override fun savePhotoOrVideo() {
+
+                    }
+
+                    override fun remove() {
+                        conversation?.let { viewModel?.removeMessage(it, msg.time) }
+                    }
+
+                })
             }
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
@@ -128,6 +145,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val layoutSender: LinearLayout = popupView.findViewById(R.id.layoutSender)
         val layoutReceiver: LinearLayout = popupView.findViewById(R.id.layoutReceiver)
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
+        val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
 
         if (isItemSender) {
             layoutSender.isVisible = true
@@ -183,6 +201,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             popupWindow.dismiss()
             Toast.makeText(requireActivity(), "Bạn đã sao chép tin nhắn", Toast.LENGTH_SHORT).show()
         }
+
+        btnRemoveMessage.setOnClickListener {
+            conversation?.let {
+                viewModel?.removeMessage(it, message.time)
+                popupWindow.dismiss()
+            }
+        }
     }
 
     @Deprecated("Deprecated in Java")
@@ -217,7 +242,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     override fun bindData() {
         super.bindData()
 
-        conversation?.let { cvt->
+        conversation?.let { cvt ->
             viewModel?.getMessage(friendId = cvt.friendId)
 
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
@@ -250,14 +275,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             friendId = conversation?.friendId ?: "",
             userId = userId,
             success = { cvt ->
-                if(cvt.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
+                if (cvt.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
                     chatAdapter?.seen = true
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
                 } else {
                     chatAdapter?.seen = false
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
                 }
-                conversation?.let {  viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
+                conversation?.let { viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
             }
         )
     }

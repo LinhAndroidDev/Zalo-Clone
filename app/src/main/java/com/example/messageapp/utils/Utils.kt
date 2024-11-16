@@ -20,7 +20,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import com.bumptech.glide.Glide
 import com.example.messageapp.R
-import de.hdodenhof.circleimageview.CircleImageView
 import java.io.ByteArrayOutputStream
 
 fun EditText.showKeyboard() {
@@ -52,7 +51,8 @@ fun Context.vibratePhone(duration: Long = 100) {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         // Dành cho Android 8.0 trở lên
-        val vibrationEffect = VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)
+        val vibrationEffect =
+            VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)
         vibrator.vibrate(vibrationEffect)
     } else {
         // Dành cho các phiên bản Android cũ hơn
@@ -80,7 +80,7 @@ fun Fragment.backRemoveFragmentCurrent(toId: Int) {
     val navController = findNavController()
     val currentDestination = navController.currentDestination
     currentDestination?.let { cDes ->
-        findNavController().navigate(toId,null,
+        findNavController().navigate(toId, null,
             navOptions {
                 popUpTo(cDes.id) { inclusive = true }
             })

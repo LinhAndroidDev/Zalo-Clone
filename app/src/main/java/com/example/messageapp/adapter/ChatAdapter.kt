@@ -36,6 +36,7 @@ class ChatAdapter(
     var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
     var seen: Boolean = false
     var clickPhoto: ((Pair<Pair<Message, String>, Boolean>) -> Unit)? = null
+    var clickOptionMenuPhoto: ((Message) -> Unit)? = null
 
     @SuppressLint("NotifyDataSetChanged")
     fun setMessage(list: ArrayList<Message>) {
@@ -84,7 +85,7 @@ class ChatAdapter(
                         holder.showViewMessage(true)
                         holder.v.tvSender.text = message.message
                         holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
-                        holder.v.layoutMessage.setOnLongClickListener {
+                        holder.v.viewMessage.setOnLongClickListener {
                             longClickItemSender?.invoke(it to message)
                             true
                         }
@@ -105,6 +106,9 @@ class ChatAdapter(
                     }
                 }
                 checkShowSeenMessage(holder, position)
+                holder.v.optionMenuPhoto.setOnClickListener {
+                    clickOptionMenuPhoto?.invoke(message)
+                }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
 
@@ -140,6 +144,9 @@ class ChatAdapter(
                         holder.v.viewPhotos.isVisible = true
                         loadSinglePhoto(holder.v.viewPhotos, message, false)
                     }
+                }
+                holder.v.optionMenuPhoto.setOnClickListener {
+                    clickOptionMenuPhoto?.invoke(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
@@ -238,15 +245,15 @@ class ChatAdapter(
         }
 
         fun showViewMessage(show: Boolean) {
+            v.layoutPhoto.isVisible = !show
             v.viewMessage.isVisible = show
-            v.viewPhotos.isVisible = !show
         }
     }
 
     class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root) {
         fun showViewMessage(show: Boolean) {
+            v.layoutPhoto.isVisible = !show
             v.viewMessage.isVisible = show
-            v.viewPhotos.isVisible = !show
         }
     }
 }

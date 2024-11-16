@@ -3,6 +3,7 @@ package com.example.messageapp.fragment
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
+import android.view.animation.AnimationUtils
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.MainActivity
@@ -32,8 +33,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
             goToChatFragment(conversation)
         }
         binding?.rcvListChat?.adapter = listChatAdapter
+        val animFadeIn = AnimationUtils.loadLayoutAnimation(requireActivity(), R.anim.layout_fade_in)
+        binding?.rcvListChat?.layoutAnimation = animFadeIn
 
         binding?.rcvSuggestFriend?.adapter = suggestFriendAdapter
+        binding?.rcvSuggestFriend?.layoutAnimation = animFadeIn
         suggestFriendAdapter.onClickItem = { friend ->
             goToChatFragment(Conversation(friend))
         }

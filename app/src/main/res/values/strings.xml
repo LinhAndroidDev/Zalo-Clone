@@ -85,4 +85,6 @@
     <string name="select_photo_on_device">Chọn ảnh trên máy</string>
     <string name="replied_to_message_of">Đã trả lời tin nhắn của %s</string>
     <string name="received">Đã nhận</string>
+    <string name="option">Tuỳ chọn</string>
+    <string name="save_photo_video">Lưu ảnh, video</string>
 </resources>
