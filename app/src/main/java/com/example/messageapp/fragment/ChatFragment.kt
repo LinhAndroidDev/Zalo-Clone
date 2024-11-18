@@ -6,14 +6,13 @@ package com.example.messageapp.fragment
 
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
+import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.Intent
-import android.graphics.Rect
 import android.net.Uri
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -59,28 +58,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun initView() {
         super.initView()
-
-        binding?.root?.let { rootView ->
-            rootView.viewTreeObserver.addOnGlobalLayoutListener {
-                val r = Rect()
-                rootView.getWindowVisibleDisplayFrame(r)
-                val screenHeight = rootView.height
-                val keypadHeight = screenHeight - r.bottom
-
-                if (keypadHeight > screenHeight * 0.15) {
-                    Log.e("ChatFragment", "Bàn phím đã xuất hiện")
-                    // Bàn phím đã xuất hiện
-                    val position = binding?.rcvChat?.computeVerticalScrollOffset() ?: 0
-                    binding?.rcvChat?.scrollBy(0, scrollPosition - position)
-//                    binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-                } else {
-                    Log.e("ChatFragment", "Bàn phím đã ẩn")
-                    // Bàn phím đã xuất hiện
-                    scrollPosition = binding?.rcvChat?.computeVerticalScrollOffset()
-                        ?: 0 // Cập nhật vị trí scroll
-                }
-            }
-        }
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
@@ -315,5 +292,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 REQUEST_CODE_MULTI_PICTURE
             )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val notificationManager = context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancelAll()
     }
 }
