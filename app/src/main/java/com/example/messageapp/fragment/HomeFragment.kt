@@ -11,12 +11,14 @@ import com.example.messageapp.R
 import com.example.messageapp.adapter.ListChatAdapter
 import com.example.messageapp.adapter.SuggestFriendAdapter
 import com.example.messageapp.base.BaseFragment
+import com.example.messageapp.bottom_sheet.BottomSheetOptionConversation
 import com.example.messageapp.databinding.FragmentHomeBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
 
 @AndroidEntryPoint
 class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
@@ -32,8 +34,13 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         listChatAdapter?.onClickView = { conversation ->
             goToChatFragment(conversation)
         }
+        listChatAdapter?.showOptionConversation = {
+            val bottomSheetOptionConversation = BottomSheetOptionConversation()
+            bottomSheetOptionConversation.show(parentFragmentManager, "")
+        }
         binding?.rcvListChat?.adapter = listChatAdapter
-        val animFadeIn = AnimationUtils.loadLayoutAnimation(requireActivity(), R.anim.layout_fade_in)
+        val animFadeIn =
+            AnimationUtils.loadLayoutAnimation(requireActivity(), R.anim.layout_fade_in)
         binding?.rcvListChat?.layoutAnimation = animFadeIn
 
         binding?.rcvSuggestFriend?.adapter = suggestFriendAdapter
@@ -41,6 +48,16 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         suggestFriendAdapter.onClickItem = { friend ->
             goToChatFragment(Conversation(friend))
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        listChatAdapter?.saveStates(outState)
+    }
+
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        listChatAdapter?.restoreStates(savedInstanceState)
     }
 
     private fun goToChatFragment(conversation: Conversation) {

@@ -9,7 +9,7 @@ import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.messageapp.R
-import com.example.messageapp.custom.StickyAdapter
+import com.example.messageapp.custom.sticky_header.StickyAdapter
 import com.example.messageapp.databinding.HeaderGroupPhoneBookBinding
 import com.example.messageapp.databinding.HeaderPhoneBookBinding
 import com.example.messageapp.databinding.ItemPhoneBookBinding

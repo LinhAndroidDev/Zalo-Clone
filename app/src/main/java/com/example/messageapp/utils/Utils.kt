@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
@@ -14,6 +15,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.findNavController
@@ -109,4 +111,18 @@ fun getImageDimensions(context: Context, imageUri: Uri): Pair<Int, Int>? {
     } finally {
         inputStream.close()
     }
+}
+
+fun Context.getBitmapFromVectorDrawable(drawableResId: Int): Bitmap? {
+    val drawable = AppCompatResources.getDrawable(this, drawableResId) ?: return null
+
+    val width = drawable.intrinsicWidth
+    val height = drawable.intrinsicHeight
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+
+    drawable.setBounds(0, 0, canvas.width, canvas.height)
+    drawable.draw(canvas)
+
+    return bitmap
 }

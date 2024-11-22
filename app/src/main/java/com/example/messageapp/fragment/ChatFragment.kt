@@ -211,7 +211,33 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                         }
                         stateScrollable = true
                     }
-                }
+//                    val clipData = data.clipData
+//                    if (clipData != null) {
+//                        val uris = arrayListOf<Pair<Uri, Int>>()
+//                        // Người dùng chọn nhiều file
+//                        for (i in 0 until clipData.itemCount) {
+//                            val mediaUri = clipData.getItemAt(i).uri
+//                            val mimeType = activity?.contentResolver?.getType(mediaUri)
+//                            when {
+//                                mimeType?.startsWith("image/") == true -> {
+//                                    uris.add(Pair(clipData.getItemAt(i).uri, 0))
+//                                }
+//                                mimeType?.startsWith("video/") == true -> {
+//                                    uris.add(Pair(clipData.getItemAt(i).uri, 1))
+//                                }
+//                            }
+//                        }
+//                        conversation?.let {
+//                            viewModel?.uploadListPhoto(
+//                                context = requireActivity(),
+//                                uris = uris,
+//                                conversation = it,
+//                                time = DateUtils.getTimeCurrent()
+//                            )
+//                        }
+//                        stateScrollable = true
+                    }
+
             }
         }
     }
@@ -291,6 +317,17 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 Intent.createChooser(intent, SELECT_MULTI_PICTURE),
                 REQUEST_CODE_MULTI_PICTURE
             )
+
+//            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+//                type = "*/*"
+//                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
+//                addCategory(Intent.CATEGORY_OPENABLE)
+//                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) // Cho phép chọn nhiều file
+//            }
+//            startActivityForResult(
+//                Intent.createChooser(intent, "select multi"),
+//                REQUEST_CODE_MULTI_PICTURE
+//            )
         }
     }
 

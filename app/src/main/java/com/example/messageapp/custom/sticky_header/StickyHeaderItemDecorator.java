@@ -1,4 +1,4 @@
-package com.example.messageapp.custom;
+package com.example.messageapp.custom.sticky_header;
 
 import android.graphics.Canvas;
 import android.view.View;

@@ -1,4 +1,4 @@
-package com.example.messageapp.custom;
+package com.example.messageapp.custom.sticky_header;
 
 import android.view.View;
 import android.view.ViewGroup;

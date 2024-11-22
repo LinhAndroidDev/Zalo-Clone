@@ -1,4 +1,4 @@
-package com.example.messageapp.custom
+package com.example.messageapp.custom.fast_scroll
 
 import android.annotation.SuppressLint
 import android.content.Context
