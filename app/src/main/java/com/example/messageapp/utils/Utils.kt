@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
@@ -15,7 +14,6 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.findNavController
@@ -23,6 +21,8 @@ import androidx.navigation.navOptions
 import com.bumptech.glide.Glide
 import com.example.messageapp.R
 import java.io.ByteArrayOutputStream
+import java.text.Normalizer
+import java.util.regex.Pattern
 
 fun EditText.showKeyboard() {
     this.isFocusable = true
@@ -113,16 +113,8 @@ fun getImageDimensions(context: Context, imageUri: Uri): Pair<Int, Int>? {
     }
 }
 
-fun Context.getBitmapFromVectorDrawable(drawableResId: Int): Bitmap? {
-    val drawable = AppCompatResources.getDrawable(this, drawableResId) ?: return null
-
-    val width = drawable.intrinsicWidth
-    val height = drawable.intrinsicHeight
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-
-    drawable.setBounds(0, 0, canvas.width, canvas.height)
-    drawable.draw(canvas)
-
-    return bitmap
+fun removeAccent(input: String): String {
+    val normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
+    val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
+    return pattern.matcher(normalized).replaceAll("")
 }

@@ -24,12 +24,20 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/tvNumberFriend"
                     android:layout_marginTop="10dp"
                     android:layout_marginStart="15dp"
-                    android:text="@string/mini_app_use_recent"
+                    android:text="@string/you_may_be_familiar_with"
                     android:textColor="@color/text_common"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rcvSearchFriend"
+                    android:layout_marginTop="10dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </RelativeLayout>

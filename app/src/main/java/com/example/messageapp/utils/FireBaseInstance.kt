@@ -438,4 +438,24 @@ object FireBaseInstance {
             .document(userId)
             .update("imageCover", imageCover)
     }
+
+    fun searchFriend(queryText: String, success: (ArrayList<User>) -> Unit) {
+        val queryLowerCase = removeAccent(queryText.lowercase())
+
+        db.collection(PATH_USER)
+            .get()
+            .addOnSuccessListener { result ->
+                val friends = result.documents.mapNotNull { it.toObject(User::class.java) }
+                    .filter { friend ->
+                        val nameFriendAccent = removeAccent(friend.name?.lowercase().toString())
+                        nameFriendAccent.contains(queryLowerCase)
+                    }
+                if (queryText.isNotEmpty()) {
+                    success.invoke(friends as ArrayList<User>)
+                } else {
+                    success.invoke(arrayListOf())
+                }
+            }
+
+    }
 }

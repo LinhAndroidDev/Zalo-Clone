@@ -32,6 +32,7 @@ abstract class BaseAdapter<T : Any, VB : ViewDataBinding> :
     fun resetList(list: ArrayList<T>) {
         items.clear()
         items.addAll(list)
+        notifyDataSetChanged()
     }
 
     fun addItems(list: ArrayList<T>) {
