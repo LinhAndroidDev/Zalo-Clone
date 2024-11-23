@@ -3,6 +3,7 @@ package com.example.messageapp.utils
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
@@ -12,14 +13,16 @@ import android.provider.MediaStore
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import com.bumptech.glide.Glide
 import com.example.messageapp.R
-import de.hdodenhof.circleimageview.CircleImageView
 import java.io.ByteArrayOutputStream
+import java.text.Normalizer
+import java.util.regex.Pattern
 
 fun EditText.showKeyboard() {
     this.isFocusable = true
@@ -50,7 +53,8 @@ fun Context.vibratePhone(duration: Long = 100) {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         // Dành cho Android 8.0 trở lên
-        val vibrationEffect = VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)
+        val vibrationEffect =
+            VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)
         vibrator.vibrate(vibrationEffect)
     } else {
         // Dành cho các phiên bản Android cũ hơn
@@ -78,17 +82,39 @@ fun Fragment.backRemoveFragmentCurrent(toId: Int) {
     val navController = findNavController()
     val currentDestination = navController.currentDestination
     currentDestination?.let { cDes ->
-        findNavController().navigate(toId,null,
+        findNavController().navigate(toId, null,
             navOptions {
                 popUpTo(cDes.id) { inclusive = true }
             })
     }
 }
 
-fun Context.loadImg(url: String, cir: CircleImageView) {
+fun Context.loadImg(url: String, cir: ImageView, imgDefault: Int = R.mipmap.ic_launcher) {
     Glide.with(this)
         .load(url)
-        .placeholder(R.mipmap.ic_launcher)
-        .error(R.mipmap.ic_launcher)
+        .placeholder(imgDefault)
+        .error(imgDefault)
         .into(cir)
+}
+
+fun getImageDimensions(context: Context, imageUri: Uri): Pair<Int, Int>? {
+    val inputStream = context.contentResolver.openInputStream(imageUri) ?: return null
+    return try {
+        // Chỉ lấy thông tin kích thước của ảnh
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeStream(inputStream, null, options)
+
+        // Trả về chiều rộng và chiều cao của ảnh
+        Pair(options.outWidth, options.outHeight)
+    } finally {
+        inputStream.close()
+    }
+}
+
+fun removeAccent(input: String): String {
+    val normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
+    val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
+    return pattern.matcher(normalized).replaceAll("")
 }

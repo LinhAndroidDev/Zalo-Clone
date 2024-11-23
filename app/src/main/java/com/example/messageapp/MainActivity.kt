@@ -23,6 +23,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        initView()
+    }
+
+    private fun initView() {
         binding = ActivityMainBinding.inflate(LayoutInflater.from(this))
         setContentView(binding?.root)
         val navHostFragment =
@@ -30,6 +34,8 @@ class MainActivity : AppCompatActivity() {
         val navController = navHostFragment.navController
         val navGraph = navController.navInflater.inflate(R.navigation.navigation_main)
         navGraph.setStartDestination(R.id.splashFragment)
+
+        //Receive Data from Notification
         val friendData: User? = intent.getParcelableExtra(ReceiverMessageService.OBJECT_FRIEND)
         val bundle = Bundle()
         bundle.putParcelable(SplashFragment.DATA_FRIEND, friendData)
@@ -46,7 +52,18 @@ class MainActivity : AppCompatActivity() {
                 else -> binding?.viewBottomNav?.visibility = View.GONE
             }
         }
+    }
 
+    /**
+     * This function used to set up number message unread for item message screen home
+     */
+    internal fun setUpNumberMessage(num: Int) {
+        val badge = binding?.bottomNav?.getOrCreateBadge(R.id.homeFragment)
+        badge?.isVisible = num > 0
+        badge?.text = if (num <= 5) num.toString() else "+5"
+        badge?.backgroundColor = getColor(R.color.red)
+        badge?.badgeTextColor = getColor(R.color.text_white)
+        badge?.horizontalOffset = 10
     }
 
     internal fun getHeightBottomNav(): Int {

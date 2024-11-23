@@ -1,4 +1,4 @@
-package com.example.messageapp.custom
+package com.example.messageapp.custom.fast_scroll
 
 import android.content.Context
 import android.graphics.*

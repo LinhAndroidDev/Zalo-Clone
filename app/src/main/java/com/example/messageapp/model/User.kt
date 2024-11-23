@@ -8,5 +8,6 @@ data class User(
     val name: String? = "",
     val email: String? = "",
     val avatar: String? = "",
+    val imageCover: String? = "",
     var keyAuth: String? = ""
 ) : Parcelable

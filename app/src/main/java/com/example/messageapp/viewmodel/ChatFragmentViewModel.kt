@@ -1,11 +1,15 @@
 package com.example.messageapp.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
+import com.example.messageapp.utils.getImageDimensions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,7 +54,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                 val messageData = arrayListOf<Message>()
                 result?.forEach { document ->
                     val message = document.toObject(Message::class.java)
-                    if(isOfThisConversation(message, friendId)) {
+                    if (isOfThisConversation(message, friendId)) {
                         messageData.add(message)
                     }
                 }
@@ -76,17 +80,73 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
      * @param msg data message
      * @param conversation data friend
      */
-    fun updateSeenMessage(msg: Message ,conversation: Conversation) = viewModelScope.launch {
+    fun updateSeenMessage(msg: Message, conversation: Conversation) = viewModelScope.launch {
         if (msg.sender != shared.getAuth()) {
             FireBaseInstance.getConversation(
                 friendId = shared.getAuth(),
                 userId = conversation.friendId,
                 success = { cvt ->
-                    if (cvt.seen == "0" && cvt.sender == conversation.friendId) {
-                        FireBaseInstance.seenMessage(shared.getAuth(), friendId = conversation.friendId)
+                    if (!cvt.isSeenMessage() && cvt.sender == conversation.friendId) {
+                        FireBaseInstance.seenMessage(
+                            shared.getAuth(),
+                            friendId = conversation.friendId
+                        )
                     }
                 }
             )
         }
+    }
+
+    fun uploadListPhoto(
+        context: Context,
+        uris: ArrayList<Uri>,
+        conversation: Conversation,
+        time: String
+    ) {
+        FireBaseInstance.uploadListPhoto(
+            context = context,
+            uris = uris,
+            friendId = conversation.friendId,
+            userId = shared.getAuth(),
+            process = {
+
+            },
+            success = { photos ->
+                val photosData = if (photos.size > 1) photos else arrayListOf()
+                val singlePhoto = arrayListOf<String>()
+                var type = TypeMessage.PHOTOS
+                if (photos.size == 1) {
+                    type = TypeMessage.SINGLE_PHOTO
+                    val data = getImageDimensions(context, uris[0])
+                    singlePhoto.add(photos[0])
+                    singlePhoto.add(data?.first.toString())
+                    singlePhoto.add(data?.second.toString())
+                }
+                val message = Message(
+                    receiver = conversation.friendId,
+                    sender = shared.getAuth(),
+                    time = time,
+                    photos = photosData,
+                    singlePhoto = singlePhoto,
+                    type = type.ordinal
+                )
+                FireBaseInstance.sendMessage(
+                    message = message,
+                    userId = shared.getAuth(),
+                    time = time,
+                    conversation = conversation,
+                    nameSender = shared.getNameUser(),
+                    type = TypeMessage.PHOTOS,
+                ) {}
+            }
+        )
+    }
+
+    fun removeMessage(conversation: Conversation, time: String) = viewModelScope.launch {
+        FireBaseInstance.removeMessage(
+            conversation = conversation,
+            userId = shared.getAuth(),
+            time = time
+        )
     }
 }

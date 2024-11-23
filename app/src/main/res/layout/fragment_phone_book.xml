@@ -22,7 +22,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.example.messageapp.custom.IndexFastScrollRecyclerView
+            <com.example.messageapp.custom.fast_scroll.IndexFastScrollRecyclerView
                 android:id="@+id/rcvPhoneBook"
                 android:layout_weight="1"
                 android:layout_width="match_parent"

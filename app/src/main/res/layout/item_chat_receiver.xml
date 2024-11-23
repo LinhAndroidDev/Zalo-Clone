@@ -1,52 +1,126 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout>
+<layout xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp">
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/avatarReceiver"
-            android:layout_marginStart="15dp"
             android:layout_width="25dp"
-            android:layout_height="25dp"/>
+            android:layout_height="25dp"
+            android:layout_marginStart="15dp" />
 
         <LinearLayout
-            android:id="@+id/layoutMessage"
-            android:layout_marginEnd="100dp"
-            android:layout_marginStart="5dp"
-            android:layout_toEndOf="@+id/avatarReceiver"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_receiver"
-            android:orientation="vertical"
-            android:paddingHorizontal="15dp"
-            android:paddingVertical="7dp">
-
-            <TextView
-                android:id="@+id/tvReceiver"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Toi anh co ve ko?"
-                android:textColor="@color/text_common"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/tvTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:text="11:09"
-                android:textColor="@color/text_sender"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <View
-            android:id="@+id/viewBottom"
-            android:layout_below="@+id/layoutMessage"
             android:layout_width="match_parent"
-            android:layout_height="30dp"
-            android:visibility="gone"/>
-    </RelativeLayout>
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:id="@+id/viewMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/layoutMessage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="100dp"
+                    android:background="@drawable/bg_receiver"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="15dp"
+                    android:paddingVertical="7dp">
+
+                    <TextView
+                        android:id="@+id/tvReceiver"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_common"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:textColor="@color/text_sender"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </RelativeLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutPhoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:visibility="gone">
+
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="13dp"
+                        app:cardBackgroundColor="@color/grey_bg"
+                        app:cardCornerRadius="5dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:id="@+id/viewPhotos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/viewEmotion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start|bottom"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginBottom="2dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="45dp"
+                        app:cardElevation="2dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginHorizontal="3dp"
+                            android:layout_marginTop="3dp"
+                            android:layout_marginBottom="2dp"
+                            android:src="@drawable/ic_favourite_not_fill" />
+                    </androidx.cardview.widget.CardView>
+                </FrameLayout>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/optionMenuPhoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="15dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="45dp">
+
+                    <ImageView
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_margin="7dp"
+                        android:src="@drawable/ic_menu_circle_fill" />
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <View
+                android:id="@+id/viewBottom"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
 </layout>
