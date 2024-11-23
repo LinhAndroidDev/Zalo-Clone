@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 class PersonalActivity : AppCompatActivity() {
     private val binding by lazy { ActivityPersonalBinding.inflate(layoutInflater) }
     private val viewModel by viewModels<PersonalActivityViewModel>()
+    private var updateAvatar = true
 
     companion object {
         private const val REQUEST_IMAGE_CAPTURE = 2
@@ -34,7 +35,7 @@ class PersonalActivity : AppCompatActivity() {
         // Callback is invoked after the user selects a media item or closes the
         // photo picker.
         if (uri != null) {
-            viewModel.uploadPhoto(this, uri)
+            viewModel.uploadPhoto(this, uri, updateAvatar)
         } else {
             Log.d("PhotoPicker", "No media selected")
         }
@@ -60,12 +61,20 @@ class PersonalActivity : AppCompatActivity() {
     private fun onClickView() {
         binding.back.setOnClickListener { onBackPressed() }
         binding.avatarUser.setOnClickListener {
-            showDialogSelectPhoto()
+            showDialogSelectPhoto(true)
+        }
+
+        binding.imgCover.setOnClickListener {
+            showDialogSelectPhoto(false)
         }
     }
 
-    private fun showDialogSelectPhoto() {
+    private fun showDialogSelectPhoto(isAvatar: Boolean) {
+        updateAvatar = isAvatar
         val bottomSheetSelectImage = BottomSheetSelectImage()
+        val bundle = Bundle()
+        bundle.putBoolean(BottomSheetSelectImage.BOTTOM_SHEET_AVATAR, isAvatar)
+        bottomSheetSelectImage.arguments = bundle
         bottomSheetSelectImage.show(supportFragmentManager, "")
         bottomSheetSelectImage.seeImage = {
 
@@ -81,6 +90,7 @@ class PersonalActivity : AppCompatActivity() {
     private fun handleDataUser(user: User) {
         binding.nameUser.text = user.name
         loadImg(user.avatar.toString(), binding.avatarUser)
+        loadImg(user.imageCover.toString(), binding.imgCover, imgDefault = R.drawable.bg_grey_horizontal)
     }
 
     private fun initView() {
@@ -101,7 +111,7 @@ class PersonalActivity : AppCompatActivity() {
 
         if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             data?.data?.let { uri ->
-                viewModel.uploadPhoto(this, uri)
+                viewModel.uploadPhoto(this, uri, updateAvatar)
             }
         }
     }

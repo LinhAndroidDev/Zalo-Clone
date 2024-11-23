@@ -49,10 +49,11 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
                 document.data?.let { data ->
                     friendData.add(
                         User(
-                            data["name"].toString(),
-                            data["email"].toString(),
-                            data["avatar"].toString(),
-                            document.id
+                            name = data["name"].toString(),
+                            email = data["email"].toString(),
+                            avatar = data["avatar"].toString(),
+                            imageCover = data["imageCover"].toString(),
+                            keyAuth = document.id
                         )
                     )
                 }

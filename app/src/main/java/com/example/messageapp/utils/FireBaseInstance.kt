@@ -432,4 +432,10 @@ object FireBaseInstance {
             .document(time)
             .delete()
     }
+
+    fun updateImageCover(userId: String, imageCover: String) {
+        db.collection(PATH_USER)
+            .document(userId)
+            .update("imageCover", imageCover)
+    }
 }
