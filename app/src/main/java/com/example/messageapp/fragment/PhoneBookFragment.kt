@@ -15,7 +15,7 @@ import com.example.messageapp.R
 import com.example.messageapp.adapter.PhoneBookAdapter
 import com.example.messageapp.adapter.TypePhoneBook
 import com.example.messageapp.base.BaseFragment
-import com.example.messageapp.custom.StickyHeaderItemDecorator
+import com.example.messageapp.custom.sticky_header.StickyHeaderItemDecorator
 import com.example.messageapp.databinding.FragmentPhoneBookBinding
 import com.example.messageapp.helper.avatars
 import com.example.messageapp.helper.capitalLetters
@@ -80,7 +80,10 @@ class PhoneBookFragment : BaseFragment<FragmentPhoneBookBinding, PhoneBookFragme
         }
         phoneBookAdapter.phoneBooks = phoneBookDatas
         binding?.rcvPhoneBook?.adapter = phoneBookAdapter
-        val stickyHeaderDecoration = StickyHeaderItemDecorator(phoneBookAdapter)
+        val stickyHeaderDecoration =
+            StickyHeaderItemDecorator(
+                phoneBookAdapter
+            )
         stickyHeaderDecoration.attachToRecyclerView(binding?.rcvPhoneBook)
         binding?.rcvPhoneBook?.addItemDecoration(stickyHeaderDecoration)
         binding?.rcvPhoneBook?.apply {

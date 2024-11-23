@@ -1,9 +1,12 @@
 package com.example.messageapp.adapter
 
 import android.annotation.SuppressLint
+import android.os.Bundle
 import androidx.core.view.isVisible
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
+import com.example.messageapp.custom.swipe.SwipeRevealLayout
+import com.example.messageapp.custom.swipe.ViewBinderHelper
 import com.example.messageapp.databinding.ItemListChatBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.utils.DateUtils
@@ -13,24 +16,56 @@ import com.example.messageapp.utils.loadImg
 class ListChatAdapter :
     BaseAdapter<Conversation, ItemListChatBinding>() {
 
+    private val binderHelper = ViewBinderHelper()
     var onClickView: ((Conversation) -> Unit)? = null
+    var showOptionConversation: (() -> Unit)? = null
+    var indexOpenSwipe: Int? = null
 
     override fun getLayout(): Int = R.layout.item_list_chat
 
-    @SuppressLint("SetTextI18n")
-    override fun onBindViewHolder(holder: BaseViewHolder<ItemListChatBinding>, position: Int) {
+    override fun onBindViewHolder(holder: BaseViewHolder<ItemListChatBinding>, @SuppressLint("RecyclerView") position: Int) {
+        if (holder.v.swipeLayout.isOpened) binderHelper.closeLayout(indexOpenSwipe.toString())
+        binderHelper.bind(holder.v.swipeLayout, position.toString())
+        binderHelper.setOpenOnlyOne(true)
+        holder.initView(position)
+    }
+
+    @SuppressLint("SetTextI18n", "NotifyDataSetChanged")
+    private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
-        holder.v.tvNameFriend.text = conversation.name
-        holder.v.tvMessage.text = "${conversation.person}: ${conversation.message}"
-        holder.v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
-        holder.handleWhenConversationIsChanged(conversation)
+        v.tvNameFriend.text = conversation.name
+        v.tvMessage.text = "${conversation.person}: ${conversation.message}"
+        v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
+        this.handleWhenConversationIsChanged(conversation)
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
-            holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avatarFriend)
-            holder.itemView.context.loadImg(user.avatar.toString(), holder.v.avtSeen)
+            itemView.context.loadImg(user.avatar.toString(), v.avatarFriend)
+            itemView.context.loadImg(user.avatar.toString(), v.avtSeen)
         }
-        holder.itemView.setOnClickListener {
+        v.itemChat.setOnClickListener {
             onClickView?.invoke(conversation)
         }
+        v.seeMore.setOnClickListener {
+            notifyDataSetChanged()
+            showOptionConversation?.invoke()
+        }
+        v.swipeLayout.setSwipeListener(object : SwipeRevealLayout.SwipeListener {
+            override fun onClosed(view: SwipeRevealLayout?) {
+                v.itemChat.isClickable = true
+                if (indexOpenSwipe == position) indexOpenSwipe = null
+            }
+
+            override fun onOpened(view: SwipeRevealLayout?) {
+                v.itemChat.isClickable = false
+                if (indexOpenSwipe != position) {
+                    indexOpenSwipe = position
+                }
+            }
+
+            override fun onSlide(view: SwipeRevealLayout?, slideOffset: Float) {
+                v.itemChat.isClickable = false
+            }
+
+        })
     }
 
     /**
@@ -72,5 +107,21 @@ class ListChatAdapter :
     private fun BaseViewHolder<ItemListChatBinding>.hideNewMessage() {
         this.v.tvMultiMessage.isVisible = false
         this.v.singMessage.isVisible = false
+    }
+
+    /**
+     * Only if you need to restore open/close state when the orientation is changed.
+     * Call this method in [android.app.Activity.onSaveInstanceState]
+     */
+    fun saveStates(outState: Bundle?) {
+        binderHelper.saveStates(outState)
+    }
+
+    /**
+     * Only if you need to restore open/close state when the orientation is changed.
+     * Call this method in [android.app.Activity.onRestoreInstanceState]
+     */
+    fun restoreStates(inState: Bundle?) {
+        binderHelper.restoreStates(inState)
     }
 }

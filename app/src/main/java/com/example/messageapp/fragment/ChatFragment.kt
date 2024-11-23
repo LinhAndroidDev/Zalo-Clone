@@ -6,13 +6,13 @@ package com.example.messageapp.fragment
 
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
+import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.Intent
-import android.graphics.Rect
-import android.util.Log
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,9 +26,11 @@ import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.base.BaseFragment
+import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
@@ -47,6 +49,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
     private var scrollPosition = 0
+    private var stateScrollable = true
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -56,40 +59,40 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     override fun initView() {
         super.initView()
 
-        binding?.root?.let { rootView ->
-            rootView.viewTreeObserver.addOnGlobalLayoutListener {
-                val r = Rect()
-                rootView.getWindowVisibleDisplayFrame(r)
-                val screenHeight = rootView.height
-                val keypadHeight = screenHeight - r.bottom
-
-                if (keypadHeight > screenHeight * 0.15) {
-                    Log.e("ChatFragment", "Bàn phím đã xuất hiện")
-                    // Bàn phím đã xuất hiện
-                    val position = binding?.rcvChat?.computeVerticalScrollOffset() ?: 0
-//                    binding?.rcvChat?.scrollBy(0, scrollPosition - position)
-                    binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-                } else {
-                    Log.e("ChatFragment", "Bàn phím đã ẩn")
-                    // Bàn phím đã xuất hiện
-                    scrollPosition = binding?.rcvChat?.computeVerticalScrollOffset()
-                        ?: 0 // Cập nhật vị trí scroll
-                }
-            }
-        }
-
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
-            chatAdapter = ChatAdapter(conversation?.friendId ?: "")
+            chatAdapter = ChatAdapter(requireActivity(), conversation?.friendId ?: "")
             chatAdapter?.longClickItemSender = { data ->
                 showPopupOption(data.first, data.second)
             }
             chatAdapter?.longClickItemReceiver = { data ->
                 showPopupOption(data.first, data.second, false)
             }
-//            chatAdapter?.seenMessage = {
-//                binding?.rcvChat?.scrollToPosition(chatAdapter?.itemCount?.minus(1) ?: 0)
-//            }
+            chatAdapter?.clickPhoto = { pair ->
+                val fromSender = pair.second
+                val keyId = if (fromSender) viewModel?.shared?.getAuth()
+                    .toString() else conversation?.friendId.toString()
+                val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
+                intent.putExtra(PreviewPhotoActivity.OBJECT_MESSAGE, pair.first.first)
+                intent.putExtra(PreviewPhotoActivity.PHOTO_DATA, pair.first.second)
+                intent.putExtra(PreviewPhotoActivity.KEY_ID, keyId)
+                activity?.startActivity(intent)
+            }
+            chatAdapter?.clickOptionMenuPhoto = { msg ->
+                val bottomSheetOptionPhoto = BottomSheetOptionPhoto()
+                bottomSheetOptionPhoto.show(parentFragmentManager, "")
+                bottomSheetOptionPhoto.setOnClickOptionPho(object :
+                    BottomSheetOptionPhoto.OnClickOptionPhoto {
+                    override fun savePhotoOrVideo() {
+
+                    }
+
+                    override fun remove() {
+                        conversation?.let { viewModel?.removeMessage(it, msg.time) }
+                    }
+
+                })
+            }
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
         }
@@ -119,6 +122,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val layoutSender: LinearLayout = popupView.findViewById(R.id.layoutSender)
         val layoutReceiver: LinearLayout = popupView.findViewById(R.id.layoutReceiver)
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
+        val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
 
         if (isItemSender) {
             layoutSender.isVisible = true
@@ -174,6 +178,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             popupWindow.dismiss()
             Toast.makeText(requireActivity(), "Bạn đã sao chép tin nhắn", Toast.LENGTH_SHORT).show()
         }
+
+        btnRemoveMessage.setOnClickListener {
+            conversation?.let {
+                viewModel?.removeMessage(it, message.time)
+                popupWindow.dismiss()
+            }
+        }
     }
 
     @Deprecated("Deprecated in Java")
@@ -184,9 +195,49 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             when (requestCode) {
                 REQUEST_CODE_MULTI_PICTURE -> {
                     if (data.clipData != null) {
+                        val uris = arrayListOf<Uri>()
                         val count: Int = data.clipData!!.itemCount
+                        for (i in 0 until count) {
+                            uris.add(data.clipData!!.getItemAt(i).uri)
+                        }
+
+                        conversation?.let {
+                            viewModel?.uploadListPhoto(
+                                context = requireActivity(),
+                                uris = uris,
+                                conversation = it,
+                                time = DateUtils.getTimeCurrent()
+                            )
+                        }
+                        stateScrollable = true
                     }
-                }
+//                    val clipData = data.clipData
+//                    if (clipData != null) {
+//                        val uris = arrayListOf<Pair<Uri, Int>>()
+//                        // Người dùng chọn nhiều file
+//                        for (i in 0 until clipData.itemCount) {
+//                            val mediaUri = clipData.getItemAt(i).uri
+//                            val mimeType = activity?.contentResolver?.getType(mediaUri)
+//                            when {
+//                                mimeType?.startsWith("image/") == true -> {
+//                                    uris.add(Pair(clipData.getItemAt(i).uri, 0))
+//                                }
+//                                mimeType?.startsWith("video/") == true -> {
+//                                    uris.add(Pair(clipData.getItemAt(i).uri, 1))
+//                                }
+//                            }
+//                        }
+//                        conversation?.let {
+//                            viewModel?.uploadListPhoto(
+//                                context = requireActivity(),
+//                                uris = uris,
+//                                conversation = it,
+//                                time = DateUtils.getTimeCurrent()
+//                            )
+//                        }
+//                        stateScrollable = true
+                    }
+
             }
         }
     }
@@ -194,7 +245,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     override fun bindData() {
         super.bindData()
 
-        conversation?.let { cvt->
+        conversation?.let { cvt ->
             viewModel?.getMessage(friendId = cvt.friendId)
 
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
@@ -202,9 +253,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
                             chatAdapter?.setMessage(msg)
-                            binding?.rcvChat?.scrollToPosition(
-                                chatAdapter?.itemCount?.minus(1) ?: 0
-                            )
+                            if (stateScrollable) {
+                                binding?.rcvChat?.scrollToPosition(
+                                    chatAdapter?.itemCount?.minus(1) ?: 0
+                                )
+                                stateScrollable = false
+                            }
                             updateSeenMessage(msg)
                         }
                     }
@@ -224,14 +278,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             friendId = conversation?.friendId ?: "",
             userId = userId,
             success = { cvt ->
-                if(cvt.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
+                if (cvt.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
                     chatAdapter?.seen = true
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
                 } else {
                     chatAdapter?.seen = false
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
                 }
-                conversation?.let {  viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
+                conversation?.let { viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
             }
         )
     }
@@ -250,6 +304,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewModel?.sendMessage(message = message, time = time, conversation = cvt)
                 binding?.edtMessage?.setText("")
             }
+            stateScrollable = true
         }
 
         binding?.btnSelectImage?.setOnClickListener {
@@ -262,6 +317,23 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 Intent.createChooser(intent, SELECT_MULTI_PICTURE),
                 REQUEST_CODE_MULTI_PICTURE
             )
+
+//            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+//                type = "*/*"
+//                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
+//                addCategory(Intent.CATEGORY_OPENABLE)
+//                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) // Cho phép chọn nhiều file
+//            }
+//            startActivityForResult(
+//                Intent.createChooser(intent, "select multi"),
+//                REQUEST_CODE_MULTI_PICTURE
+//            )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val notificationManager = context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancelAll()
     }
 }

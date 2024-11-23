@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_border_top"
+    android:orientation="vertical">
+
+    <View
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_corner_25_blue_light"
+        android:layout_width="50dp"
+        android:layout_height="6dp"
+        android:backgroundTint="@color/text_hint"/>
+
+    <TextView
+        android:layout_marginTop="20dp"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/option"
+        android:textSize="15sp"
+        android:textColor="@color/text_common"
+        android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/font_noto_sans"/>
+
+    <View
+        android:layout_marginTop="15dp"
+        android:background="@color/grey_bg"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"/>
+
+    <TextView
+        android:id="@+id/tvSavePhotoVideo"
+        android:paddingStart="15dp"
+        android:paddingVertical="15dp"
+        android:text="@string/save_photo_video"
+        android:textSize="16sp"
+        android:textColor="@color/text_common"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:ignore="RtlSymmetry" />
+
+    <View
+        android:layout_marginStart="15dp"
+        android:background="@color/grey_bg"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"/>
+
+    <TextView
+        android:id="@+id/tvRemove"
+        android:paddingStart="15dp"
+        android:paddingVertical="15dp"
+        android:text="@string/delete"
+        android:textSize="16sp"
+        android:textColor="@color/text_common"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:ignore="RtlSymmetry" />
+
+    <View
+        android:layout_marginStart="15dp"
+        android:layout_marginBottom="2dp"
+        android:background="@color/grey_bg"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"/>
+</LinearLayout>

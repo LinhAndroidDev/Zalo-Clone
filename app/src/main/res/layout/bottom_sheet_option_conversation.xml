@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@drawable/bg_border_top"
+    android:orientation="vertical">
+
+    <View
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_corner_25_blue_light"
+        android:layout_width="50dp"
+        android:layout_height="6dp"
+        android:backgroundTint="@color/text_hint"/>
+
+    <TextView
+        android:layout_marginTop="20dp"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/option"
+        android:textSize="15sp"
+        android:textColor="@color/text_common"
+        android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/font_noto_sans"/>
+
+    <View
+        android:layout_marginTop="15dp"
+        android:background="@color/grey_bg"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        tools:ignore="UseCompoundDrawables">
+
+        <ImageView
+            android:layout_marginStart="15dp"
+            android:layout_marginEnd="15dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_pin"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:rotationY="180"
+            app:tint="@color/black"/>
+
+        <TextView
+            android:layout_marginVertical="15dp"
+            android:text="@string/pin"
+            android:textSize="14sp"
+            android:textColor="@color/text_common"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+    <View
+        android:layout_marginStart="15dp"
+        android:background="@color/grey_bg"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        tools:ignore="UseCompoundDrawables">
+
+        <ImageView
+            android:layout_marginStart="15dp"
+            android:layout_marginEnd="15dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_notification_off"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            app:tint="@color/black"/>
+
+        <TextView
+            android:layout_marginVertical="15dp"
+            android:text="@string/turn_off_notification"
+            android:textSize="14sp"
+            android:textColor="@color/text_common"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+    <View
+        android:layout_marginStart="15dp"
+        android:layout_marginBottom="2dp"
+        android:background="@color/grey_bg"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        tools:ignore="UseCompoundDrawables">
+
+        <ImageView
+            android:layout_marginStart="15dp"
+            android:layout_marginEnd="15dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_hide"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:rotationY="180" />
+
+        <TextView
+            android:layout_marginVertical="15dp"
+            android:text="@string/hide"
+            android:textSize="14sp"
+            android:textColor="@color/text_common"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+</LinearLayout>

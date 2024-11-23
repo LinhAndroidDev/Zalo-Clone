@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.view.isVisible
+import androidx.core.widget.doOnTextChanged
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.databinding.CustomHeaderViewBinding
@@ -19,6 +20,15 @@ class CustomHeaderView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr) {
     private var binding: CustomHeaderViewBinding? = null
+    private var mTypeSearchListener: OnTypeSearchListener? = null
+
+    interface OnTypeSearchListener {
+        fun callBackKeySearch(keySearch: String)
+    }
+
+    fun setOnTypeSearch(typeSearchListener: OnTypeSearchListener) {
+        this.mTypeSearchListener = typeSearchListener
+    }
 
     init {
         binding = CustomHeaderViewBinding.inflate(LayoutInflater.from(context))
@@ -97,6 +107,10 @@ class CustomHeaderView @JvmOverloads constructor(
                 context.getFragmentActivity()?.supportFragmentManager?.findFragmentById(R.id.navHostFragment)
                     ?.findNavController()
             navController?.navigate(R.id.settingFragment)
+        }
+
+        binding?.viewSearch?.edtSearch?.doOnTextChanged { text, start, before, count ->
+            mTypeSearchListener?.callBackKeySearch(text.toString())
         }
     }
 

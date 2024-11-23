@@ -16,7 +16,6 @@
     <string name="see_more">Xem thêm</string>
     <string name="note_chat">Dễ dàng tìm kiếm và trò chuyện với bạn bè</string>
     <string name="find_more_friend">Tìm thêm bạn</string>
-    <string name="mini_app_use_recent">Mini App sử dụng gần đây</string>
     <string name="contact_found">Liên hệ đã tìm</string>
     <string name="vietnamese">Tiếng Việt</string>
     <string name="login">Đăng nhập</string>
@@ -43,7 +42,7 @@
     <string name="password">Mật khẩu</string>
     <string name="get_password">Lấy lại mật khẩu</string>
     <string name="show">HIỆN</string>
-    <string name="hide">ẨN</string>
+    <string name="hide">Ẩn</string>
     <string name="select_language">Chọn ngôn ngữ</string>
     <string name="english">English</string>
     <string name="confirm_phone_number">Xác nhận số điện thoại</string>
@@ -65,7 +64,7 @@
     <string name="enter_password_again">Nhập lại mật khẩu</string>
     <string name="older">Cũ hơn</string>
     <string name="want_to_make_friends">Muốn kết bạn</string>
-    <string name="you_may_be_familiar_with">Có thể bạn quen</string>
+    <string name="you_may_be_familiar_with">Có thể bạn quen (%s)</string>
     <string name="add">Thêm</string>
     <string name="view_profile">Xem trang cá nhân</string>
     <string name="log_out">Đăng xuất</string>
@@ -85,4 +84,8 @@
     <string name="select_photo_on_device">Chọn ảnh trên máy</string>
     <string name="replied_to_message_of">Đã trả lời tin nhắn của %s</string>
     <string name="received">Đã nhận</string>
+    <string name="option">Tuỳ chọn</string>
+    <string name="save_photo_video">Lưu ảnh, video</string>
+    <string name="un_read">Chưa đọc</string>
+    <string name="turn_off_notification">Tắt thông báo</string>
 </resources>

@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:app="http://schemas.android.com/apk/res-auto">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
+    <RelativeLayout
+        android:id="@+id/rootView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/grey_bg"
         android:orientation="vertical"
-        android:id="@+id/rootView"
         tools:context=".fragment.ChatFragment">
 
         <com.example.messageapp.custom.CustomHeaderView
@@ -18,17 +19,17 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rcvChat"
-            android:layout_marginBottom="45dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/header"
+            android:layout_marginBottom="45dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         <View
             android:id="@+id/viewMarginKeyBoard"
-            android:layout_below="@id/rcvChat"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_below="@id/rcvChat" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -41,6 +42,7 @@
                 android:layout_width="25dp"
                 android:layout_height="25dp"
                 android:layout_marginStart="10dp"
+                android:importantForAccessibility="no"
                 android:src="@drawable/ic_sticker_smile" />
 
             <EditText
@@ -51,8 +53,10 @@
                 android:layout_weight="1"
                 android:background="@color/white"
                 android:hint="@string/message"
+                android:importantForAutofill="no"
                 android:textColor="@color/text_common"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                tools:ignore="TextFields" />
 
             <LinearLayout
                 android:id="@+id/viewOptions"
@@ -63,6 +67,7 @@
                 <ImageView
                     android:layout_width="25dp"
                     android:layout_height="25dp"
+                    android:importantForAccessibility="no"
                     android:src="@drawable/ic_menu_circle" />
 
                 <ImageView
@@ -70,6 +75,7 @@
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_marginStart="20dp"
+                    android:importantForAccessibility="no"
                     android:src="@drawable/ic_micro" />
 
                 <ImageView
@@ -78,7 +84,8 @@
                     android:layout_height="25dp"
                     android:layout_marginStart="20dp"
                     android:layout_marginEnd="10dp"
-                    android:background="@drawable/ic_image" />
+                    android:background="@drawable/ic_image"
+                    android:importantForAccessibility="no" />
             </LinearLayout>
 
             <ImageView
@@ -89,14 +96,15 @@
                 android:layout_marginEnd="10dp"
                 android:layout_marginBottom="7dp"
                 android:background="@drawable/ic_send"
+                android:importantForAccessibility="no"
                 android:visibility="gone" />
         </LinearLayout>
 
         <View
             android:id="@+id/viewCoverPopupOptions"
-            android:background="@color/transparent_popup_options"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"/>
+            android:background="@color/transparent_popup_options"
+            android:visibility="gone" />
     </RelativeLayout>
 </layout>

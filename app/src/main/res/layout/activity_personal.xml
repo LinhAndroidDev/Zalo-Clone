@@ -25,6 +25,7 @@
             android:layout_marginBottom="40dp"
             android:layout_width="match_parent"
             android:layout_height="200dp"
+            android:importantForAccessibility="no"
             android:scaleType="centerCrop"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -42,13 +43,14 @@
             <ImageView
                 android:layout_marginVertical="10dp"
                 android:layout_marginStart="15dp"
-                android:src="@drawable/ic_back"
+                android:importantForAccessibility="no" android:src="@drawable/ic_back"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 app:tint="@color/white" />
         </LinearLayout>
 
         <ImageView
+            android:importantForAccessibility="no"
             android:src="@drawable/ic_menu_circle"
             android:layout_width="25dp"
             android:layout_height="25dp"
@@ -86,9 +88,11 @@
         android:layout_marginTop="5dp"
         android:layout_gravity="center_horizontal"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        tools:ignore="UseCompoundDrawables">
 
         <ImageView
+            android:importantForAccessibility="no"
             android:src="@drawable/ic_edit_personal"
             android:layout_width="20dp"
             android:layout_height="20dp"
