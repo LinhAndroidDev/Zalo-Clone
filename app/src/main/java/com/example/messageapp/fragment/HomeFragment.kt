@@ -3,7 +3,6 @@ package com.example.messageapp.fragment
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
-import android.view.animation.AnimationUtils
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.MainActivity
@@ -14,6 +13,7 @@ import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionConversation
 import com.example.messageapp.databinding.FragmentHomeBinding
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -39,12 +39,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
             bottomSheetOptionConversation.show(parentFragmentManager, "")
         }
         binding?.rcvListChat?.adapter = listChatAdapter
-        val animFadeIn =
-            AnimationUtils.loadLayoutAnimation(requireActivity(), R.anim.layout_fade_in)
-        binding?.rcvListChat?.layoutAnimation = animFadeIn
+        AnimatorUtils.fadeInItemRecyclerView(requireActivity(), binding?.rcvListChat)
 
         binding?.rcvSuggestFriend?.adapter = suggestFriendAdapter
-        binding?.rcvSuggestFriend?.layoutAnimation = animFadeIn
+        AnimatorUtils.fadeInItemRecyclerView(requireActivity(), binding?.rcvSuggestFriend)
         suggestFriendAdapter.onClickItem = { friend ->
             goToChatFragment(Conversation(friend))
         }

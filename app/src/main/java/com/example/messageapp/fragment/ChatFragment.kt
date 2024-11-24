@@ -12,6 +12,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.Intent
+import android.media.MediaPlayer
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
@@ -35,6 +36,7 @@ import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
+import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
@@ -114,7 +116,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
      * the popup will show above the message item, otherwise it will show below.
      * This is how to calculate so that the popup does not lose view when it is near the bottom of the screen.
      */
-    @SuppressLint("MissingInflatedId", "InflateParams")
+    @SuppressLint("MissingInflatedId", "InflateParams", "ClickableViewAccessibility")
     private fun showPopupOption(anchor: View, message: Message, isItemSender: Boolean = true) {
         // Lấy LayoutInflater để inflate layout của PopupWindow
         val inflater = requireActivity().getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -123,6 +125,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val layoutReceiver: LinearLayout = popupView.findViewById(R.id.layoutReceiver)
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
         val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
+        val layoutEmotion: LinearLayout = popupView.findViewById(R.id.layoutEmotion)
+        val layoutPopupOptions: LinearLayout = popupView.findViewById(R.id.layoutPopupOptions)
+
+        val soundEmotion = MediaPlayer.create(requireActivity(), R.raw.sound_emotion)
+        soundEmotion.start()
+        AnimatorUtils.scaleEmotion(requireActivity(), layoutEmotion)
 
         if (isItemSender) {
             layoutSender.isVisible = true
