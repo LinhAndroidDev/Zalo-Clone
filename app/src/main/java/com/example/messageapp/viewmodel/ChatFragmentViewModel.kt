@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.FireBaseInstance
@@ -147,6 +148,15 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             conversation = conversation,
             userId = shared.getAuth(),
             time = time
+        )
+    }
+
+    fun releaseEmotion(time: String, friendId: String, data: Emotion) {
+        val idRoom = listOf(friendId, shared.getAuth()).sorted().toString()
+        FireBaseInstance.releaseEmotion(
+            time = time,
+            idRoom = idRoom,
+            data = data,
         )
     }
 }

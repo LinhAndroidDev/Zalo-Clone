@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.User
@@ -14,6 +15,7 @@ import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -457,5 +459,16 @@ object FireBaseInstance {
                 }
             }
 
+    }
+
+    fun releaseEmotion(time: String, idRoom: String, data: Emotion) {
+        db.collection(PATH_MESSAGE)
+            .document(idRoom)
+            .collection(PATH_CHAT)
+            .document(time)
+            .set(
+                mapOf("emotion" to data),
+                SetOptions.mergeFields("emotion")
+            )
     }
 }

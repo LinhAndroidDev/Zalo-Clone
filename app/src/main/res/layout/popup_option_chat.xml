@@ -76,12 +76,14 @@
         android:paddingHorizontal="15dp">
 
         <ImageView
+            android:id="@+id/imgFavourite"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:importantForAccessibility="no"
             android:src="@drawable/emotion_favourite" />
 
         <ImageView
+            android:id="@+id/imgLike"
             android:layout_width="25dp"
             android:layout_height="25dp"
             android:layout_marginStart="15dp"
@@ -89,6 +91,7 @@
             android:src="@drawable/emotion_like" />
 
         <ImageView
+            android:id="@+id/imgLaugh"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_marginStart="10dp"
@@ -96,6 +99,7 @@
             android:src="@drawable/emotion_laugh" />
 
         <ImageView
+            android:id="@+id/imgCry"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_marginStart="10dp"
@@ -103,6 +107,7 @@
             android:src="@drawable/emotion_cry" />
 
         <ImageView
+            android:id="@+id/imgAngry"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_marginStart="10dp"

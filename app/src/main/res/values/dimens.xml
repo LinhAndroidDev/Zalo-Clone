@@ -2,4 +2,6 @@
 <resources>
     <dimen name="margin_50">50dp</dimen>
     <dimen name="width_popup_options">275dp</dimen>
+    <dimen name="margin_100">100dp</dimen>
+    <dimen name="margin_20">20dp</dimen>
 </resources>

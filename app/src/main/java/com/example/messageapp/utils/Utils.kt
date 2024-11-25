@@ -31,6 +31,14 @@ fun EditText.showKeyboard() {
     imm.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
 }
 
+fun Fragment.hideKeyboard() {
+    val inputMethodManager = requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    val view = requireActivity().currentFocus
+    view?.let {
+        inputMethodManager.hideSoftInputFromWindow(it.windowToken, 0)
+    }
+}
+
 fun View.showViewAboveKeyBoard(rootView: View) {
     rootView.viewTreeObserver.addOnGlobalLayoutListener {
         val r = Rect()

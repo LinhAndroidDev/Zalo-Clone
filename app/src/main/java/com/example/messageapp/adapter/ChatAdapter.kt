@@ -80,8 +80,21 @@ class ChatAdapter(
         when (holder.itemViewType) {
             VIEW_SENDER -> {
                 holder as SenderViewHolder
+                if (message.emotion?.emotionEmpty() == false) {
+                    holder.v.viewEmotion.isVisible = true
+                    holder.v.viewReleaseEmotion.isVisible = true
+                    holder.v.viewReleaseEmotion.updateReleaseEmotion(message.emotion!!)
+                } else {
+                    holder.v.viewEmotion.isVisible = false
+                    holder.v.viewReleaseEmotion.isVisible = false
+                }
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
+                        holder.v.viewMarginBottomMessage.isVisible = message.emotion?.emotionEmpty() == false
+                        holder.v.viewMarginEmotion.layoutParams = LayoutParams(
+                            context.resources.getDimensionPixelSize(R.dimen.margin_100),
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
                         holder.showViewMessage(true)
                         holder.v.tvSender.text = message.message
                         holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
@@ -92,6 +105,11 @@ class ChatAdapter(
                     }
 
                     TypeMessage.PHOTOS -> {
+                        holder.v.viewEmotion.isVisible = true
+                        holder.v.viewMarginEmotion.layoutParams = LayoutParams(
+                            context.resources.getDimensionPixelSize(R.dimen.margin_50),
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
                         holder.showViewMessage(false)
                         holder.v.viewMessage.isVisible = false
                         holder.v.viewPhotos.isVisible = true
@@ -99,6 +117,11 @@ class ChatAdapter(
                     }
 
                     TypeMessage.SINGLE_PHOTO -> {
+                        holder.v.viewEmotion.isVisible = true
+                        holder.v.viewMarginEmotion.layoutParams = LayoutParams(
+                            context.resources.getDimensionPixelSize(R.dimen.margin_50),
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
                         holder.showViewMessage(false)
                         holder.v.viewMessage.isVisible = false
                         holder.v.viewPhotos.isVisible = true

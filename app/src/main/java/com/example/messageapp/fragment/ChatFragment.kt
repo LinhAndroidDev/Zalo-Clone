@@ -17,6 +17,7 @@ import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
@@ -35,10 +36,12 @@ import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +53,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
-    private var scrollPosition = 0
     private var stateScrollable = true
 
     companion object {
@@ -126,8 +128,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
         val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
         val layoutEmotion: LinearLayout = popupView.findViewById(R.id.layoutEmotion)
-        val layoutPopupOptions: LinearLayout = popupView.findViewById(R.id.layoutPopupOptions)
+        val imgFavourite: ImageView = popupView.findViewById(R.id.imgFavourite)
+        val imgLike: ImageView = popupView.findViewById(R.id.imgLike)
+        val imgLaugh: ImageView = popupView.findViewById(R.id.imgLaugh)
+        val imgCry: ImageView = popupView.findViewById(R.id.imgCry)
+        val imgAngry: ImageView = popupView.findViewById(R.id.imgAngry)
 
+        hideKeyboard()
         val soundEmotion = MediaPlayer.create(requireActivity(), R.raw.sound_emotion)
         soundEmotion.start()
         AnimatorUtils.scaleEmotion(requireActivity(), layoutEmotion)
@@ -192,6 +199,41 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewModel?.removeMessage(it, message.time)
                 popupWindow.dismiss()
             }
+        }
+
+        imgFavourite.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(favourite = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
+        }
+
+        imgLike.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(like = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
+        }
+
+        imgLaugh.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(laugh = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
+        }
+
+        imgCry.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(cry = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
+        }
+
+        imgAngry.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(angry = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
         }
     }
 
