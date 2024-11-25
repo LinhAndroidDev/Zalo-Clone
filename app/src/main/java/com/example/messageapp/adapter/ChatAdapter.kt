@@ -32,11 +32,19 @@ class ChatAdapter(
     private val friendId: String,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
-    var longClickItemSender: ((Pair<View, Message>) -> Unit)? = null
-    var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
     var seen: Boolean = false
-    var clickPhoto: ((Pair<Pair<Message, String>, Boolean>) -> Unit)? = null
-    var clickOptionMenuPhoto: ((Message) -> Unit)? = null
+    private var mCallBack: CallBackClickItem? = null
+
+    fun setOnActionClickItem(callBackClickItem: CallBackClickItem) {
+        this.mCallBack = callBackClickItem
+    }
+
+    interface CallBackClickItem {
+        fun longClickItemSender(data: (Pair<View, Message>))
+        fun longClickItemReceiver(data: (Pair<View, Message>))
+        fun clickPhoto(data: (Pair<Pair<Message, String>, Boolean>))
+        fun clickOptionMenuPhoto(msg: Message)
+    }
 
     @SuppressLint("NotifyDataSetChanged")
     fun setMessage(list: ArrayList<Message>) {
@@ -99,7 +107,7 @@ class ChatAdapter(
                         holder.v.tvSender.text = message.message
                         holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
                         holder.v.viewMessage.setOnLongClickListener {
-                            longClickItemSender?.invoke(it to message)
+                            mCallBack?.longClickItemSender(it to message)
                             true
                         }
                     }
@@ -130,7 +138,7 @@ class ChatAdapter(
                 }
                 checkShowSeenMessage(holder, position)
                 holder.v.optionMenuPhoto.setOnClickListener {
-                    clickOptionMenuPhoto?.invoke(message)
+                    mCallBack?.clickOptionMenuPhoto(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
@@ -149,7 +157,7 @@ class ChatAdapter(
                         holder.v.tvReceiver.text = message.message
                         holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
                         holder.v.layoutMessage.setOnLongClickListener {
-                            longClickItemReceiver?.invoke(it to message)
+                            mCallBack?.longClickItemReceiver(it to message)
                             true
                         }
                     }
@@ -169,7 +177,7 @@ class ChatAdapter(
                     }
                 }
                 holder.v.optionMenuPhoto.setOnClickListener {
-                    clickOptionMenuPhoto?.invoke(message)
+                    mCallBack?.clickOptionMenuPhoto(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
@@ -215,7 +223,7 @@ class ChatAdapter(
         imageView.layoutParams =
             ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
         imageView.setOnClickListener {
-            clickPhoto?.invoke(Pair(Pair(message, photo), fromSender))
+            mCallBack?.clickPhoto(Pair(Pair(message, photo), fromSender))
         }
         viewPhoto.addView(imageView)
         context.loadImg(
@@ -243,7 +251,7 @@ class ChatAdapter(
                             rightMargin = if (j == 3 * i + 2) 0 else 8
                         }
                     imgPhoto.setOnClickListener {
-                        clickPhoto?.invoke(Pair(Pair(message, photos[j]), fromSender))
+                        mCallBack?.clickPhoto(Pair(Pair(message, photos[j]), fromSender))
                     }
                     imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
                     context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
