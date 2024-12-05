@@ -98,6 +98,13 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
+    /**
+     * This function used to upload photo to FireStore
+     * @param context context
+     * @param uri data uri of photo
+     * @param conversation data friend
+     * @param time time message sent
+     */
     fun uploadListPhoto(
         context: Context,
         uris: ArrayList<Uri>,
@@ -143,6 +150,13 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
+    /**
+     * This function used to remove message
+     * @param context context
+     * @param uri data uri of photo
+     * @param conversation data friend
+     * @param time time message sent
+     */
     fun removeMessage(conversation: Conversation, time: String) = viewModelScope.launch {
         FireBaseInstance.removeMessage(
             conversation = conversation,
@@ -151,6 +165,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
+    /**
+     * This function used to release emotion
+     * @param time time message sent
+     * @param friendId key auth of friend
+     * @param data data emotion
+     */
     fun releaseEmotion(time: String, friendId: String, data: Emotion) {
         val idRoom = listOf(friendId, shared.getAuth()).sorted().toString()
         FireBaseInstance.releaseEmotion(

@@ -46,6 +46,10 @@ object FireBaseInstance {
     /**
      * This function is used to check the login of the user
      * + By query whereEqualTo @param email and @param password
+     * @param email email of user
+     * @param password password of user
+     * @param success callback when query is successful
+     * @param failure callback when query is failed
      */
     fun checkLogin(
         email: String,
@@ -67,6 +71,8 @@ object FireBaseInstance {
 
     /**
      * This function is used to get all users from the FireStore database
+     * @param success callback when query is successful
+     * @param failure callback when query is failed
      */
     fun getUsers(success: (QuerySnapshot) -> Unit, failure: (String) -> Unit) {
         db.collection(PATH_USER).get().addOnSuccessListener { result ->
@@ -78,6 +84,9 @@ object FireBaseInstance {
 
     /**
      * This function is used to add a new user to the FiresStore database
+     * @param user data user
+     * @param success callback when query is successful
+     * @param failure callback when query is failed
      */
     fun addUser(
         user: HashMap<String, String>,
@@ -94,6 +103,8 @@ object FireBaseInstance {
 
     /**
      * This function is used to get all messages from the FireStore database
+     * @param idRoom id room of chat room
+     * @param success callback when query is successful
      */
     fun getMessage(
         idRoom: String,
@@ -117,6 +128,13 @@ object FireBaseInstance {
      * This function is used to send a message to the FireStore database
      * + Here we send a message and create 2 conversations between the sender and the receiver
      * + Then send a notification to the receiver via the receiver's token.
+     * @param message data message
+     * @param userId key auth of user
+     * @param time time message sent
+     * @param conversation data conversation
+     * @param nameSender name of sender
+     * @param type type of message
+     * @param success callback when query is successful
      */
     fun sendMessage(
         message: Message,
@@ -234,6 +252,9 @@ object FireBaseInstance {
 
     /**
      * This function is used to get all conversations from the FireStore database
+     * @param userId key auth of user
+     * @param success callback when query is successful
+     * @param failure callback when query is failed
      */
     fun getListConversation(
         userId: String,
@@ -253,6 +274,8 @@ object FireBaseInstance {
 
     /**
      * This function is used to save token of user to the FireStore database
+     * @param userId key auth of user
+     * @param data data token
      */
     fun saveTokenMessage(userId: String, data: HashMap<String, String>) {
         db.collection(PATH_TOKEN).document(userId).set(data).addOnSuccessListener {
@@ -261,6 +284,9 @@ object FireBaseInstance {
 
     /**
      * This function is used to get token of receiver from the FireStore database
+     * @param friendId key auth of friend
+     * @param success callback when query is successful
+     * @param failure callback when query is failed
      */
     private fun getTokenMessage(
         friendId: String,
@@ -283,6 +309,8 @@ object FireBaseInstance {
 
     /**
      * This function is used to get information user from the FireStore database
+     * @param userId key auth of user
+     * @param success callback when query is successful
      */
     fun getInfoUser(userId: String, success: (User) -> Unit) {
         db.collection(PATH_USER)
@@ -301,6 +329,9 @@ object FireBaseInstance {
 
     /**
      * This function is used to upload image to the Storage Firebase
+     * @param context context of activity
+     * @param uriPhoto uri of photo
+     * @param success callback when upload is successful
      */
     fun uploadImage(context: Context, uriPhoto: Uri, success: (String) -> Unit) {
         storage.child(PATH_IMAGE)
@@ -317,6 +348,8 @@ object FireBaseInstance {
 
     /**
      * This function is used to update avatar of user to the FireStore database
+     * @param avatar data avatar
+     * @param userId key auth of user
      */
     fun updateAvatarUser(avatar: String, userId: String) {
         db.collection(PATH_USER)
@@ -326,6 +359,9 @@ object FireBaseInstance {
 
     /**
      * This function is used to get conversation from the FireStore database
+     * @param friendId key auth of friend
+     * @param userId key auth of user
+     * @param success callback when query is successful
      */
     fun getConversation(friendId: String, userId: String, success: (Conversation) -> Unit) {
         db.collection("Conversation${friendId}")
@@ -339,6 +375,9 @@ object FireBaseInstance {
 
     /**
      * This function is used to get conversation from the FireStore database with Realtime
+     * @param friendId key auth of friend
+     * @param userId key auth of user
+     * @param success callback when query is successful
      */
     fun getConversationRlt(friendId: String, userId: String, success: (Conversation) -> Unit) {
         db.collection("Conversation${friendId}")
@@ -353,6 +392,8 @@ object FireBaseInstance {
 
     /**
      * This function is used to update seen message for conversation user and friend
+     * @param userId key auth of user
+     * @param friendId key auth of friend
      */
     fun seenMessage(userId: String, friendId: String) {
         db.collection("Conversation${friendId}")
@@ -371,6 +412,8 @@ object FireBaseInstance {
 
     /**
      * This function is used to get number of unread messages from the FireStore database
+     * @param userId key auth of user
+     * @param number callback number of unread messages
      */
     fun getNumberUnreadMessages(userId: String, number: (Int) -> Unit) {
         db.collection("Conversation${userId}")
@@ -386,6 +429,15 @@ object FireBaseInstance {
             }
     }
 
+    /**
+     * This function is used to upload list photo to the Storage Firebase
+     * @param context context of activity
+     * @param uris list uri of photo
+     * @param friendId key auth of friend
+     * @param userId key auth of user
+     * @param process callback when upload is processing
+     * @param success callback when upload is successful
+     */
     fun uploadListPhoto(
         context: Context,
         uris: ArrayList<Uri>,
@@ -406,6 +458,12 @@ object FireBaseInstance {
             success.invoke(photos)
         }
 
+    /**
+     * This function is used to upload photo to the Storage Firebase
+     * @param context context of activity
+     * @param uri uri of photo
+     * @param idRoom id room of chat room
+     */
     private suspend fun uploadPhoto(context: Context, uri: Uri, idRoom: List<String>): String? {
         return suspendCoroutine { continuation ->
             val storageRef = storage.child("photo")
@@ -426,6 +484,12 @@ object FireBaseInstance {
         }
     }
 
+    /**
+     * This function is used to remove message from the FireStore database
+     * @param conversation data conversation
+     * @param userId key auth of user
+     * @param time time message sent
+     */
     fun removeMessage(conversation: Conversation, userId: String, time: String) {
         val idRoom = listOf(conversation.friendId, userId).sorted()
         db.collection(PATH_MESSAGE)
@@ -435,12 +499,22 @@ object FireBaseInstance {
             .delete()
     }
 
+    /**
+     * This function is used to update photo cover of user to the FireStore database
+     * @param userId key auth of user
+     * @param imageCover data image cover
+     */
     fun updateImageCover(userId: String, imageCover: String) {
         db.collection(PATH_USER)
             .document(userId)
             .update("imageCover", imageCover)
     }
 
+    /**
+     * This function is used to search friend from the FireStore database
+     * @param queryText query text search
+     * @param success callback when query is successful
+     */
     fun searchFriend(queryText: String, success: (ArrayList<User>) -> Unit) {
         val queryLowerCase = removeAccent(queryText.lowercase())
 
@@ -461,6 +535,12 @@ object FireBaseInstance {
 
     }
 
+    /**
+     * This function is used to release emotion from the FireStore database
+     * @param time time message sent
+     * @param idRoom id room of chat room
+     * @param data data emotion
+     */
     fun releaseEmotion(time: String, idRoom: String, data: Emotion) {
         db.collection(PATH_MESSAGE)
             .document(idRoom)
