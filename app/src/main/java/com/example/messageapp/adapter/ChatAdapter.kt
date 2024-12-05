@@ -9,6 +9,7 @@ import android.view.ViewGroup.MarginLayoutParams
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -37,13 +38,6 @@ class ChatAdapter(
 
     fun setOnActionClickItem(callBackClickItem: CallBackClickItem) {
         this.mCallBack = callBackClickItem
-    }
-
-    interface CallBackClickItem {
-        fun longClickItemSender(data: (Pair<View, Message>))
-        fun longClickItemReceiver(data: (Pair<View, Message>))
-        fun clickPhoto(data: (Pair<Pair<Message, String>, Boolean>))
-        fun clickOptionMenuPhoto(msg: Message)
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -88,51 +82,21 @@ class ChatAdapter(
         when (holder.itemViewType) {
             VIEW_SENDER -> {
                 holder as SenderViewHolder
-                if (message.emotion?.emotionEmpty() == false) {
-                    holder.v.viewEmotion.isVisible = true
-                    holder.v.viewReleaseEmotion.isVisible = true
-                    holder.v.viewReleaseEmotion.updateReleaseEmotion(message.emotion!!)
-                } else {
-                    holder.v.viewEmotion.isVisible = false
-                    holder.v.viewReleaseEmotion.isVisible = false
-                }
+                holder.checkShowEmotion(message)
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
-                        holder.v.viewMarginBottomMessage.isVisible = message.emotion?.emotionEmpty() == false
-                        holder.v.viewMarginEmotion.layoutParams = LayoutParams(
-                            context.resources.getDimensionPixelSize(R.dimen.margin_100),
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                        )
-                        holder.showViewMessage(true)
-                        holder.v.tvSender.text = message.message
-                        holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
-                        holder.v.viewMessage.setOnLongClickListener {
+                        holder.initViewMessage(context, message) {
                             mCallBack?.longClickItemSender(it to message)
-                            true
                         }
                     }
 
                     TypeMessage.PHOTOS -> {
-                        holder.v.viewEmotion.isVisible = true
-                        holder.v.viewMarginEmotion.layoutParams = LayoutParams(
-                            context.resources.getDimensionPixelSize(R.dimen.margin_50),
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                        )
-                        holder.showViewMessage(false)
-                        holder.v.viewMessage.isVisible = false
-                        holder.v.viewPhotos.isVisible = true
-                        drawViewPhoto(holder.v.viewPhotos, message)
+                        holder.initViewMultiPhoto(context)
+                        drawViewMultiPhoto(holder.v.viewPhotos, message)
                     }
 
                     TypeMessage.SINGLE_PHOTO -> {
-                        holder.v.viewEmotion.isVisible = true
-                        holder.v.viewMarginEmotion.layoutParams = LayoutParams(
-                            context.resources.getDimensionPixelSize(R.dimen.margin_50),
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                        )
-                        holder.showViewMessage(false)
-                        holder.v.viewMessage.isVisible = false
-                        holder.v.viewPhotos.isVisible = true
+                        holder.initViewSinglePhoto(context)
                         loadSinglePhoto(holder.v.viewPhotos, message)
                     }
                 }
@@ -145,34 +109,22 @@ class ChatAdapter(
 
             else -> {
                 holder as ReceiverViewHolder
-                FireBaseInstance.getInfoUser(friendId) { user ->
-                    context.loadImg(
-                        user.avatar.toString(),
-                        holder.v.avatarReceiver
-                    )
-                }
+                holder.checkShowEmotion(message)
+                holder.showAvatarReceiver(context, friendId)
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
-                        holder.showViewMessage(true)
-                        holder.v.tvReceiver.text = message.message
-                        holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
-                        holder.v.layoutMessage.setOnLongClickListener {
+                        holder.initViewMessage(context, message) {
                             mCallBack?.longClickItemReceiver(it to message)
-                            true
                         }
                     }
 
                     TypeMessage.PHOTOS -> {
-                        holder.showViewMessage(false)
-                        holder.v.viewMessage.isVisible = false
-                        holder.v.viewPhotos.isVisible = true
-                        drawViewPhoto(holder.v.viewPhotos, message, false)
+                        holder.initViewMultiPhoto(context)
+                        drawViewMultiPhoto(holder.v.viewPhotos, message, false)
                     }
 
                     TypeMessage.SINGLE_PHOTO -> {
-                        holder.showViewMessage(false)
-                        holder.v.viewMessage.isVisible = false
-                        holder.v.viewPhotos.isVisible = true
+                        holder.initViewSinglePhoto(context)
                         loadSinglePhoto(holder.v.viewPhotos, message, false)
                     }
                 }
@@ -233,7 +185,7 @@ class ChatAdapter(
         )
     }
 
-    private fun drawViewPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
+    private fun drawViewMultiPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
         val photos = message.photos
         viewPhotos.removeAllViews()
         val row = ceil(photos.size / 3f).toInt()
@@ -269,22 +221,143 @@ class ChatAdapter(
         return if (messages[position].sender != friendId) VIEW_SENDER else VIEW_RECEIVER
     }
 
-    class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root) {
+    class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root), ViewTypeMessage {
+
+        fun checkShowEmotion(message: Message) {
+            if (message.emotion?.emotionEmpty() == false) {
+                v.viewEmotion.isVisible = true
+                v.viewReleaseEmotion.isVisible = true
+                v.viewReleaseEmotion.updateReleaseEmotion(message.emotion!!)
+            } else {
+                v.viewEmotion.isVisible = false
+                v.viewReleaseEmotion.isVisible = false
+            }
+        }
+
+        override fun initViewMessage(context: Context, message: Message, longClick: (View) -> Unit) {
+            v.viewMarginBottomMessage.isVisible = message.emotion?.emotionEmpty() == false
+            v.viewMarginEmotion.layoutParams = LayoutParams(
+                context.resources.getDimensionPixelSize(R.dimen.margin_100),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            showViewMessage(true)
+            v.tvSender.text = message.message
+            v.tvTime.text = DateUtils.convertTimeToHour(message.time)
+            v.viewMessage.setOnLongClickListener {
+                longClick.invoke(it)
+                true
+            }
+        }
+
+        override fun initViewMultiPhoto(context: Context) {
+            initEmotionPhoto(context)
+            showViewMessage(false)
+        }
+
+        override fun initViewSinglePhoto(context: Context) {
+            initEmotionPhoto(context)
+            showViewMessage(false)
+        }
+
+        private fun initEmotionPhoto(context: Context) {
+            v.viewEmotion.isVisible = true
+            v.viewMarginEmotion.layoutParams = LayoutParams(
+                context.resources.getDimensionPixelSize(R.dimen.margin_50),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
         fun showSeen(seen: Boolean) {
             this.v.avtSeen.isVisible = seen
             this.v.viewReceived.isVisible = !seen
         }
 
-        fun showViewMessage(show: Boolean) {
+        private fun showViewMessage(show: Boolean) {
             v.layoutPhoto.isVisible = !show
             v.viewMessage.isVisible = show
+            v.viewPhotos.isVisible = !show
         }
     }
 
-    class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root) {
-        fun showViewMessage(show: Boolean) {
+    class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root), ViewTypeMessage {
+        fun showAvatarReceiver(context: Context, friendId: String) {
+            FireBaseInstance.getInfoUser(friendId) { user ->
+                context.loadImg(
+                    user.avatar.toString(),
+                    v.avatarReceiver
+                )
+            }
+        }
+
+        fun checkShowEmotion(message: Message) {
+            if (message.emotion?.emotionEmpty() == false) {
+                v.viewEmotion.isVisible = true
+                v.viewReleaseEmotion.isVisible = true
+                v.viewReleaseEmotion.updateReleaseEmotion(message.emotion!!)
+            } else {
+                v.viewEmotion.isVisible = false
+                v.viewReleaseEmotion.isVisible = false
+            }
+        }
+
+        private fun showViewMessage(show: Boolean) {
             v.layoutPhoto.isVisible = !show
             v.viewMessage.isVisible = show
+            v.viewPhotos.isVisible = !show
         }
+
+        override fun initViewMessage(
+            context: Context,
+            message: Message,
+            longClick: (View) -> Unit
+        ) {
+            v.viewMarginBottomMessage.isVisible = message.emotion?.emotionEmpty() == false
+            context.calculatorViewMarginEmotion(R.dimen.margin_100)
+            showViewMessage(true)
+            v.tvReceiver.text = message.message
+            v.tvTime.text = DateUtils.convertTimeToHour(message.time)
+            v.viewMessage.setOnLongClickListener {
+                longClick.invoke(it)
+                true
+            }
+        }
+
+        override fun initViewMultiPhoto(context: Context) {
+            initEmotionPhoto(context)
+            showViewMessage(false)
+        }
+
+        override fun initViewSinglePhoto(context: Context) {
+            initEmotionPhoto(context)
+            showViewMessage(false)
+        }
+
+        private fun initEmotionPhoto(context: Context) {
+            v.viewEmotion.isVisible = true
+            context.calculatorViewMarginEmotion(R.dimen.margin_50)
+        }
+
+        private fun Context.calculatorViewMarginEmotion(margin: Int) {
+            val params = ConstraintLayout.LayoutParams(
+                resources.getDimensionPixelSize(margin),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            v.viewMarginEmotion.layoutParams = params
+        }
+    }
+
+    interface CallBackClickItem {
+        fun longClickItemSender(data: (Pair<View, Message>))
+        fun longClickItemReceiver(data: (Pair<View, Message>))
+        fun clickPhoto(data: (Pair<Pair<Message, String>, Boolean>))
+        fun clickOptionMenuPhoto(msg: Message)
+    }
+
+    interface ViewTypeMessage {
+        fun initViewMessage(context: Context, message: Message, longClick: (View) -> Unit)
+        fun initViewMultiPhoto(context: Context)
+        fun initViewSinglePhoto(context: Context)
     }
 }

@@ -3,7 +3,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_corner_25_blue_light"
-    android:backgroundTint="@color/white"
+    android:backgroundTint="@color/grey_emotion"
     android:gravity="center_vertical"
     android:orientation="horizontal">
 

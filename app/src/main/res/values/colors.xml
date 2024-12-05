@@ -13,6 +13,7 @@
     <color name="grey">#4C4C4C</color>
     <color name="grey_1">#9f9f9f</color>
     <color name="grey_2">#77787a</color>
+    <color name="grey_emotion">#F8F7F7</color>
     <color name="stroke_sender">#bbced7</color>
     <color name="stroke_receiver">#d7dbde</color>
     <color name="grey_bg">#dfe3e6</color>
