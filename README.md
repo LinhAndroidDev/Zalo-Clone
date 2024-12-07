@@ -14,7 +14,7 @@
 
 
 
-# Configure push notification messages using Firebase Cloud Messaging
+# Configure push notification with Firebase cloud messaging
 ## 1. Add library to dependencies:
 
   `implementation "com.google.firebase:firebase-messaging:24.0.3"`
