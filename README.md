@@ -13,9 +13,11 @@
 ### Configure push notification messages using Firebase Cloud Messaging
 ***
 1. *Add library to dependencies:*
-Cloud messaging firebase:
 
-```bash
-implementation("com.google.firebase:firebase-messaging:24.0.3")
+
+```gradle
+dependencies {
+    implementation "com.google.firebase:firebase-messaging:24.0.3"
+}
 
 3. *Get file json key to generate access token:*
