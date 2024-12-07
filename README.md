@@ -90,7 +90,7 @@ object AccessToken {
 }
 ```
 
-### 4.Create Api Service
+### 4. Create Api Service
 ```
 interface ApiService {
     @POST("YOUR_PROJECT_ID/messages:send")
@@ -105,8 +105,8 @@ interface ApiService {
 }
 ```
 
-### 5.Document Migrate from legacy FCM APIs to HTTP v1
-https://firebase.google.com/docs/cloud-messaging/migrate-v1
+### 5. Document Migrate from legacy FCM APIs to HTTP v1
+- document: https://firebase.google.com/docs/cloud-messaging/migrate-v1
 ```
 {
    "message":{
