@@ -1,4 +1,4 @@
-# Zalo Clone
+## Zalo Clone
 - Zalo Clone is a chat app that helps users exchange messages and images with friends
 - Users can receive notifications from messages and make friends with people, update their profiles
 
@@ -14,12 +14,12 @@
 
 
 
-# Configure push notification with Firebase cloud messaging
-## 1. Add library to dependencies:
+## Configure push notification with Firebase cloud messaging
+### 1. Add library to dependencies:
 
   `implementation "com.google.firebase:firebase-messaging:24.0.3"`
 
-## 2. Get file json key to generate access token:
+### 2. Get file json key to generate access token:
    
    - *Project -> Setting -> Service accounts -> Select Java -> Click Generate new private key:*
    <div style="display: flex; justify-content: center;">
