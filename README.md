@@ -11,7 +11,7 @@
 
 
 ### Configure push notification messages using Firebase Cloud Messaging access token
-1.*Add library to dependencies:*
-`implementation("com.google.firebase:firebase-messaging:24.0.3")`
+1. *Add library to dependencies:*
+  '''implementation("com.google.firebase:firebase-messaging:24.0.3")
 
-2.*Get file json key to generate access token*
+3. *Get file json key to generate access token*
