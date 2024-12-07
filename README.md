@@ -5,7 +5,7 @@
 ***Demo Zalo Clone App***
 <div style="display: flex; justify-content: center;">
   <img src="https://github.com/user-attachments/assets/dace1fce-7f7c-4732-9b94-10975e807bd1" alt="Screen Home" width="250""/>
-  ........
+           
   <img src="https://github.com/user-attachments/assets/c04bf373-8642-43d0-97ca-68d387c24081" alt="Screen Message" width="250"/>
 </div>
 
