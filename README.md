@@ -100,7 +100,7 @@ interface ApiService {
 }
 ```
 
-### 5. Document Migrate from legacy FCM APIs to HTTP v1
+## Document Migrate from legacy FCM APIs to HTTP v1
 - document: https://firebase.google.com/docs/cloud-messaging/migrate-v1
 ```
 {
