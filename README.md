@@ -11,12 +11,12 @@
 
 
 
-### Configure push notification messages using Firebase Cloud Messaging
-1. **Add library to dependencies:**
+# Configure push notification messages using Firebase Cloud Messaging
+## 1.Add library to dependencies:
 
   `implementation "com.google.firebase:firebase-messaging:24.0.3"`
 
-2. **Get file json key to generate access token:**
+## 2.Get file json key to generate access token:
    
    - *Project -> Setting -> Service accounts -> Select Java -> Click Generate new private key:*
      
