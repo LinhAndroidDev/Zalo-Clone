@@ -18,6 +18,6 @@
 
 2. *Get file json key to generate access token:*
    - Project -> Setting -> Service accounts -> Select Java -> Click Generate new private key:
-   - <div style="display: flex; justify-content: center;">
-  <img src="https://github.com/LinhAndroidDev/Zalo-Clone/blob/main/Screenshot%202024-12-07%20at%2013.14.38.png?raw=true" alt="Screen Home"/>
-</div>
+   <div style="display: flex; justify-content: center;">
+      <img src="https://github.com/LinhAndroidDev/Zalo-Clone/blob/main/Screenshot%202024-12-07%20at%2013.14.38.png?raw=true" alt="Screen Home"/>
+   </div>
