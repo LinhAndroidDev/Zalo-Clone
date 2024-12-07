@@ -16,6 +16,6 @@
 Cloud messaging firebase:
 
 ```bash
-implementation("com.google.firebase:firebase-messaging:24.0.3")```
+implementation("com.google.firebase:firebase-messaging:24.0.3")
 
 3. *Get file json key to generate access token:*
