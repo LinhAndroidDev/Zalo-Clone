@@ -17,7 +17,9 @@
 ## Configure push notification with Firebase cloud messaging
 ### 1. Add library to dependencies:
 
-  `implementation "com.google.firebase:firebase-messaging:24.0.3"`
+  ``` bash
+implementation "com.google.firebase:firebase-messaging:24.0.3
+```
 
 ### 2. Get file json key to generate access token:
    
