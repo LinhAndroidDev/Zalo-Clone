@@ -15,9 +15,6 @@
 ***
 1. *Add library to dependencies:*
 
-```gradle
-dependencies {
-    implementation "com.google.firebase:firebase-messaging:24.0.3"
-}
+`implementation "com.google.firebase:firebase-messaging:24.0.3"'
 
-*Get file json key to generate access token:*
+2. *Get file json key to generate access token:*
