@@ -38,8 +38,8 @@ object AccessToken {
         try {
             val jsonString = "{\n" +
                     "  \"type\": \"service_account\",\n" +
-                    "  \"project_id\": \"zalo-clone-45246\",\n" +
-                    "  \"private_key_id\": \"e461fc14707374efe047ff73a5e51a799b386e18\",\n" +
+                    "  \"project_id\": \"YOUR_PROJECT_ID\",\n" +
+                    "  \"private_key_id\": \"YOUR_PRIVATE_KEY_ID\",\n" +
                     "  \"private_key\": \"-----BEGIN PRIVATE KEY-----\n" +
                     "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCy7so6W2Qxq6EU\n" +
                     "qag73gKJaSCpTSjXmQZpj+NY/Orrmg7qqGW+UQvDfbUqMelXlNye8Wt7fxZRZlB9\n" +
@@ -68,12 +68,12 @@ object AccessToken {
                     "9u9Ko8DPxAt7ZFOjALhHFbf0Svj7UEqeEE3wFnhsRf22vdrGI+dvdsXzWzz6p/7k\n" +
                     "NOMR/8IbDJBb+Xf7NuV1uNo=\n" +
                     "-----END PRIVATE KEY-----\n\",\n" +
-                    "  \"client_email\": \"firebase-adminsdk-4f5r1@zalo-clone-45246.iam.gserviceaccount.com\",\n" +
-                    "  \"client_id\": \"110025514291433775491\",\n" +
+                    "  \"client_email\": \"firebase-adminsdk-4f5r1@YOUR_PROJECT_ID.iam.gserviceaccount.com\",\n" +
+                    "  \"client_id\": \"YOUR_CLIENT_ID\",\n" +
                     "  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\n" +
                     "  \"token_uri\": \"https://oauth2.googleapis.com/token\",\n" +
                     "  \"auth_provider_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\n" +
-                    "  \"client_x_cert_url\": \"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-4f5r1%40zalo-clone-45246.iam.gserviceaccount.com\",\n" +
+                    "  \"client_x_cert_url\": \"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-4f5r1%40YOUR_PROJECT_ID.iam.gserviceaccount.com\",\n" +
                     "  \"universe_domain\": \"googleapis.com\"\n" +
                     "}"
             val stream: InputStream =
@@ -87,5 +87,34 @@ object AccessToken {
             return null
         }
     }
+}
+```
+
+### 4.Create Api Service
+```
+interface ApiService {
+    @POST("YOUR_PROJECT_ID/messages:send")
+    @Headers(
+        "Content-Type: application/json",
+        "Accept: application/json"
+        )
+    fun sendMessage(
+        @Body message: MessageRequest,
+        @Header("Authorization") accessToken: String = "Bearer ${AccessToken.getAccessToken()}"
+    ): Call<MessageRequest>
+}
+```
+
+### 5.Document Migrate from legacy FCM APIs to HTTP v1
+https://firebase.google.com/docs/cloud-messaging/migrate-v1
+```
+{
+   "message":{
+      "token":"bk3RNwTe3H0:CI2k_HHwgIpoDKCIZvvDMExUdFQ3P1...",
+      "notification":{
+        "body":"This is an FCM notification message!",
+        "title":"FCM Message"
+      }
+   }
 }
 ```
