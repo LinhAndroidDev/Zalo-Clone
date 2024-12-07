@@ -8,3 +8,10 @@
   ........
   <img src="https://github.com/user-attachments/assets/c04bf373-8642-43d0-97ca-68d387c24081" alt="Screen Message" width="250"/>
 </div>
+
+
+### Configure push notification messages using Firebase Cloud Messaging access token
+1.*Add library to dependencies:*
+`implementation("com.google.firebase:firebase-messaging:24.0.3")`
+
+2.*Get file json key to generate access token*
