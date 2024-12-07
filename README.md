@@ -20,4 +20,4 @@ dependencies {
     implementation "com.google.firebase:firebase-messaging:24.0.3"
 }
 
-3. *Get file json key to generate access token:*
+2. *Get file json key to generate access token:*
