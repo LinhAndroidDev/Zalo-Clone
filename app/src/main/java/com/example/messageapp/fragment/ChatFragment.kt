@@ -54,6 +54,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
     private var stateScrollable = true
+    private var isChatScreenActive = false
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -313,7 +314,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                                 )
                                 stateScrollable = false
                             }
-                            updateSeenMessage(msg)
+                            if (isChatScreenActive) {
+                                updateSeenMessage(msg)
+                            }
                         }
                     }
                 }
@@ -395,7 +398,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun onResume() {
         super.onResume()
+        isChatScreenActive = true
         val notificationManager = context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancelAll()
     }
+
+    override fun onPause() {
+        isChatScreenActive = false
+        super.onPause()
+    }
+
 }
