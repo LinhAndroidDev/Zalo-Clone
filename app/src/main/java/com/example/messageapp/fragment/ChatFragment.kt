@@ -55,6 +55,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var chatAdapter: ChatAdapter? = null
     private var stateScrollable = true
     private var isChatScreenActive = false
+    private var isMessageEmpty = true
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -261,7 +262,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                                 context = requireActivity(),
                                 uris = uris,
                                 conversation = it,
-                                time = DateUtils.getTimeCurrent()
+                                time = DateUtils.getTimeCurrent(),
+                                sendFirst = isMessageEmpty
                             )
                         }
                         stateScrollable = true
@@ -314,7 +316,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                                 )
                                 stateScrollable = false
                             }
-                            if (isChatScreenActive) {
+                            if (isChatScreenActive && messages.isNotEmpty()) {
+                                isMessageEmpty = false
                                 updateSeenMessage(msg)
                             }
                         }
@@ -366,7 +369,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 val sender = viewModel?.shared?.getAuth().toString()
                 val time = DateUtils.getTimeCurrent()
                 val message = Message(msg, receiver, sender, time)
-                viewModel?.sendMessage(message = message, time = time, conversation = cvt)
+                viewModel?.sendMessage(message = message, time = time, conversation = cvt, sendFirst = isMessageEmpty)
                 binding?.edtMessage?.setText("")
             }
             stateScrollable = true

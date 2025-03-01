@@ -127,7 +127,6 @@ object FireBaseInstance {
     /**
      * This function is used to send a message to the FireStore database
      * + Here we send a message and create 2 conversations between the sender and the receiver
-     * + Then send a notification to the receiver via the receiver's token.
      * @param message data message
      * @param userId key auth of user
      * @param time time message sent
@@ -143,6 +142,7 @@ object FireBaseInstance {
         conversation: Conversation,
         nameSender: String,
         type: TypeMessage = TypeMessage.MESSAGE,
+        sendFirst: Boolean,
         success: () -> Unit,
     ) {
         val idRoom = listOf(conversation.friendId, userId).sorted()
@@ -153,101 +153,132 @@ object FireBaseInstance {
             .document(time)
             .set(message)
 
-        getConversation(conversation.friendId, userId) { cvt ->
-
-            //Get token of receiver to send notification message to receiver
-            getTokenMessage(
-                conversation.friendId,
-                success = { token ->
-                    val notificationNotification = NotificationData(
-                        token = token,
-                        data = Data(
-                            title = nameSender,
-                            body = when (type) {
-                                TypeMessage.MESSAGE -> {
-                                    message.message
-                                }
-
-                                TypeMessage.PHOTOS -> {
-                                    "$nameSender đã gửi ảnh cho bạn"
-                                }
-
-                                TypeMessage.SINGLE_PHOTO -> {
-                                    "$nameSender đã gửi 1 ảnh cho bạn"
-                                }
-                            },
-                            senderId = userId
-                        )
-                    )
-
-                    ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
-                        ?.enqueue(object : Callback<MessageRequest> {
-                            override fun onFailure(
-                                call: Call<MessageRequest>,
-                                t: Throwable
-                            ) {
-                                Log.e("Send Message", "Send Fail")
-                            }
-
-                            override fun onResponse(
-                                call: Call<MessageRequest>,
-                                response: Response<MessageRequest>
-                            ) {
-                                Log.e("Send Message", "Send Successful")
-                            }
-                        })
-                },
-                failure = {
-                    Log.e("Send Message", "Token retrieval failed")
-                }
-            )
-
-            //Create Data Conversation For Sender
-            val conversationData = Conversation(
-                friendId = conversation.friendId,
-                friendImage = conversation.friendImage,
-                message = when (type) {
-                    TypeMessage.MESSAGE -> {
-                        message.message
-                    }
-
-                    TypeMessage.PHOTOS -> {
-                        "Bạn đã gửi ảnh cho ${conversation.name}"
-                    }
-
-                    TypeMessage.SINGLE_PHOTO -> {
-                        "Bạn đã gửi 1 ảnh cho ${conversation.name}"
-                    }
-                },
-                name = conversation.name,
-                person = "Bạn",
-                sender = userId,
-                time = time,
-            )
-
-            //Create Conversation For Sender
-            db.collection("Conversation${userId}")
-                .document(conversation.friendId)
-                .set(conversationData)
-
-            //Create Data Conversation For Receiver
-            val num = cvt.numberUnSeen + 1
-            val conversationFriend = Conversation(
-                friendId = userId,
-                message = if (type == TypeMessage.MESSAGE) message.message else "$nameSender đã gửi ảnh cho bạn",
-                name = nameSender,
-                person = nameSender,
-                sender = userId,
-                time = time,
-                numberUnSeen = num
-            )
-
-            //Create Conversation For Receiver
-            db.collection("Conversation${conversation.friendId}")
-                .document(userId)
-                .set(conversationFriend)
+        if (sendFirst) {
+            Log.e("sendMessage", "sendFirst")
+            handleSendMessage(message, userId, time, conversation, nameSender, type, 1)
+        } else {
+            Log.e("sendMessage", "not sendFirst")
+            getConversation(conversation.friendId, userId) { cvt ->
+                val num = cvt.numberUnSeen + 1
+                handleSendMessage(message, userId, time, conversation, nameSender, type, num)
+            }
         }
         success.invoke()
+    }
+
+    /**
+     * This function is used to handle send a message to the FireStore database
+     * + Send a notification to the receiver via the receiver's token.
+     * + Update data conversation between sender and receiver
+     * @param message data message
+     * @param userId key auth of user
+     * @param time time message sent
+     * @param conversation data conversation
+     * @param nameSender name of sender
+     * @param type type of message
+     * @param idRoom id of conversation
+     * @param numberUnSeen quantity of message unseen
+     */
+    private fun handleSendMessage(
+        message: Message,
+        userId: String,
+        time: String,
+        conversation: Conversation,
+        nameSender: String,
+        type: TypeMessage = TypeMessage.MESSAGE,
+        numberUnSeen: Int
+    ) {
+
+        //Get token of receiver to send notification message to receiver
+        getTokenMessage(
+            conversation.friendId,
+            success = { token ->
+                val notificationNotification = NotificationData(
+                    token = token,
+                    data = Data(
+                        title = nameSender,
+                        body = when (type) {
+                            TypeMessage.MESSAGE -> {
+                                message.message
+                            }
+
+                            TypeMessage.PHOTOS -> {
+                                "$nameSender đã gửi ảnh cho bạn"
+                            }
+
+                            TypeMessage.SINGLE_PHOTO -> {
+                                "$nameSender đã gửi 1 ảnh cho bạn"
+                            }
+                        },
+                        senderId = userId
+                    )
+                )
+
+                ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
+                    ?.enqueue(object : Callback<MessageRequest> {
+                        override fun onFailure(
+                            call: Call<MessageRequest>,
+                            t: Throwable
+                        ) {
+                            Log.e("Send Message", "Send Fail")
+                        }
+
+                        override fun onResponse(
+                            call: Call<MessageRequest>,
+                            response: Response<MessageRequest>
+                        ) {
+                            Log.e("Send Message", "Send Successful")
+                        }
+                    })
+            },
+            failure = {
+                Log.e("Send Message", "Token retrieval failed")
+            }
+        )
+
+        //Create Data Conversation For Sender
+        val conversationData = Conversation(
+            friendId = conversation.friendId,
+            friendImage = conversation.friendImage,
+            message = when (type) {
+                TypeMessage.MESSAGE -> {
+                    message.message
+                }
+
+                TypeMessage.PHOTOS -> {
+                    "Bạn đã gửi ảnh cho ${conversation.name}"
+                }
+
+                TypeMessage.SINGLE_PHOTO -> {
+                    "Bạn đã gửi 1 ảnh cho ${conversation.name}"
+                }
+            },
+            name = conversation.name,
+            person = "Bạn",
+            sender = userId,
+            time = time,
+        )
+
+        //Create Conversation For Sender
+        db.collection("Conversation${userId}")
+            .document(conversation.friendId)
+            .set(conversationData)
+
+        //Create Data Conversation For Receiver
+        val conversationFriend = Conversation(
+            friendId = userId,
+            message = if (type == TypeMessage.MESSAGE) message.message else "$nameSender đã gửi ảnh cho bạn",
+            name = nameSender,
+            person = nameSender,
+            sender = userId,
+            time = time,
+            numberUnSeen = numberUnSeen
+        )
+
+        //Create Conversation For Receiver
+        db.collection("Conversation${conversation.friendId}")
+            .document(userId)
+            .set(conversationFriend)
     }
 
     /**

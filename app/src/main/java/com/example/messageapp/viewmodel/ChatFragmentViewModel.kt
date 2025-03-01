@@ -35,6 +35,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         message: Message,
         time: String,
         conversation: Conversation,
+        sendFirst: Boolean
     ) = viewModelScope.launch {
         FireBaseInstance.sendMessage(
             message = message,
@@ -42,6 +43,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             time = time,
             conversation = conversation,
             nameSender = shared.getNameUser(),
+            sendFirst = sendFirst
         ) {}
     }
 
@@ -109,7 +111,8 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         context: Context,
         uris: ArrayList<Uri>,
         conversation: Conversation,
-        time: String
+        time: String,
+        sendFirst: Boolean
     ) {
         FireBaseInstance.uploadListPhoto(
             context = context,
@@ -145,6 +148,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                     conversation = conversation,
                     nameSender = shared.getNameUser(),
                     type = TypeMessage.PHOTOS,
+                    sendFirst = sendFirst
                 ) {}
             }
         )
