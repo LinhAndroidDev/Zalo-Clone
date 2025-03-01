@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:app="http://schemas.android.com/apk/res-auto">
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".fragment.PersonalFragment"
+        android:background="@color/white"
         android:orientation="vertical"
-        android:background="@color/white">
+        tools:context=".fragment.PersonalFragment">
 
         <com.example.messageapp.custom.CustomHeaderView
             android:id="@+id/header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:item_view="personal"
             app:layout_constraintEnd_toEndOf="parent"
-            app:item_view="personal"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <LinearLayout
             android:id="@+id/personal"
@@ -24,48 +26,120 @@
 
             <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/avatarUser"
-                android:layout_margin="15dp"
-                android:src="@mipmap/ic_launcher"
                 android:layout_width="60dp"
-                android:layout_height="60dp"/>
+                android:layout_height="60dp"
+                android:layout_margin="15dp"
+                android:src="@mipmap/ic_launcher" />
 
             <LinearLayout
-                android:layout_gravity="center_vertical"
-                android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/tvNameUser"
-                    android:text="Nguyen Huu Linh"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_common"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:text="Nguyen Huu Linh"
+                    android:textColor="@color/text_common"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/font_noto_sans"/>
 
                 <TextView
                     android:id="@+id/tvAction"
-                    android:layout_marginTop="5dp"
-                    android:text="@string/view_profile"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_grey"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/view_profile"
+                    android:textColor="@color/text_grey"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/font_noto_sans"/>
             </LinearLayout>
 
             <ImageView
-                android:layout_marginEnd="25dp"
-                android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_view_account"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
-                app:tint="@color/back_common"/>
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="25dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_view_account"
+                app:tint="@color/back_common" />
         </LinearLayout>
 
         <View
-            android:background="@color/grey_bg"
             android:layout_width="match_parent"
-            android:layout_height="10dp"/>
+            android:layout_height="10dp"
+            android:background="@color/grey_bg" />
+
+        <com.example.messageapp.custom.ItemViewProfile
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:detail="Không gian lưu trữ dữ liệu trên đám mây"
+            app:icon="@drawable/ic_cloud_upload"
+            app:show_divider="true"
+            app:title="zCloud" />
+
+        <com.example.messageapp.custom.ItemViewProfile
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:detail="Hình nền và nhạc chuông cho cuộc gọi Zalo"
+            app:icon="@drawable/ic_style"
+            app:show_according="false"
+            app:title="zStyle - Nổi bật trên Zalo" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="10dp"
+            android:background="@color/grey_bg" />
+
+        <com.example.messageapp.custom.ItemViewProfile
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:detail="Lưu trữ các tin nhắn quan trọng"
+            app:icon="@drawable/ic_cloud"
+            app:show_divider="true"
+            app:title="Cloud của tôi" />
+
+        <com.example.messageapp.custom.ItemViewProfile
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:show_divider="true"
+            app:detail="Quản lí dữ liệu Zalo của bạn"
+            app:icon="@drawable/ic_data"
+            app:title="Dữ liệu trên máy" />
+
+        <com.example.messageapp.custom.ItemViewProfile
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:detail="Lưu trữ và xuất trình các mã QR quan trọng"
+            app:show_according="false"
+            app:icon="@drawable/ic_qr_code_wallet"
+            app:title="Ví QR" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="10dp"
+            android:background="@color/grey_bg" />
+
+        <com.example.messageapp.custom.ItemViewProfile
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:icon="@drawable/ic_security"
+            app:show_divider="true"
+            app:title="Cloud của tôi" />
+
+        <com.example.messageapp.custom.ItemViewProfile
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:icon="@drawable/ic_privacy"
+            app:title="Quyền riêng tư" />
+
+        <View
+            android:background="@color/grey_bg"
+            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"/>
     </LinearLayout>
 </layout>

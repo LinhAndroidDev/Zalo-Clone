@@ -79,4 +79,12 @@
 
         <attr name="minDistRequestDisallowParent" format="dimension" />
     </declare-styleable>
+
+    <declare-styleable name="ItemViewProfile">
+        <attr name="title" format="string" />
+        <attr name="detail" format="string" />
+        <attr name="icon" format="reference" />
+        <attr name="show_according" format="boolean" />
+        <attr name="show_divider" format="boolean" />
+    </declare-styleable>
 </resources>
