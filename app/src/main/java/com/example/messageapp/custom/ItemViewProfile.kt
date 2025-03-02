@@ -30,5 +30,27 @@ class ItemViewProfile @JvmOverloads constructor(
         v.detailView.text = detail
         v.iconAccording.isVisible = array?.getBoolean(R.styleable.ItemViewProfile_show_according, true) ?: true
         v.divider.isVisible = array?.getBoolean(R.styleable.ItemViewProfile_show_divider, false) ?: false
+
+        val type = array?.getInt(R.styleable.ItemViewProfile_end_icon, 0)
+        when (type) {
+            1 -> {
+                hideAllIconEnd()
+                v.warning.isVisible = true
+            }
+
+            2 -> {
+                hideAllIconEnd()
+                v.contact.isVisible = true
+            }
+
+            else -> {
+                hideAllIconEnd()
+            }
+        }
+    }
+
+    private fun hideAllIconEnd() {
+        v.warning.isVisible = false
+        v.contact.isVisible = false
     }
 }

@@ -81,6 +81,7 @@ class CustomHeaderView @JvmOverloads constructor(
 
                 else -> {
                     binding.headerTitle.layout.isVisible = true
+                    binding.headerTitle.titleView.text = array.getText(R.styleable.CustomHeaderView_title_header)
                     binding.viewCommon.isVisible = false
                     binding.viewChat.layout.isVisible = false
                     binding.viewSearch.layout.isVisible = false

@@ -42,7 +42,7 @@
                     android:id="@+id/tvNameUser"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Nguyen Huu Linh"
+                    tools:text="Nguyen Huu Linh"
                     android:textColor="@color/text_common"
                     android:textSize="16sp"
                     android:fontFamily="@font/font_noto_sans"/>
@@ -76,18 +76,18 @@
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:detail="Không gian lưu trữ dữ liệu trên đám mây"
+            app:detail="@string/cloud_data_storage_space"
             app:icon="@drawable/ic_cloud_upload"
             app:show_divider="true"
-            app:title="zCloud" />
+            app:title="@string/zCloud" />
 
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:detail="Hình nền và nhạc chuông cho cuộc gọi Zalo"
+            app:detail="@string/wallpaper_and_ringtone"
             app:icon="@drawable/ic_style"
             app:show_according="false"
-            app:title="zStyle - Nổi bật trên Zalo" />
+            app:title="@string/zStyle" />
 
         <View
             android:layout_width="match_parent"
@@ -97,26 +97,26 @@
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:detail="Lưu trữ các tin nhắn quan trọng"
+            app:detail="@string/archive_important_messages"
             app:icon="@drawable/ic_cloud"
             app:show_divider="true"
-            app:title="Cloud của tôi" />
+            app:title="@string/my_cloud" />
 
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:show_divider="true"
-            app:detail="Quản lí dữ liệu Zalo của bạn"
+            app:detail="@string/manage_your_data"
             app:icon="@drawable/ic_data"
-            app:title="Dữ liệu trên máy" />
+            app:title="@string/data_on_machine" />
 
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:detail="Lưu trữ và xuất trình các mã QR quan trọng"
+            app:detail="@string/store_and_present_qr"
             app:show_according="false"
             app:icon="@drawable/ic_qr_code_wallet"
-            app:title="Ví QR" />
+            app:title="@string/qr_wallet" />
 
         <View
             android:layout_width="match_parent"
@@ -128,13 +128,13 @@
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_security"
             app:show_divider="true"
-            app:title="Cloud của tôi" />
+            app:title="@string/account_and_security" />
 
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_privacy"
-            app:title="Quyền riêng tư" />
+            app:title="@string/privacy" />
 
         <View
             android:background="@color/grey_bg"

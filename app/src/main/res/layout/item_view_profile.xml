@@ -43,6 +43,34 @@
         </LinearLayout>
 
         <ImageView
+            android:id="@+id/warning"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="5dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_error_fill"
+            android:visibility="gone"
+            app:tint="@color/red" />
+
+        <FrameLayout
+            android:id="@+id/contact"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="@color/grey_bg"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:layout_margin="5dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_chat"
+                app:tint="@color/black" />
+        </FrameLayout>
+
+        <ImageView
             android:id="@+id/iconAccording"
             android:layout_width="15dp"
             android:layout_height="15dp"

@@ -88,4 +88,22 @@
     <string name="save_photo_video">Lưu ảnh, video</string>
     <string name="un_read">Chưa đọc</string>
     <string name="turn_off_notification">Tắt thông báo</string>
+    <string name="account_and_security">Tài khoản và bảo mật</string>
+    <string name="privacy">Quyền riêng tư</string>
+    <string name="data_on_machine">Dữ liệu trên máy</string>
+    <string name="notification">Thông báo</string>
+    <string name="backup_and_restore">Sao lưu và khôi phục</string>
+    <string name="call">Cuộc gọi</string>
+    <string name="information_about_zalo">Thông tin về Zalo</string>
+    <string name="contact_support">Liên hệ hỗ trợ</string>
+    <string name="transfer_account">Chuyển tài khoản</string>
+    <string name="zCloud">zCloud</string>
+    <string name="cloud_data_storage_space">Không gian lưu trữ dữ liệu trên đám mây</string>
+    <string name="zStyle">zStyle - Nổi bật trên Zalo</string>
+    <string name="wallpaper_and_ringtone">Wallpaper and ringtone for Zalo calls</string>
+    <string name="my_cloud">Cloud của tôi</string>
+    <string name="archive_important_messages">Lưu trữ các tin nhắn quan trọng</string>
+    <string name="manage_your_data">Quản lí dữ liệu Zalo của bạn</string>
+    <string name="qr_wallet">Ví QR</string>
+    <string name="store_and_present_qr">Lưu trữ và xuất trình các mã QR quan trọng</string>
 </resources>

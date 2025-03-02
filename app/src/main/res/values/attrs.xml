@@ -11,6 +11,7 @@
             <enum name="search" value="6" />
             <enum name="header_title" value="7" />
         </attr>
+        <attr name="title_header" format="string" />
     </declare-styleable>
 
     <declare-styleable name="CircleIndicator">
@@ -86,5 +87,9 @@
         <attr name="icon" format="reference" />
         <attr name="show_according" format="boolean" />
         <attr name="show_divider" format="boolean" />
+        <attr name="end_icon">
+            <enum name="warning" value="1" />
+            <enum name="contact" value="2" />
+        </attr>
     </declare-styleable>
 </resources>
