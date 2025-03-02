@@ -29,7 +29,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="7dp"
-                android:text="Ảnh"
+                android:text="@string/image"
                 android:textColor="@color/text_common"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -54,7 +54,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
-                android:text="Video"
+                android:text="@string/video"
                 android:textColor="@color/text_common"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -79,7 +79,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
-                android:text="Album"
+                android:text="@string/album"
                 android:textColor="@color/text_common"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -104,7 +104,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
-                android:text="Kỷ niệm"
+                android:text="@string/memory"
                 android:textColor="@color/text_common"
                 android:textSize="12sp" />
         </LinearLayout>

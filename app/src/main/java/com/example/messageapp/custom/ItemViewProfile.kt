@@ -24,6 +24,8 @@ class ItemViewProfile @JvmOverloads constructor(
             context?.theme?.obtainStyledAttributes(attrs, R.styleable.ItemViewProfile, 0, 0)
         val iconId = array?.getResourceId(R.styleable.ItemViewProfile_icon, 0)
         iconId?.let { v.iconView.setImageResource(it) }
+        val colorIcon = array?.getResourceId(R.styleable.ItemViewProfile_color_icon, 0)
+        colorIcon?.let { if (it != 0) v.iconView.setColorFilter(context.getColor(it)) }
         v.titleView.text = array?.getText(R.styleable.ItemViewProfile_title)
         val detail = array?.getText(R.styleable.ItemViewProfile_detail)
         v.detailView.isVisible = detail != null

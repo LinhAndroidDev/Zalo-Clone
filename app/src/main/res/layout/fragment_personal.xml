@@ -68,10 +68,9 @@
                 app:tint="@color/back_common" />
         </LinearLayout>
 
-        <View
+        <com.example.messageapp.custom.DividerCommon
             android:layout_width="match_parent"
-            android:layout_height="10dp"
-            android:background="@color/grey_bg" />
+            android:layout_height="wrap_content" />
 
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"
@@ -89,10 +88,9 @@
             app:show_according="false"
             app:title="@string/zStyle" />
 
-        <View
+        <com.example.messageapp.custom.DividerCommon
             android:layout_width="match_parent"
-            android:layout_height="10dp"
-            android:background="@color/grey_bg" />
+            android:layout_height="wrap_content" />
 
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"
@@ -118,10 +116,9 @@
             app:icon="@drawable/ic_qr_code_wallet"
             app:title="@string/qr_wallet" />
 
-        <View
+        <com.example.messageapp.custom.DividerCommon
             android:layout_width="match_parent"
-            android:layout_height="10dp"
-            android:background="@color/grey_bg" />
+            android:layout_height="wrap_content" />
 
         <com.example.messageapp.custom.ItemViewProfile
             android:layout_width="match_parent"

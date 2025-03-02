@@ -106,4 +106,19 @@
     <string name="manage_your_data">Quản lí dữ liệu Zalo của bạn</string>
     <string name="qr_wallet">Ví QR</string>
     <string name="store_and_present_qr">Lưu trữ và xuất trình các mã QR quan trọng</string>
+    <string name="game_center">Game center</string>
+    <string name="zalo_video">Zalo Video</string>
+    <string name="note_zalo_video">Vì bạn đã xem Tú Lê - Chứng khoán:…</string>
+    <string name="life_utilities">Tiện ích đời sống</string>
+    <string name="detail_life_utilities">Nạp điện thoại, Dò vé số, Lịch bóng đá…</string>
+    <string name="financial_utilities">Tiện ích tài chính</string>
+    <string name="public_services">Dịch vụ công</string>
+    <string name="mini_app">Mini App</string>
+    <string name="how_are_you_today">Hôm nay bạn thế nào?</string>
+    <string name="image">Ảnh</string>
+    <string name="video">Video</string>
+    <string name="album">Album</string>
+    <string name="memory">Kỉ niệm</string>
+    <string name="moment">Khoảnh khắc</string>
+    <string name="create_new">Tạo mới</string>
 </resources>
