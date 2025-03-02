@@ -36,6 +36,7 @@ class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentV
         binding?.personal?.setOnClickListener {
             val intent = Intent(requireActivity(), PersonalActivity::class.java)
             startActivity(intent)
+            activity?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
     }
 }

@@ -46,7 +46,11 @@
             app:destination="@id/searchFragment" />
         <action
             android:id="@+id/action_phoneBookFragment_to_friendRequestFragment"
-            app:destination="@id/friendRequestFragment" />
+            app:destination="@id/friendRequestFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
     <fragment
         android:id="@+id/discoverFragment"
@@ -76,7 +80,11 @@
             app:destination="@id/searchFragment" />
         <action
             android:id="@+id/action_personalFragment_to_settingFragment"
-            app:destination="@id/settingFragment" />
+            app:destination="@id/settingFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
     <fragment
         android:id="@+id/chatFragment"

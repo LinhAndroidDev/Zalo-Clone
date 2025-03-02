@@ -107,7 +107,7 @@ class CustomHeaderView @JvmOverloads constructor(
             val navController =
                 context.getFragmentActivity()?.supportFragmentManager?.findFragmentById(R.id.navHostFragment)
                     ?.findNavController()
-            navController?.navigate(R.id.settingFragment)
+            navController?.navigate(R.id.action_personalFragment_to_settingFragment, null)
         }
 
         binding?.viewSearch?.edtSearch?.doOnTextChanged { text, start, before, count ->

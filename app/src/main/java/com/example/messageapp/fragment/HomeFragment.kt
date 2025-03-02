@@ -17,6 +17,9 @@ import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 
@@ -26,6 +29,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
 
     private val suggestFriendAdapter by lazy { SuggestFriendAdapter() }
     private var listChatAdapter: ListChatAdapter? = null
+    private var updateJob: Job? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -95,5 +99,22 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
                 (activity as MainActivity).setUpNumberMessage(num)
             }
         }
+    }
+
+    // Update chat time every minute
+    @SuppressLint("NotifyDataSetChanged")
+    override fun onResume() {
+        super.onResume()
+        updateJob = lifecycleScope.launch {
+            while (isActive) {
+                listChatAdapter?.notifyDataSetChanged()
+                delay(60_000L)
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        updateJob?.cancel()
     }
 }
