@@ -23,7 +23,7 @@
                 android:layout_height="17dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_image_news"
-                app:tint="#4CAF50"/>
+                app:tint="@color/green"/>
 
             <TextView
                 android:layout_width="wrap_content"
@@ -98,7 +98,7 @@
                 android:layout_height="17dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_diary_fill"
-                app:tint="#E38568" />
+                app:tint="@color/orange_dark" />
 
             <TextView
                 android:layout_width="wrap_content"

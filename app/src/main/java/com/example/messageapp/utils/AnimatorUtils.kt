@@ -49,6 +49,16 @@ object AnimatorUtils {
         view.scheduleLayoutAnimation()
     }
 
+    fun fadeInViewItem(context: Context, view: ViewGroup) {
+        view.layoutAnimation = AnimationUtils.loadLayoutAnimation(context, R.anim.layout_fade_in)
+        view.scheduleLayoutAnimation()
+    }
+
+    fun transitionInViewItem(context: Context, view: ViewGroup) {
+        view.layoutAnimation = AnimationUtils.loadLayoutAnimation(context, R.anim.layout_transition_in)
+        view.scheduleLayoutAnimation()
+    }
+
     fun scaleNews(img: ImageView?, type: TypeNews) {
         img?.setImageResource(getNextIcon(type))
 

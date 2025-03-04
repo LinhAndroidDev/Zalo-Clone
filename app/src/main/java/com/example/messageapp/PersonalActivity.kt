@@ -90,6 +90,7 @@ class PersonalActivity : AppCompatActivity() {
 
     private fun handleDataUser(user: User) {
         binding.nameUser.text = user.name
+        binding.txtWhatHappy.text = getString(R.string.what_happy_today, user.name)
         loadImg(user.avatar.toString(), binding.avatarUser)
         loadImg(user.imageCover.toString(), binding.imgCover, imgDefault = R.drawable.bg_grey_horizontal)
     }

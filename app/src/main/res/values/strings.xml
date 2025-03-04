@@ -121,4 +121,13 @@
     <string name="memory">Kỉ niệm</string>
     <string name="moment">Khoảnh khắc</string>
     <string name="create_new">Tạo mới</string>
+    <string name="setting_style">Cài zStyle</string>
+    <string name="my_photo">Ảnh của tôi</string>
+    <string name="archive">Kho khoảnh khắc</string>
+    <string name="memories_of_the_past">Kỉ niệm năm xưa</string>
+    <string name="my_video">Video của tôi</string>
+    <string name="import_from_facebook">Nhập từ Facebook</string>
+    <string name="what_happy_today">Hôm nay %s có gì vui?</string>
+    <string name="note_happy_today">Đây là Nhật ký của bạn - Hãy làm đầy Nhật ký với những dấu ấn cuộc đời và kỷ niệm đáng nhớ nhé</string>
+    <string name="post_to_diary">Đăng lên Nhật ký</string>
 </resources>

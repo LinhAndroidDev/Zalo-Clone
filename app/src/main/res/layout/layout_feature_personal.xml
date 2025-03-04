@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:scrollbars="none"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <com.example.messageapp.custom.ItemFeaturePersonal
+            android:layout_marginStart="12.5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:title_feature="@string/setting_style"
+            app:icon_feature="@drawable/ic_style"
+            app:color_icon_feature="@color/blue"/>
+
+        <com.example.messageapp.custom.ItemFeaturePersonal
+            android:layout_marginStart="7.5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:title_feature="@string/my_photo"
+            app:icon_feature="@drawable/ic_image_news"
+            app:color_icon_feature="@color/blue1"/>
+
+        <com.example.messageapp.custom.ItemFeaturePersonal
+            android:layout_marginStart="7.5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:title_feature="@string/archive"
+            app:icon_feature="@drawable/ic_store"
+            app:color_icon_feature="@color/blue_4"/>
+
+        <com.example.messageapp.custom.ItemFeaturePersonal
+            android:layout_marginStart="7.5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:title_feature="@string/memories_of_the_past"
+            app:icon_feature="@drawable/ic_diary_fill"
+            app:color_icon_feature="@color/orange_dark"/>
+
+        <com.example.messageapp.custom.ItemFeaturePersonal
+            android:layout_marginStart="7.5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:title_feature="@string/my_video"
+            app:icon_feature="@drawable/ic_video_news"
+            app:color_icon_feature="@color/green"/>
+
+        <com.example.messageapp.custom.ItemFeaturePersonal
+            android:layout_marginStart="7.5dp"
+            android:layout_marginEnd="15dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:title_feature="@string/import_from_facebook"
+            app:icon_feature="@drawable/ic_export"
+            app:color_icon_feature="@color/blue1"/>
+    </LinearLayout>
+</HorizontalScrollView>

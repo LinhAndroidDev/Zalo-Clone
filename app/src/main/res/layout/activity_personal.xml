@@ -5,6 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
     android:orientation="vertical"
     tools:context=".PersonalActivity">
 
@@ -13,96 +14,152 @@
         android:layout_height="wrap_content">
 
         <View
-            android:background="@color/grey_1"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            app:layout_constraintTop_toTopOf="parent"
+            android:layout_height="220dp"
+            android:background="@color/grey_1"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
             android:id="@+id/imgCover"
-            android:layout_marginBottom="40dp"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="220dp"
+            android:layout_marginBottom="60dp"
             android:importantForAccessibility="no"
             android:scaleType="centerCrop"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <LinearLayout
             android:id="@+id/back"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent">
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
-                android:layout_marginVertical="10dp"
-                android:layout_marginStart="15dp"
-                android:importantForAccessibility="no" android:src="@drawable/ic_back"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
+                android:layout_marginVertical="10dp"
+                android:layout_marginStart="15dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_back"
                 app:tint="@color/white" />
         </LinearLayout>
 
         <ImageView
-            android:importantForAccessibility="no"
-            android:src="@drawable/ic_menu_circle"
             android:layout_width="25dp"
             android:layout_height="25dp"
-            app:tint="@color/white"
-            android:layout_marginEnd="10dp"
             android:layout_marginTop="40dp"
+            android:layout_marginEnd="10dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_menu_circle"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:tint="@color/white" />
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/avatarUser"
-            android:src="@mipmap/ic_launcher"
             android:layout_width="140dp"
             android:layout_height="140dp"
+            android:src="@mipmap/ic_launcher"
             app:civ_border_color="@color/white"
             app:civ_border_width="4dp"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintStart_toStartOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
         android:id="@+id/nameUser"
-        android:layout_marginTop="10dp"
-        android:layout_gravity="center_horizontal"
-        tools:text="Nguyen Huu Linh"
-        android:textSize="20sp"
-        android:textColor="@color/text_common"
-        android:textStyle="bold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/font_noto_sans"/>
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:fontFamily="@font/font_noto_sans"
+        android:textColor="@color/text_common"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        tools:text="Nguyen Huu Linh" />
 
     <LinearLayout
-        android:layout_marginTop="5dp"
-        android:layout_gravity="center_horizontal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="5dp"
         tools:ignore="UseCompoundDrawables">
 
         <ImageView
-            android:importantForAccessibility="no"
-            android:src="@drawable/ic_edit_personal"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            app:tint="@color/blue1"/>
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_edit_personal"
+            app:tint="@color/blue1" />
 
         <TextView
-            android:text="@string/update_your_profile"
-            android:textSize="13sp"
-            android:textColor="@color/blue1"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:text="@string/update_your_profile"
+            android:textColor="@color/blue1"
+            android:textSize="13sp" />
     </LinearLayout>
+
+    <include
+        layout="@layout/layout_feature_personal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp" />
+
+    <ImageView
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="30dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/img_what_happy" />
+
+    <TextView
+        android:id="@+id/txtWhatHappy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:fontFamily="@font/font_noto_sans"
+        android:text="@string/what_happy_today"
+        android:textColor="@color/text_common"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="50dp"
+        android:layout_marginTop="10dp"
+        android:fontFamily="@font/font_noto_sans"
+        android:gravity="center"
+        android:text="@string/note_happy_today"
+        android:textColor="@color/text_grey"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/btnFindMoreFriend"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_corner_20_blue"
+        android:fontFamily="@font/font_noto_sans"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="8dp"
+        android:text="@string/post_to_diary"
+        android:textColor="@color/text_white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvNoteChat" />
 </LinearLayout>

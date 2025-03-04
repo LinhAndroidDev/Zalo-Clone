@@ -6,6 +6,7 @@ import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentPersonalBinding
+import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.loadImg
 import com.example.messageapp.viewmodel.PersonalFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,6 +29,8 @@ class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentV
                 }
             }
         }
+
+        binding?.viewParent?.let { AnimatorUtils.transitionInViewItem(requireActivity(), it) }
     }
 
     override fun onClickView() {

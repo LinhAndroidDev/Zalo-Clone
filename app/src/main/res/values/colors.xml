@@ -20,8 +20,9 @@
     <color name="red">#fb534f</color>
     <color name="grey_light">#F0F0F0</color>
     <color name="transparent_popup_options">#CF000000</color>
+    <color name="green">#4CAF50</color>
     <color name="green_light">#93b738</color>
-    <color name="orange_dark">#cf891f</color>
+    <color name="orange_dark">#F6BA5F</color>
     <color name="red_light">#f2594d</color>
     <color name="blue_3">#4672fd</color>
     <color name="blue_4">#1893ef</color>

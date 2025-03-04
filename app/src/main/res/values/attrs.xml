@@ -93,4 +93,10 @@
             <enum name="contact" value="2" />
         </attr>
     </declare-styleable>
+
+    <declare-styleable name="ItemFeaturePersonal">
+        <attr name="title_feature" format="string" />
+        <attr name="icon_feature" format="reference" />
+        <attr name="color_icon_feature" format="color" />
+    </declare-styleable>
 </resources>
