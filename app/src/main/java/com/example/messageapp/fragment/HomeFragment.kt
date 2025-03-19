@@ -1,7 +1,10 @@
 package com.example.messageapp.fragment
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -13,6 +16,7 @@ import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionConversation
 import com.example.messageapp.databinding.FragmentHomeBinding
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.service.ChatHeadService
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -30,6 +34,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     private val suggestFriendAdapter by lazy { SuggestFriendAdapter() }
     private var listChatAdapter: ListChatAdapter? = null
     private var updateJob: Job? = null
+
+    companion object {
+        private const val REQUEST_OVERLAY_PERMISSION = 1001
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -49,6 +57,34 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         AnimatorUtils.fadeInItemRecyclerView(requireActivity(), binding?.rcvSuggestFriend)
         suggestFriendAdapter.onClickItem = { friend ->
             goToChatFragment(Conversation(friend))
+        }
+    }
+
+    override fun onClickView() {
+        super.onClickView()
+
+        binding?.btnFindMoreFriend?.setOnClickListener {
+            if (Settings.canDrawOverlays(requireActivity())) {
+                activity?.startService(Intent(requireActivity(), ChatHeadService::class.java))
+            } else {
+                requestOverlayPermission()
+            }
+        }
+    }
+
+    private fun requestOverlayPermission() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:${activity?.packageName}")
+        )
+        startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_OVERLAY_PERMISSION && Settings.canDrawOverlays(requireActivity())) {
+            activity?.startService(Intent(requireActivity(), ChatHeadService::class.java))
         }
     }
 
