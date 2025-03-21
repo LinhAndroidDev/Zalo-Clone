@@ -1,8 +1,10 @@
 package com.example.messageapp.service
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
@@ -12,6 +14,8 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
+import androidx.cardview.widget.CardView
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 
@@ -22,7 +26,7 @@ class ChatHeadService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    @SuppressLint("InflateParams")
+    @SuppressLint("InflateParams", "ClickableViewAccessibility")
     override fun onCreate() {
         super.onCreate()
 
@@ -46,20 +50,24 @@ class ChatHeadService : Service() {
 
         // Đặt vị trí xuất hiện ban đầu
         layoutParams.gravity = Gravity.TOP or Gravity.START
-        layoutParams.x = 100
+        val screenWidth = Resources.getSystem().displayMetrics.widthPixels
+        layoutParams.x = screenWidth - 500
         layoutParams.y = 100
 
         // Thêm chat head vào màn hình
         windowManager.addView(chatHeadView, layoutParams)
 
+        val icBubbleChat = chatHeadView.findViewById<CardView>(R.id.icChatHead)
+        animateChatHeadToEdge(layoutParams, icBubbleChat.width)
+
         // Xử lý sự kiện kéo thả bong bóng
-        chatHeadView.findViewById<View>(R.id.icChatHead).setOnTouchListener(object : View.OnTouchListener {
+        icBubbleChat.setOnTouchListener(object : View.OnTouchListener {
             private var initialX = 0
             private var initialY = 0
             private var initialTouchX = 0f
             private var initialTouchY = 0f
 
-            @SuppressLint("ClickableViewAccessibility")
+            @SuppressLint("ClickableViewAccessibility", "ObjectAnimatorBinding")
             override fun onTouch(view: View?, event: MotionEvent?): Boolean {
                 event ?: return false
 
@@ -75,16 +83,24 @@ class ChatHeadService : Service() {
 
                     MotionEvent.ACTION_UP -> {
                         val touchDuration = SystemClock.elapsedRealtime() - touchStartTime
-                        if (touchDuration < 200) { // Nếu thời gian chạm nhỏ hơn 200ms thì coi là click
-                            view?.performClick() // Kích hoạt sự kiện onClick
+                        if (touchDuration < 200) { // Nếu là click
+                            view?.performClick()
+                        }
+                        else {
+                            animateChatHeadToEdge(layoutParams, icBubbleChat.width) // Gọi animation để di chuyển về mép màn hình
                         }
                         return true
                     }
 
                     MotionEvent.ACTION_MOVE -> {
-                        layoutParams.x = initialX + (event.rawX - initialTouchX).toInt()
-                        layoutParams.y = initialY + (event.rawY - initialTouchY).toInt()
-                        windowManager.updateViewLayout(chatHeadView, layoutParams)
+                        try {
+                            layoutParams.x = initialX + (event.rawX - initialTouchX).toInt()
+                            layoutParams.y = initialY + (event.rawY - initialTouchY).toInt()
+                            windowManager.updateViewLayout(chatHeadView, layoutParams)
+                        } catch (e: IllegalArgumentException) {
+                            Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_SHORT).show()
+                            e.printStackTrace() // Tránh lỗi nếu view đã bị remove
+                        }
                         return true
                     }
                 }
@@ -92,7 +108,7 @@ class ChatHeadService : Service() {
             }
         })
 
-        chatHeadView.findViewById<View>(R.id.icChatHead).setOnClickListener {
+        icBubbleChat.setOnClickListener {
             val packageManager = applicationContext.packageManager
             val intent: Intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
                 addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
@@ -105,6 +121,30 @@ class ChatHeadService : Service() {
         chatHeadView.findViewById<View>(R.id.closeChatHeader).setOnClickListener {
             stopSelf()
         }
+    }
+
+    private fun animateChatHeadToEdge(layoutParams: WindowManager.LayoutParams, widthBubble: Int) {
+        val screenWidth = Resources.getSystem().displayMetrics.widthPixels
+        val startX = layoutParams.x
+        val endX = if (startX > screenWidth / 2 - widthBubble / 2) {
+            screenWidth - widthBubble / 2 // Mép phải
+        } else {
+            0 // Mép trái
+        }
+
+        // Tạo animation
+        val animator = ValueAnimator.ofInt(startX, endX)
+        animator.duration = 400 // Thời gian animation 400ms
+        animator.addUpdateListener { valueAnimator ->
+            try {
+                layoutParams.x = valueAnimator.animatedValue as Int
+                windowManager.updateViewLayout(chatHeadView, layoutParams)
+            } catch (e: IllegalArgumentException) {
+                Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_SHORT).show()
+                animator.cancel() // Hủy animation nếu view không còn tồn tại
+            }
+        }
+        animator.start()
     }
 
     override fun onDestroy() {
