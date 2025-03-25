@@ -114,8 +114,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.conversation?.collect { conversations ->
                 conversations?.let {
-                    listChatAdapter?.items = conversations
-                    listChatAdapter?.notifyDataSetChanged()
+                    listChatAdapter?.updateDiffConversation(conversations)
                 }
             }
         }

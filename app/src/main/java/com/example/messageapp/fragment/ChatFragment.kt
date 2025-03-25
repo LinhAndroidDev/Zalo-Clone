@@ -309,7 +309,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
-                            chatAdapter?.setMessage(msg)
+                            chatAdapter?.updateDiffList(msg)
                             if (stateScrollable) {
                                 binding?.rcvChat?.scrollToPosition(
                                     chatAdapter?.itemCount?.minus(1) ?: 0

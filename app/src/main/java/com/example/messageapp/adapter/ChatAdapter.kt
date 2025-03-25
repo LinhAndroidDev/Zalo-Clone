@@ -12,8 +12,10 @@ import androidx.appcompat.app.ActionBar.LayoutParams
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.R
+import com.example.messageapp.base.BaseAdapter.BaseDiffUtil
 import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.databinding.ItemChatSenderBinding
 import com.example.messageapp.helper.screenHeight
@@ -48,11 +50,14 @@ class ChatAdapter(
      * This function used to update data message
      */
     @SuppressLint("NotifyDataSetChanged")
-    fun setMessage(list: ArrayList<Message>) {
-        seen = false
+    fun updateDiffList(newList: List<Message>) {
+        val diffResult = DiffUtil.calculateDiff(BaseDiffUtil(messages, newList,
+            areContentsTheSame = { old, new -> old.time == new.time },
+            areItemsTheSame = { old, new -> old == new }
+        ))
         messages.clear()
-        messages.addAll(list)
-        notifyDataSetChanged()
+        messages.addAll(newList)
+        diffResult.dispatchUpdatesTo(this)
     }
 
     /**

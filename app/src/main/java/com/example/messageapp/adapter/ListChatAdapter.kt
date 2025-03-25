@@ -30,6 +30,13 @@ class ListChatAdapter :
         holder.initView(position)
     }
 
+    fun updateDiffConversation(conversations : ArrayList<Conversation>) {
+        updateDiffList(conversations,
+            compareItem = { old, new -> old.time == new.time },
+            compareContent = { old, new -> old == new }
+        )
+    }
+
     @SuppressLint("SetTextI18n", "NotifyDataSetChanged")
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
