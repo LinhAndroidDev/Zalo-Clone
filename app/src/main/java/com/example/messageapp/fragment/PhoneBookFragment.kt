@@ -76,7 +76,7 @@ class PhoneBookFragment : BaseFragment<FragmentPhoneBookBinding, PhoneBookFragme
 
         }
         phoneBookAdapter.onClickFriendRequest = {
-            findNavController().navigate(R.id.friendRequestFragment)
+            findNavController().navigate(R.id.action_phoneBookFragment_to_friendRequestFragment)
         }
         phoneBookAdapter.phoneBooks = phoneBookDatas
         binding?.rcvPhoneBook?.adapter = phoneBookAdapter

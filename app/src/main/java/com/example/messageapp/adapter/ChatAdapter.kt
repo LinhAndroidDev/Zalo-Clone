@@ -9,10 +9,13 @@ import android.view.ViewGroup.MarginLayoutParams
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.R
+import com.example.messageapp.base.BaseAdapter.BaseDiffUtil
 import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.databinding.ItemChatSenderBinding
 import com.example.messageapp.helper.screenHeight
@@ -32,20 +35,34 @@ class ChatAdapter(
     private val friendId: String,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
-    var longClickItemSender: ((Pair<View, Message>) -> Unit)? = null
-    var longClickItemReceiver: ((Pair<View, Message>) -> Unit)? = null
     var seen: Boolean = false
-    var clickPhoto: ((Pair<Pair<Message, String>, Boolean>) -> Unit)? = null
-    var clickOptionMenuPhoto: ((Message) -> Unit)? = null
+    private var mCallBack: CallBackClickItem? = null
 
-    @SuppressLint("NotifyDataSetChanged")
-    fun setMessage(list: ArrayList<Message>) {
-        seen = false
-        messages.clear()
-        messages.addAll(list)
-        notifyDataSetChanged()
+    /**
+     * This function used to set on click item in chat adapter
+     * @param callBackClickItem call back click item
+     */
+    fun setOnActionClickItem(callBackClickItem: CallBackClickItem) {
+        this.mCallBack = callBackClickItem
     }
 
+    /**
+     * This function used to update data message
+     */
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateDiffList(newList: List<Message>) {
+        val diffResult = DiffUtil.calculateDiff(BaseDiffUtil(messages, newList,
+            areContentsTheSame = { old, new -> old.time == new.time },
+            areItemsTheSame = { old, new -> old == new }
+        ))
+        messages.clear()
+        messages.addAll(newList)
+        diffResult.dispatchUpdatesTo(this)
+    }
+
+    /**
+     * This function used to create view holder for chat adapter
+     */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
             VIEW_SENDER -> {
@@ -72,81 +89,68 @@ class ChatAdapter(
         }
     }
 
+    /**
+     * This function used to get item count of chat adapter
+     */
     override fun getItemCount(): Int = messages.size
 
+    /**
+     * This function used to bind view holder for chat adapter
+     */
     @SuppressLint("NotifyDataSetChanged")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val message = messages[position]
         when (holder.itemViewType) {
             VIEW_SENDER -> {
                 holder as SenderViewHolder
+                holder.checkShowEmotion(message)
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
-                        holder.showViewMessage(true)
-                        holder.v.tvSender.text = message.message
-                        holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
-                        holder.v.viewMessage.setOnLongClickListener {
-                            longClickItemSender?.invoke(it to message)
-                            true
+                        holder.initViewMessage(context, message) {
+                            mCallBack?.longClickItemSender(it to message)
                         }
                     }
 
                     TypeMessage.PHOTOS -> {
-                        holder.showViewMessage(false)
-                        holder.v.viewMessage.isVisible = false
-                        holder.v.viewPhotos.isVisible = true
-                        drawViewPhoto(holder.v.viewPhotos, message)
+                        holder.initViewMultiPhoto(context)
+                        drawViewMultiPhoto(holder.v.viewPhotos, message)
                     }
 
                     TypeMessage.SINGLE_PHOTO -> {
-                        holder.showViewMessage(false)
-                        holder.v.viewMessage.isVisible = false
-                        holder.v.viewPhotos.isVisible = true
+                        holder.initViewSinglePhoto(context)
                         loadSinglePhoto(holder.v.viewPhotos, message)
                     }
                 }
                 checkShowSeenMessage(holder, position)
                 holder.v.optionMenuPhoto.setOnClickListener {
-                    clickOptionMenuPhoto?.invoke(message)
+                    mCallBack?.clickOptionMenuPhoto(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
 
             else -> {
                 holder as ReceiverViewHolder
-                FireBaseInstance.getInfoUser(friendId) { user ->
-                    context.loadImg(
-                        user.avatar.toString(),
-                        holder.v.avatarReceiver
-                    )
-                }
+                holder.checkShowEmotion(message)
+                holder.showAvatarReceiver(context, friendId)
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
-                        holder.showViewMessage(true)
-                        holder.v.tvReceiver.text = message.message
-                        holder.v.tvTime.text = DateUtils.convertTimeToHour(message.time)
-                        holder.v.layoutMessage.setOnLongClickListener {
-                            longClickItemReceiver?.invoke(it to message)
-                            true
+                        holder.initViewMessage(context, message) {
+                            mCallBack?.longClickItemReceiver(it to message)
                         }
                     }
 
                     TypeMessage.PHOTOS -> {
-                        holder.showViewMessage(false)
-                        holder.v.viewMessage.isVisible = false
-                        holder.v.viewPhotos.isVisible = true
-                        drawViewPhoto(holder.v.viewPhotos, message, false)
+                        holder.initViewMultiPhoto(context)
+                        drawViewMultiPhoto(holder.v.viewPhotos, message, false)
                     }
 
                     TypeMessage.SINGLE_PHOTO -> {
-                        holder.showViewMessage(false)
-                        holder.v.viewMessage.isVisible = false
-                        holder.v.viewPhotos.isVisible = true
+                        holder.initViewSinglePhoto(context)
                         loadSinglePhoto(holder.v.viewPhotos, message, false)
                     }
                 }
                 holder.v.optionMenuPhoto.setOnClickListener {
-                    clickOptionMenuPhoto?.invoke(message)
+                    mCallBack?.clickOptionMenuPhoto(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
@@ -177,7 +181,21 @@ class ChatAdapter(
         }
     }
 
-    private fun loadSinglePhoto(viewPhoto: LinearLayout, message: Message, fromSender: Boolean = true) {
+    /**
+     * This function is used to calculate the size of a single photo based on the size returned from the server
+     * + Then scale it according to the width and height of the device.
+     * + If the width is greater than the height, the width is 3/4 of the screen width - 120
+     * + If the height is greater than the width, the height is half of the screen height
+     * + Calculate the size of the photo and display the size in advance while loading.
+     * @param viewPhoto view photo
+     * @param message message
+     * @param fromSender from sender or not
+     */
+    private fun loadSinglePhoto(
+        viewPhoto: LinearLayout,
+        message: Message,
+        fromSender: Boolean = true
+    ) {
         val photo = message.singlePhoto[0]
         val width = message.singlePhoto[1].toInt()
         val height = message.singlePhoto[2].toInt()
@@ -192,7 +210,7 @@ class ChatAdapter(
         imageView.layoutParams =
             ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
         imageView.setOnClickListener {
-            clickPhoto?.invoke(Pair(Pair(message, photo), fromSender))
+            mCallBack?.clickPhoto(Pair(Pair(message, photo), fromSender))
         }
         viewPhoto.addView(imageView)
         context.loadImg(
@@ -202,7 +220,16 @@ class ChatAdapter(
         )
     }
 
-    private fun drawViewPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
+    /**
+     * This function is used to draw multiple photos to create a gridview-like list with 3 columns.
+     * + Calculate the number of rows based on the number of photos by taking size of photos and dividing it by 3
+     * + Then add each photo and row each row has 3 photos
+     * + Finally add each row to viewPhotos
+     * @param viewPhotos view photos
+     * @param message message
+     * @param fromSender from sender or not
+     */
+    private fun drawViewMultiPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
         val photos = message.photos
         viewPhotos.removeAllViews()
         val row = ceil(photos.size / 3f).toInt()
@@ -212,48 +239,192 @@ class ChatAdapter(
                 ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
             layoutRow.orientation = LinearLayout.HORIZONTAL
             for (j in 3 * i until 3 * i + 3) {
-                if (j < photos.size) {
-                    val imgPhoto = ImageView(context)
-                    imgPhoto.layoutParams =
-                        MarginLayoutParams(screenWidth / 4 - 40, screenWidth / 4 - 40).apply {
-                            bottomMargin = if (i == row - 1) 0 else 8
-                            rightMargin = if (j == 3 * i + 2) 0 else 8
-                        }
-                    imgPhoto.setOnClickListener {
-                        clickPhoto?.invoke(Pair(Pair(message, photos[j]), fromSender))
+                if (j >= photos.size) break
+                val imgPhoto = ImageView(context)
+                imgPhoto.layoutParams =
+                    MarginLayoutParams(screenWidth / 4 - 40, screenWidth / 4 - 40).apply {
+                        bottomMargin = if (i == row - 1) 0 else 8
+                        rightMargin = if (j == 3 * i + 2) 0 else 8
                     }
-                    imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
-                    context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
-                    layoutRow.addView(imgPhoto)
-                } else {
-                    break
+                imgPhoto.setOnClickListener {
+                    mCallBack?.clickPhoto(Pair(Pair(message, photos[j]), fromSender))
                 }
+                imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+                context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
+                layoutRow.addView(imgPhoto)
             }
             viewPhotos.addView(layoutRow)
         }
 
     }
 
+    /**
+     * This function used to get view type of chat adapter
+     */
     override fun getItemViewType(position: Int): Int {
         return if (messages[position].sender != friendId) VIEW_SENDER else VIEW_RECEIVER
     }
 
-    class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root) {
+    class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root), ViewTypeMessage {
+
+        // This function used to check if the message has emotion or not of sender
+        fun checkShowEmotion(message: Message) {
+            if (message.emotion?.emotionEmpty() == false) {
+                v.viewEmotion.isVisible = true
+                v.viewReleaseEmotion.isVisible = true
+                v.viewReleaseEmotion.updateReleaseEmotion(message.emotion!!)
+            } else {
+                v.viewEmotion.isVisible = false
+                v.viewReleaseEmotion.isVisible = false
+            }
+        }
+
+        // This function used to show view message of sender
+        override fun initViewMessage(context: Context, message: Message, longClick: (View) -> Unit) {
+            v.viewMarginBottomMessage.isVisible = message.emotion?.emotionEmpty() == false
+            v.viewMarginEmotion.layoutParams = LayoutParams(
+                context.resources.getDimensionPixelSize(R.dimen.margin_100),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            showViewMessage(true)
+            v.tvSender.text = message.message
+            v.tvTime.text = DateUtils.convertTimeToHour(message.time)
+            v.viewMessage.setOnLongClickListener {
+                longClick.invoke(it)
+                true
+            }
+        }
+
+        // This function used to show view multi photo of sender
+        override fun initViewMultiPhoto(context: Context) {
+            initEmotionPhoto(context)
+            showViewMessage(false)
+        }
+
+        // This function used to show view single photo of sender
+        override fun initViewSinglePhoto(context: Context) {
+            initEmotionPhoto(context)
+            showViewMessage(false)
+        }
+
+        // This function used to init emotion photo of sender
+        private fun initEmotionPhoto(context: Context) {
+            v.viewEmotion.isVisible = true
+            v.viewMarginEmotion.layoutParams = LayoutParams(
+                context.resources.getDimensionPixelSize(R.dimen.margin_50),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        // This function used to show view seen or receive message of sender
         fun showSeen(seen: Boolean) {
             this.v.avtSeen.isVisible = seen
             this.v.viewReceived.isVisible = !seen
         }
 
-        fun showViewMessage(show: Boolean) {
-            v.layoutPhoto.isVisible = !show
+
+        // This function used to show view message of sender
+        private fun showViewMessage(show: Boolean) {
             v.viewMessage.isVisible = show
+            v.layoutPhoto.isVisible = !show
+            v.viewPhotos.isVisible = !show
         }
     }
 
-    class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root) {
-        fun showViewMessage(show: Boolean) {
+    class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root), ViewTypeMessage {
+
+        // This function used to show avatar receiver
+        fun showAvatarReceiver(context: Context, friendId: String) {
+            FireBaseInstance.getInfoUser(friendId) { user ->
+                context.loadImg(
+                    user.avatar.toString(),
+                    v.avatarReceiver
+                )
+            }
+        }
+
+        // This function used to check show emotion of receiver
+        fun checkShowEmotion(message: Message) {
+            if (message.emotion?.emotionEmpty() == false) {
+                v.viewEmotion.isVisible = true
+                v.viewReleaseEmotion.isVisible = true
+                v.viewReleaseEmotion.updateReleaseEmotion(message.emotion!!)
+            } else {
+                v.viewEmotion.isVisible = false
+                v.viewReleaseEmotion.isVisible = false
+            }
+        }
+
+        // This function used to show view message of receiver
+        private fun showViewMessage(show: Boolean) {
             v.layoutPhoto.isVisible = !show
             v.viewMessage.isVisible = show
+            v.viewPhotos.isVisible = !show
         }
+
+        // This function used to show view message of receiver
+        override fun initViewMessage(
+            context: Context,
+            message: Message,
+            longClick: (View) -> Unit
+        ) {
+            v.viewMarginBottomMessage.isVisible = message.emotion?.emotionEmpty() == false
+            context.calculatorViewMarginEmotion(R.dimen.margin_100)
+            showViewMessage(true)
+            v.tvReceiver.text = message.message
+            v.tvTime.text = DateUtils.convertTimeToHour(message.time)
+            v.viewMessage.setOnLongClickListener {
+                longClick.invoke(it)
+                true
+            }
+        }
+
+        // This function used to show view multi photo of receiver
+        override fun initViewMultiPhoto(context: Context) {
+            initEmotionPhoto(context)
+            showViewMessage(false)
+        }
+
+        // This function used to show view single photo of receiver
+        override fun initViewSinglePhoto(context: Context) {
+            initEmotionPhoto(context)
+            showViewMessage(false)
+        }
+
+        // This function used to init emotion photo of receiver
+        private fun initEmotionPhoto(context: Context) {
+            v.viewEmotion.isVisible = true
+            context.calculatorViewMarginEmotion(R.dimen.margin_50)
+        }
+
+        // This function used to calculate view margin emotion of receiver
+        private fun Context.calculatorViewMarginEmotion(margin: Int) {
+            val params = ConstraintLayout.LayoutParams(
+                resources.getDimensionPixelSize(margin),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            v.viewMarginEmotion.layoutParams = params
+        }
+    }
+
+    /**
+     * This interface used to handle click item in chat adapter
+     */
+    interface CallBackClickItem {
+        fun longClickItemSender(data: (Pair<View, Message>))
+        fun longClickItemReceiver(data: (Pair<View, Message>))
+        fun clickPhoto(data: (Pair<Pair<Message, String>, Boolean>))
+        fun clickOptionMenuPhoto(msg: Message)
+    }
+
+    /**
+     * This interface used to handle view type message
+     */
+    interface ViewTypeMessage {
+        fun initViewMessage(context: Context, message: Message, longClick: (View) -> Unit)
+        fun initViewMultiPhoto(context: Context)
+        fun initViewSinglePhoto(context: Context)
     }
 }

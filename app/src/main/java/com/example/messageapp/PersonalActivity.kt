@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -89,6 +90,7 @@ class PersonalActivity : AppCompatActivity() {
 
     private fun handleDataUser(user: User) {
         binding.nameUser.text = user.name
+        binding.txtWhatHappy.text = getString(R.string.what_happy_today, user.name)
         loadImg(user.avatar.toString(), binding.avatarUser)
         loadImg(user.imageCover.toString(), binding.imgCover, imgDefault = R.drawable.bg_grey_horizontal)
     }
@@ -104,6 +106,14 @@ class PersonalActivity : AppCompatActivity() {
                 }
             }
         }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+                overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+            }
+
+        })
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
