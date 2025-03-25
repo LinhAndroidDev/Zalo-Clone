@@ -11,6 +11,7 @@
             <enum name="search" value="6" />
             <enum name="header_title" value="7" />
         </attr>
+        <attr name="title_header" format="string" />
     </declare-styleable>
 
     <declare-styleable name="CircleIndicator">
@@ -78,5 +79,24 @@
         <attr name="flingVelocity" format="integer" />
 
         <attr name="minDistRequestDisallowParent" format="dimension" />
+    </declare-styleable>
+
+    <declare-styleable name="ItemViewProfile">
+        <attr name="title" format="string" />
+        <attr name="detail" format="string" />
+        <attr name="icon" format="reference" />
+        <attr name="color_icon" format="reference" />
+        <attr name="show_according" format="boolean" />
+        <attr name="show_divider" format="boolean" />
+        <attr name="end_icon">
+            <enum name="warning" value="1" />
+            <enum name="contact" value="2" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="ItemFeaturePersonal">
+        <attr name="title_feature" format="string" />
+        <attr name="icon_feature" format="reference" />
+        <attr name="color_icon_feature" format="color" />
     </declare-styleable>
 </resources>

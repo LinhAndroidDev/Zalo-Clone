@@ -163,7 +163,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center_vertical"
                             android:layout_marginStart="25dp"
-                            android:background="@drawable/bg_circle"
+                            android:background="@drawable/bg_corner_10_red"
                             android:visibility="visible">
 
                             <TextView

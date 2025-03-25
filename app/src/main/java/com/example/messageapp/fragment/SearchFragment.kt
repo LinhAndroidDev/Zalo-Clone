@@ -37,7 +37,7 @@ class SearchFragment : BaseFragment<FragmentSearchBinding, SearchFragmentViewMod
             viewModel?.users?.collect {
                 binding?.tvNumberFriend?.text =
                     String.format(getString(R.string.you_may_be_familiar_with), it.size.toString())
-                searchAdapter.resetList(it)
+                searchAdapter.updateUserDiff(it)
             }
         }
     }

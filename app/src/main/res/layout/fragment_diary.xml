@@ -1,19 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:app="http://schemas.android.com/apk/res-auto">
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/white"
+        android:orientation="vertical"
         tools:context=".fragment.DiaryFragment">
 
         <com.example.messageapp.custom.CustomHeaderView
             android:id="@+id/header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:item_view="diary"
             app:layout_constraintEnd_toEndOf="parent"
-            app:item_view="diary"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/avatarUser"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="15dp"
+                android:src="@mipmap/ic_launcher" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/how_are_you_today"
+                android:textColor="@color/text_grey"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <include
+            android:layout_marginBottom="10dp"
+            layout="@layout/layout_feature_diary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <com.example.messageapp.custom.DividerCommon
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="15dp"
+            android:text="@string/moment"
+            android:textColor="@color/text_common"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/font_noto_sans"/>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:layout_marginVertical="10dp"
+            app:cardCornerRadius="8dp">
+
+            <FrameLayout
+                android:background="@drawable/bg_gradient_news"
+                android:layout_width="110dp"
+                android:layout_height="180dp">
+
+                <ImageView
+                    android:id="@+id/imgCreateNews"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:importantForAccessibility="no"
+                    android:scaleType="centerCrop" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#99111111" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center|bottom"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="5dp">
+
+                    <FrameLayout
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_circle_gradient_stroke_grey"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:id="@+id/iconNews"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_margin="12dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_edit_news"
+                            app:tint="@color/white" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_marginTop="5dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/create_new"
+                        android:textColor="@color/text_white"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/font_noto_sans"/>
+                </LinearLayout>
+            </FrameLayout>
+        </androidx.cardview.widget.CardView>
+
+        <com.example.messageapp.custom.DividerCommon
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 </layout>

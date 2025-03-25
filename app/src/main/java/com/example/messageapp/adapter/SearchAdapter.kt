@@ -18,4 +18,11 @@ class SearchAdapter : BaseAdapter<User, ItemSearchFriendBinding>() {
         )
         holder.v.nameFriend.text = friend.name
     }
+
+    fun updateUserDiff(users: ArrayList<User>) {
+        updateDiffList(users,
+            compareItem = { old, new -> old.keyAuth == new.keyAuth },
+            compareContent = { old, new -> old == new }
+        )
+    }
 }

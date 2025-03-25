@@ -30,12 +30,19 @@ class ListChatAdapter :
         holder.initView(position)
     }
 
+    fun updateDiffConversation(conversations : ArrayList<Conversation>) {
+        updateDiffList(conversations,
+            compareItem = { old, new -> old.time == new.time },
+            compareContent = { old, new -> old == new }
+        )
+    }
+
     @SuppressLint("SetTextI18n", "NotifyDataSetChanged")
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
         v.tvNameFriend.text = conversation.name
         v.tvMessage.text = "${conversation.person}: ${conversation.message}"
-        v.tvTime.text = DateUtils.convertTimeToHour(conversation.time)
+        v.tvTime.text = DateUtils.formatTime(conversation.time)
         this.handleWhenConversationIsChanged(conversation)
         FireBaseInstance.getInfoUser(conversation.friendId) { user ->
             itemView.context.loadImg(user.avatar.toString(), v.avatarFriend)
@@ -74,8 +81,10 @@ class ListChatAdapter :
     private fun BaseViewHolder<ItemListChatBinding>.handleWhenConversationIsChanged(conversation: Conversation) {
         if (conversation.numberUnSeen > 0) {
             v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
+            v.tvTime.setTextColor(itemView.context.getColor(R.color.text_common))
         } else {
             v.tvMessage.setTextColor(itemView.context.getColor(R.color.grey_1))
+            v.tvTime.setTextColor(itemView.context.getColor(R.color.grey_1))
         }
 
         if (conversation.isMessageFromFriend()) {

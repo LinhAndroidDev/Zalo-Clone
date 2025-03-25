@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_corner_25_blue_light"
+    android:backgroundTint="@color/grey_emotion"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <View
+        android:layout_width="5dp"
+        android:layout_height="1dp"/>
+
+    <ImageView
+        android:id="@+id/emotionFavourite"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
+        android:layout_marginVertical="1dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/emotion_favourite"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/emotionLike"
+        android:layout_width="12.5dp"
+        android:layout_height="12.5dp"
+        android:layout_marginVertical="1dp"
+        android:layout_marginStart="3dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/emotion_like"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/emotionLaugh"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginVertical="1dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/emotion_laugh"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/emotionCry"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginVertical="1dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/emotion_cry"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/emotionAngry"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginVertical="1dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/emotion_angry"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvQuantityEmotion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="3dp"
+        android:text="6"
+        android:textColor="@color/text_common"
+        android:textSize="12sp"
+        android:visibility="gone" />
+</LinearLayout>

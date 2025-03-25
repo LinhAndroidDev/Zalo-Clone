@@ -81,6 +81,7 @@ class CustomHeaderView @JvmOverloads constructor(
 
                 else -> {
                     binding.headerTitle.layout.isVisible = true
+                    binding.headerTitle.titleView.text = array.getText(R.styleable.CustomHeaderView_title_header)
                     binding.viewCommon.isVisible = false
                     binding.viewChat.layout.isVisible = false
                     binding.viewSearch.layout.isVisible = false
@@ -106,7 +107,7 @@ class CustomHeaderView @JvmOverloads constructor(
             val navController =
                 context.getFragmentActivity()?.supportFragmentManager?.findFragmentById(R.id.navHostFragment)
                     ?.findNavController()
-            navController?.navigate(R.id.settingFragment)
+            navController?.navigate(R.id.action_personalFragment_to_settingFragment, null)
         }
 
         binding?.viewSearch?.edtSearch?.doOnTextChanged { text, start, before, count ->

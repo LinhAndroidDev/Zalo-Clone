@@ -17,6 +17,7 @@ import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
@@ -35,10 +36,12 @@ import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -50,12 +53,51 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
-    private var scrollPosition = 0
     private var stateScrollable = true
+    private var isChatScreenActive = false
+    private var isMessageEmpty = true
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
         private const val SELECT_MULTI_PICTURE = "SELECT_MULTI_PICTURE"
+    }
+
+    private val mCallBackClickItem = object : ChatAdapter.CallBackClickItem {
+        override fun longClickItemSender(data: Pair<View, Message>) {
+            showPopupOption(data.first, data.second)
+        }
+
+        override fun longClickItemReceiver(data: Pair<View, Message>) {
+            showPopupOption(data.first, data.second, false)
+        }
+
+        override fun clickPhoto(data: Pair<Pair<Message, String>, Boolean>) {
+            val fromSender = data.second
+            val keyId = if (fromSender) viewModel?.shared?.getAuth()
+                .toString() else conversation?.friendId.toString()
+            val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
+            intent.putExtra(PreviewPhotoActivity.OBJECT_MESSAGE, data.first.first)
+            intent.putExtra(PreviewPhotoActivity.PHOTO_DATA, data.first.second)
+            intent.putExtra(PreviewPhotoActivity.KEY_ID, keyId)
+            activity?.startActivity(intent)
+        }
+
+        override fun clickOptionMenuPhoto(msg: Message) {
+            val bottomSheetOptionPhoto = BottomSheetOptionPhoto()
+            bottomSheetOptionPhoto.show(parentFragmentManager, "")
+            bottomSheetOptionPhoto.setOnClickOptionPho(object :
+                BottomSheetOptionPhoto.OnClickOptionPhoto {
+                override fun savePhotoOrVideo() {
+
+                }
+
+                override fun remove() {
+                    conversation?.let { viewModel?.removeMessage(it, msg.time) }
+                }
+
+            })
+        }
+
     }
 
     override fun initView() {
@@ -64,37 +106,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
             chatAdapter = ChatAdapter(requireActivity(), conversation?.friendId ?: "")
-            chatAdapter?.longClickItemSender = { data ->
-                showPopupOption(data.first, data.second)
-            }
-            chatAdapter?.longClickItemReceiver = { data ->
-                showPopupOption(data.first, data.second, false)
-            }
-            chatAdapter?.clickPhoto = { pair ->
-                val fromSender = pair.second
-                val keyId = if (fromSender) viewModel?.shared?.getAuth()
-                    .toString() else conversation?.friendId.toString()
-                val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
-                intent.putExtra(PreviewPhotoActivity.OBJECT_MESSAGE, pair.first.first)
-                intent.putExtra(PreviewPhotoActivity.PHOTO_DATA, pair.first.second)
-                intent.putExtra(PreviewPhotoActivity.KEY_ID, keyId)
-                activity?.startActivity(intent)
-            }
-            chatAdapter?.clickOptionMenuPhoto = { msg ->
-                val bottomSheetOptionPhoto = BottomSheetOptionPhoto()
-                bottomSheetOptionPhoto.show(parentFragmentManager, "")
-                bottomSheetOptionPhoto.setOnClickOptionPho(object :
-                    BottomSheetOptionPhoto.OnClickOptionPhoto {
-                    override fun savePhotoOrVideo() {
-
-                    }
-
-                    override fun remove() {
-                        conversation?.let { viewModel?.removeMessage(it, msg.time) }
-                    }
-
-                })
-            }
+            chatAdapter?.setOnActionClickItem(mCallBackClickItem)
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
         }
@@ -126,8 +138,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
         val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
         val layoutEmotion: LinearLayout = popupView.findViewById(R.id.layoutEmotion)
-        val layoutPopupOptions: LinearLayout = popupView.findViewById(R.id.layoutPopupOptions)
+        val imgFavourite: ImageView = popupView.findViewById(R.id.imgFavourite)
+        val imgLike: ImageView = popupView.findViewById(R.id.imgLike)
+        val imgLaugh: ImageView = popupView.findViewById(R.id.imgLaugh)
+        val imgCry: ImageView = popupView.findViewById(R.id.imgCry)
+        val imgAngry: ImageView = popupView.findViewById(R.id.imgAngry)
 
+        hideKeyboard()
         val soundEmotion = MediaPlayer.create(requireActivity(), R.raw.sound_emotion)
         soundEmotion.start()
         AnimatorUtils.scaleEmotion(requireActivity(), layoutEmotion)
@@ -150,11 +167,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             resources.getDimensionPixelSize(R.dimen.width_popup_options),
             ViewGroup.LayoutParams.WRAP_CONTENT,
             true // True để Popup có thể bị tắt khi bấm ra ngoài
-        )
-
-        popupWindow.setBackgroundDrawable(
-            ContextCompat.getDrawable(requireActivity(), android.R.color.transparent)
-        )
+        ).apply {
+            setBackgroundDrawable(
+                ContextCompat.getDrawable(requireActivity(), android.R.color.transparent)
+            )
+        }
 
         binding?.viewCoverPopupOptions?.isVisible = true
         popupWindow.setOnDismissListener {
@@ -179,12 +196,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         btnCopy.setOnClickListener {
-            val clipboard: ClipboardManager? =
-                activity?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
-            val clip = ClipData.newPlainText("label", message.message)
-            clipboard?.setPrimaryClip(clip)
+            handleCopyMessage(message)
             popupWindow.dismiss()
-            Toast.makeText(requireActivity(), "Bạn đã sao chép tin nhắn", Toast.LENGTH_SHORT).show()
         }
 
         btnRemoveMessage.setOnClickListener {
@@ -192,6 +205,41 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewModel?.removeMessage(it, message.time)
                 popupWindow.dismiss()
             }
+        }
+
+        imgFavourite.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(favourite = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
+        }
+
+        imgLike.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(like = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
+        }
+
+        imgLaugh.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(laugh = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
+        }
+
+        imgCry.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(cry = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
+        }
+
+        imgAngry.setOnClickListener {
+            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
+            val emotion = Emotion(angry = data)
+            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            popupWindow.dismiss()
         }
     }
 
@@ -214,7 +262,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                                 context = requireActivity(),
                                 uris = uris,
                                 conversation = it,
-                                time = DateUtils.getTimeCurrent()
+                                time = DateUtils.getTimeCurrent(),
+                                sendFirst = isMessageEmpty
                             )
                         }
                         stateScrollable = true
@@ -260,14 +309,17 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
-                            chatAdapter?.setMessage(msg)
+                            chatAdapter?.updateDiffList(msg)
                             if (stateScrollable) {
                                 binding?.rcvChat?.scrollToPosition(
                                     chatAdapter?.itemCount?.minus(1) ?: 0
                                 )
                                 stateScrollable = false
                             }
-                            updateSeenMessage(msg)
+                            if (isChatScreenActive && messages.isNotEmpty()) {
+                                isMessageEmpty = false
+                                updateSeenMessage(msg)
+                            }
                         }
                     }
                 }
@@ -298,6 +350,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         )
     }
 
+    private fun handleCopyMessage(message: Message) {
+        val clipboard: ClipboardManager? =
+            activity?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
+        val clip = ClipData.newPlainText("label", message.message)
+        clipboard?.setPrimaryClip(clip)
+        Toast.makeText(requireActivity(), "Bạn đã sao chép tin nhắn", Toast.LENGTH_SHORT).show()
+    }
+
     @SuppressLint("SetTextI18n")
     override fun onClickView() {
         super.onClickView()
@@ -309,7 +369,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 val sender = viewModel?.shared?.getAuth().toString()
                 val time = DateUtils.getTimeCurrent()
                 val message = Message(msg, receiver, sender, time)
-                viewModel?.sendMessage(message = message, time = time, conversation = cvt)
+                viewModel?.sendMessage(message = message, time = time, conversation = cvt, sendFirst = isMessageEmpty)
                 binding?.edtMessage?.setText("")
             }
             stateScrollable = true
@@ -341,7 +401,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun onResume() {
         super.onResume()
+        isChatScreenActive = true
         val notificationManager = context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancelAll()
     }
+
+    override fun onPause() {
+        isChatScreenActive = false
+        super.onPause()
+    }
+
 }

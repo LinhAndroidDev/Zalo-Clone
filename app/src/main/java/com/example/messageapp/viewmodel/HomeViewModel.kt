@@ -26,6 +26,7 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
     private var _numberMsgUnSeen: MutableStateFlow<Int> = MutableStateFlow(0)
     val numberMsgUnSeen = _numberMsgUnSeen.asStateFlow()
 
+    // This function used to get list suggest friend
     fun getSuggestFriend() = viewModelScope.launch {
         showLoading(true)
         FireBaseInstance.getUsers(
@@ -42,6 +43,11 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
+    /**
+     * This function used to handle get suggest friend
+     * @param result data from FireStore
+     * @param success callback function
+     */
     private fun handlerGetSuggestFriend(result: QuerySnapshot, success: (MutableList<User>) -> Unit) {
         val friendData = mutableListOf<User>()
         for(document in result.documents) {
@@ -62,6 +68,7 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
         success.invoke(friendData)
     }
 
+    // This function used to get list conversation
     fun getListConversation() = viewModelScope.launch {
         FireBaseInstance.getListConversation(shared.getAuth(),
             success = { result ->
@@ -77,6 +84,7 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
             })
     }
 
+   // This function used to generate token for message
     fun generateToken() {
         FirebaseMessaging.getInstance().token.addOnSuccessListener { gettocken ->
             val hasHamp = hashMapOf<String, String>("token" to gettocken)
@@ -84,9 +92,7 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
-    /**
-     * This function used to get number of message unread
-     */
+    // This function used to get number of message unread
     fun getNumberUnSeen() = viewModelScope.launch {
         FireBaseInstance.getNumberUnreadMessages(shared.getAuth()) {
             _numberMsgUnSeen.value = it
