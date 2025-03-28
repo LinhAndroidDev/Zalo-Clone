@@ -10,8 +10,8 @@ import com.example.messageapp.custom.swipe.ViewBinderHelper
 import com.example.messageapp.databinding.ItemListChatBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.loadImg
 
 class ListChatAdapter :
     BaseAdapter<Conversation, ItemListChatBinding>() {

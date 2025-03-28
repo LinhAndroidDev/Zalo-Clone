@@ -16,7 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.messageapp.bottom_sheet.BottomSheetSelectImage
 import com.example.messageapp.databinding.ActivityPersonalBinding
 import com.example.messageapp.model.User
-import com.example.messageapp.utils.loadImg
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.viewmodel.PersonalActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers

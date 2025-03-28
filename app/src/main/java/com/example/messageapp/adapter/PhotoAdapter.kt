@@ -4,7 +4,7 @@ import android.content.Context
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemPhotoPageBinding
-import com.example.messageapp.utils.loadImg
+import com.example.messageapp.utils.FileUtils.loadImg
 
 class PhotoAdapter(private val context: Context) : BaseAdapter<String, ItemPhotoPageBinding>() {
     var onClickPhoto: (() -> Unit)? = null

@@ -60,7 +60,7 @@
 
             <TextView
                 android:id="@+id/tvTimeSend"
-                android:text="Hom qua • 01:03"
+                tools:text="Hom qua • 01:03"
                 android:textSize="10sp"
                 android:textColor="@color/text_white"
                 android:layout_width="wrap_content"
@@ -69,6 +69,7 @@
         </LinearLayout>
 
         <ImageView
+            android:id="@+id/btnSaveImageToGallery"
             android:layout_width="35dp"
             android:layout_height="35dp"
             android:layout_marginStart="20dp"

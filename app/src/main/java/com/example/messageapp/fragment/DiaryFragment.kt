@@ -5,7 +5,7 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiaryBinding
 import com.example.messageapp.utils.AnimatorUtils
-import com.example.messageapp.utils.loadImg
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.viewmodel.DiaryFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers

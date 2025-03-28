@@ -11,7 +11,8 @@ import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.databinding.ActivityPreviewPhotoBinding
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
-import com.example.messageapp.utils.loadImg
+import com.example.messageapp.utils.FileUtils
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.viewmodel.PreviewPhotoActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ class PreviewPhotoActivity : AppCompatActivity() {
     companion object {
         const val PREVIEW_PHOTO_ARGUMENT = "PREVIEW_PHOTO_ARGUMENT"
     }
+    private var previewPhotoArgument: PreviewPhotoArgument? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +37,7 @@ class PreviewPhotoActivity : AppCompatActivity() {
     }
 
     private fun initView() {
-        val previewPhotoArgument: PreviewPhotoArgument? = intent.getParcelableExtra(PREVIEW_PHOTO_ARGUMENT)
+        previewPhotoArgument = intent.getParcelableExtra(PREVIEW_PHOTO_ARGUMENT)
         previewPhotoArgument?.let { arg ->
             binding.tvTimeSend.text = DateUtils.formatDateTimeApp(arg.message.time)
             val adapter = PhotoAdapter(this)
@@ -71,6 +73,15 @@ class PreviewPhotoActivity : AppCompatActivity() {
                 AnimatorUtils.fadeIn(binding.header)
             }
             isShowHeader = !isShowHeader
+        }
+
+        binding.btnSaveImageToGallery.setOnClickListener {
+            val index = binding.photoPager.currentItem
+            previewPhotoArgument?.let {
+                lifecycleScope.launch {
+                    FileUtils.downloadAndSaveImage(this@PreviewPhotoActivity, it.photoData[index])
+                }
+            }
         }
     }
 

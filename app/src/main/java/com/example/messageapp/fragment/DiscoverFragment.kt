@@ -4,7 +4,7 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiscoverBinding
 import com.example.messageapp.utils.AnimatorUtils
-import com.example.messageapp.utils.loadImg
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.viewmodel.DiscoverFragmentViewModel
 
 class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentViewModel>() {

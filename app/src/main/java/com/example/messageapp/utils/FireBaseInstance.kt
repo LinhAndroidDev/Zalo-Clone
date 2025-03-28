@@ -13,6 +13,7 @@ import com.example.messageapp.remote.Token
 import com.example.messageapp.remote.request.Data
 import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
+import com.example.messageapp.utils.FileUtils.compressImage
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -176,7 +177,6 @@ object FireBaseInstance {
      * @param conversation data conversation
      * @param nameSender name of sender
      * @param type type of message
-     * @param idRoom id of conversation
      * @param numberUnSeen quantity of message unseen
      */
     private fun handleSendMessage(

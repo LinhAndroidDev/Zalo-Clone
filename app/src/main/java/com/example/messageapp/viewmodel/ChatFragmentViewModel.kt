@@ -2,19 +2,28 @@ package com.example.messageapp.viewmodel
 
 import android.content.Context
 import android.net.Uri
+import android.widget.Toast
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.utils.getImageDimensions
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -156,8 +165,6 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     /**
      * This function used to remove message
-     * @param context context
-     * @param uri data uri of photo
      * @param conversation data friend
      * @param time time message sent
      */
@@ -182,5 +189,32 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             idRoom = idRoom,
             data = data,
         )
+    }
+
+    /**
+     * This function used to save multi photo to gallery
+     * @param context context
+     * @param photos data photos
+     */
+    fun saveMultiPhotoWithCombine(context: Context, photos: ArrayList<String>) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val flows = photos.map { photo ->
+                    flow<String> { FileUtils.downloadAndSaveImage(context, photo) }
+                        .catch { emit("Error: ${it.message}") }
+                        .flowOn(Dispatchers.IO)
+                }
+
+                combine(flows) { results ->
+                    results.toList() // Chuyển các kết quả thành danh sách
+                }.collect { _ ->
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Đã lưu ảnh", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                showError(e.toString())
+            }
+        }
     }
 }

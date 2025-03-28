@@ -4,8 +4,8 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemSuggestFriendBinding
 import com.example.messageapp.model.User
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.loadImg
 
 class SuggestFriendAdapter : BaseAdapter<User, ItemSuggestFriendBinding>() {
     var onClickItem: ((User) -> Unit)? = null

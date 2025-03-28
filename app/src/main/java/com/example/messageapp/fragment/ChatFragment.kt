@@ -40,8 +40,10 @@ import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
@@ -93,7 +95,21 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             bottomSheetOptionPhoto.setOnClickOptionPho(object :
                 BottomSheetOptionPhoto.OnClickOptionPhoto {
                 override fun savePhotoOrVideo() {
+                    when (TypeMessage.of(msg.type)) {
+                        TypeMessage.SINGLE_PHOTO -> {
+                            lifecycleScope.launch {
+                                FileUtils.downloadAndSaveImage(context = requireActivity(), imageUrl = msg.singlePhoto[0])
+                            }
+                        }
 
+                        TypeMessage.PHOTOS -> {
+                            lifecycleScope.launch {
+                                viewModel?.saveMultiPhotoWithCombine(requireActivity(), msg.photos)
+                            }
+                        }
+
+                        else -> {}
+                    }
                 }
 
                 override fun remove() {

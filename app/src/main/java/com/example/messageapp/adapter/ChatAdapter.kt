@@ -23,8 +23,8 @@ import com.example.messageapp.helper.screenWidth
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.loadImg
 import kotlin.math.ceil
 
 const val VIEW_SENDER = 0

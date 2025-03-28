@@ -4,7 +4,7 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemSearchFriendBinding
 import com.example.messageapp.model.User
-import com.example.messageapp.utils.loadImg
+import com.example.messageapp.utils.FileUtils.loadImg
 
 class SearchAdapter : BaseAdapter<User, ItemSearchFriendBinding>() {
     override fun getLayout(): Int = R.layout.item_search_friend
