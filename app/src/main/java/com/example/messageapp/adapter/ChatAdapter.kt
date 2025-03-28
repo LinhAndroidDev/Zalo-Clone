@@ -30,6 +30,13 @@ import kotlin.math.ceil
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
 
+data class PhotoClickData(
+    val message: Message,
+    val indexOfPhoto: Int,
+    val photoData: ArrayList<String>,
+    val fromSender: Boolean
+)
+
 class ChatAdapter(
     private val context: Context,
     private val friendId: String,
@@ -107,7 +114,7 @@ class ChatAdapter(
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
                         holder.initViewMessage(context, message) {
-                            mCallBack?.longClickItemSender(it to message)
+                            mCallBack?.onSenderLongClick(it to message)
                         }
                     }
 
@@ -123,7 +130,7 @@ class ChatAdapter(
                 }
                 checkShowSeenMessage(holder, position)
                 holder.v.optionMenuPhoto.setOnClickListener {
-                    mCallBack?.clickOptionMenuPhoto(message)
+                    mCallBack?.onPhotoOptionMenuClick(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
@@ -135,7 +142,7 @@ class ChatAdapter(
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
                         holder.initViewMessage(context, message) {
-                            mCallBack?.longClickItemReceiver(it to message)
+                            mCallBack?.onReceiverLongClick(it to message)
                         }
                     }
 
@@ -150,7 +157,7 @@ class ChatAdapter(
                     }
                 }
                 holder.v.optionMenuPhoto.setOnClickListener {
-                    mCallBack?.clickOptionMenuPhoto(message)
+                    mCallBack?.onPhotoOptionMenuClick(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
@@ -210,7 +217,7 @@ class ChatAdapter(
         imageView.layoutParams =
             ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
         imageView.setOnClickListener {
-            mCallBack?.clickPhoto(Pair(Pair(message, photo), fromSender))
+            mCallBack?.onPhotoClick(PhotoClickData(message = message, indexOfPhoto = 0, photoData = arrayListOf(photo), fromSender = fromSender))
         }
         viewPhoto.addView(imageView)
         context.loadImg(
@@ -247,7 +254,7 @@ class ChatAdapter(
                         rightMargin = if (j == 3 * i + 2) 0 else 8
                     }
                 imgPhoto.setOnClickListener {
-                    mCallBack?.clickPhoto(Pair(Pair(message, photos[j]), fromSender))
+                    mCallBack?.onPhotoClick(PhotoClickData(message = message, indexOfPhoto = j, photoData = photos, fromSender = fromSender))
                 }
                 imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
                 context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
@@ -413,10 +420,10 @@ class ChatAdapter(
      * This interface used to handle click item in chat adapter
      */
     interface CallBackClickItem {
-        fun longClickItemSender(data: (Pair<View, Message>))
-        fun longClickItemReceiver(data: (Pair<View, Message>))
-        fun clickPhoto(data: (Pair<Pair<Message, String>, Boolean>))
-        fun clickOptionMenuPhoto(msg: Message)
+        fun onSenderLongClick(data: (Pair<View, Message>))
+        fun onReceiverLongClick(data: (Pair<View, Message>))
+        fun onPhotoClick(data: PhotoClickData)
+        fun onPhotoOptionMenuClick(msg: Message)
     }
 
     /**

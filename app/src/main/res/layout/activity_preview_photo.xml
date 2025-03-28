@@ -8,23 +8,10 @@
     tools:context=".PreviewPhotoActivity"
     android:background="@color/black">
 
-    <com.otaliastudios.zoom.ZoomImageView
-        android:id="@+id/photo"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="30dp"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/photoPager"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:zoomEnabled="true"
-        app:scrollEnabled="true"
-        app:oneFingerScrollEnabled="true"
-        app:overScrollHorizontal="false"
-        app:overScrollVertical="false"
-        app:overPinchable="false"
-        app:minZoom="1"
-        app:minZoomType="zoom"
-        app:maxZoom="2.5"
-        app:maxZoomType="zoom"
-        app:hasClickableChildren="false"/>
+        android:layout_height="match_parent"/>
 
     <LinearLayout
         android:id="@+id/header"
@@ -72,6 +59,7 @@
                 android:layout_height="wrap_content"/>
 
             <TextView
+                android:id="@+id/tvTimeSend"
                 android:text="Hom qua • 01:03"
                 android:textSize="10sp"
                 android:textColor="@color/text_white"

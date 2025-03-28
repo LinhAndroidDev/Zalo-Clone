@@ -31,6 +31,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
+import com.example.messageapp.adapter.PhotoClickData
+import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.databinding.FragmentChatBinding
@@ -63,26 +65,29 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     }
 
     private val mCallBackClickItem = object : ChatAdapter.CallBackClickItem {
-        override fun longClickItemSender(data: Pair<View, Message>) {
+        override fun onSenderLongClick(data: Pair<View, Message>) {
             showPopupOption(data.first, data.second)
         }
 
-        override fun longClickItemReceiver(data: Pair<View, Message>) {
+        override fun onReceiverLongClick(data: Pair<View, Message>) {
             showPopupOption(data.first, data.second, false)
         }
 
-        override fun clickPhoto(data: Pair<Pair<Message, String>, Boolean>) {
-            val fromSender = data.second
-            val keyId = if (fromSender) viewModel?.shared?.getAuth()
+        override fun onPhotoClick(data: PhotoClickData) {
+            val keyId = if (data.fromSender) viewModel?.shared?.getAuth()
                 .toString() else conversation?.friendId.toString()
             val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
-            intent.putExtra(PreviewPhotoActivity.OBJECT_MESSAGE, data.first.first)
-            intent.putExtra(PreviewPhotoActivity.PHOTO_DATA, data.first.second)
-            intent.putExtra(PreviewPhotoActivity.KEY_ID, keyId)
+            val previewPhotoArgument = PreviewPhotoArgument(
+                message = data.message,
+                indexOfPhoto = data.indexOfPhoto,
+                keyId = keyId,
+                photoData = data.photoData
+            )
+            intent.putExtra(PreviewPhotoActivity.PREVIEW_PHOTO_ARGUMENT, previewPhotoArgument)
             activity?.startActivity(intent)
         }
 
-        override fun clickOptionMenuPhoto(msg: Message) {
+        override fun onPhotoOptionMenuClick(msg: Message) {
             val bottomSheetOptionPhoto = BottomSheetOptionPhoto()
             bottomSheetOptionPhoto.show(parentFragmentManager, "")
             bottomSheetOptionPhoto.setOnClickOptionPho(object :
