@@ -10,6 +10,7 @@ object DateUtils {
     private const val DATE_TIME = "yyyy_MM_dd_HH_mm_ss"
     private const val DATE_TIME_APP = "dd-MM-yyyy • HH:mm"
     private const val HOUR_TIME = "HH:mm"
+    const val MINUTE_TIME = "mm:ss"
 
     fun getTimeCurrent(): String {
         val sdf = SimpleDateFormat(DATE_TIME, Locale.getDefault())

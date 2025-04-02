@@ -14,7 +14,11 @@ import com.bumptech.glide.Glide
 import com.example.messageapp.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -79,6 +83,33 @@ object FileUtils {
             resolver.openOutputStream(uri)?.use { outputStream ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             }
+        }
+    }
+
+    fun fileToByteArray(filePath: String): ByteArray? {
+        return try {
+            val file = File(filePath)
+            file.readBytes()
+        } catch (e: IOException) {
+            Log.e("FileConversion", "Lỗi khi chuyển file sang ByteArray: ${e.message}")
+            null
+        }
+    }
+
+    fun convertMp3UrlToByteArray(mp3Url: String): ByteArray? {
+        return try {
+            val client = OkHttpClient()
+            val request = Request.Builder().url(mp3Url).build()
+            val response = client.newCall(request).execute()
+
+            if (response.isSuccessful) {
+                response.body?.bytes()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 }

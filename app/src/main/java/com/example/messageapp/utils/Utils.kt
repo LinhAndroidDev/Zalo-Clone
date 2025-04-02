@@ -86,17 +86,15 @@ fun Fragment.backRemoveFragmentCurrent(toId: Int) {
 
 fun getImageDimensions(context: Context, imageUri: Uri): Pair<Int, Int>? {
     val inputStream = context.contentResolver.openInputStream(imageUri) ?: return null
-    return try {
+    return inputStream.use { stream ->
         // Chỉ lấy thông tin kích thước của ảnh
         val options = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
-        BitmapFactory.decodeStream(inputStream, null, options)
+        BitmapFactory.decodeStream(stream, null, options)
 
         // Trả về chiều rộng và chiều cao của ảnh
         Pair(options.outWidth, options.outHeight)
-    } finally {
-        inputStream.close()
     }
 }
 
