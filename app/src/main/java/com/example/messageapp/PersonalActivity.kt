@@ -14,9 +14,11 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.messageapp.bottom_sheet.BottomSheetSelectImage
+import com.example.messageapp.bottom_sheet.BottomSheetSettingViewDiary
 import com.example.messageapp.databinding.ActivityPersonalBinding
 import com.example.messageapp.model.User
 import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.setOnSingleClickListener
 import com.example.messageapp.viewmodel.PersonalActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -61,12 +63,17 @@ class PersonalActivity : AppCompatActivity() {
 
     private fun onClickView() {
         binding.back.setOnClickListener { onBackPressed() }
-        binding.avatarUser.setOnClickListener {
+        binding.avatarUser.setOnSingleClickListener {
             showDialogSelectPhoto(true)
         }
 
-        binding.imgCover.setOnClickListener {
+        binding.imgCover.setOnSingleClickListener {
             showDialogSelectPhoto(false)
+        }
+
+        binding.btnViewDiary.setOnSingleClickListener {
+            val bottomSheet = BottomSheetSettingViewDiary()
+            bottomSheet.show(supportFragmentManager, "")
         }
     }
 

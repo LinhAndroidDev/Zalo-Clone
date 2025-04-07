@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <com.example.messageapp.custom.swipe.SwipeRevealLayout
+    <com.example.messageapp.library.swipe.SwipeRevealLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/swipe_layout"
@@ -203,5 +203,5 @@
                 android:layout_marginStart="90dp"
                 android:background="#E1E1E1" />
         </LinearLayout>
-    </com.example.messageapp.custom.swipe.SwipeRevealLayout>
+    </com.example.messageapp.library.swipe.SwipeRevealLayout>
 </layout>

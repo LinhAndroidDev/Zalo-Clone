@@ -15,7 +15,7 @@ import com.example.messageapp.R
 import com.example.messageapp.adapter.PhoneBookAdapter
 import com.example.messageapp.adapter.TypePhoneBook
 import com.example.messageapp.base.BaseFragment
-import com.example.messageapp.custom.sticky_header.StickyHeaderItemDecorator
+import com.example.messageapp.library.sticky_header.StickyHeaderItemDecorator
 import com.example.messageapp.databinding.FragmentPhoneBookBinding
 import com.example.messageapp.helper.avatars
 import com.example.messageapp.helper.capitalLetters

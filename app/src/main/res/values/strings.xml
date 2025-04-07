@@ -130,4 +130,6 @@
     <string name="what_happy_today">Hôm nay %s có gì vui?</string>
     <string name="note_happy_today">Đây là Nhật ký của bạn - Hãy làm đầy Nhật ký với những dấu ấn cuộc đời và kỷ niệm đáng nhớ nhé</string>
     <string name="post_to_diary">Đăng lên Nhật ký</string>
+    <string name="choose">Chọn</string>
+    <string name="note_select_date_diary">Bạn bè sẽ không thấy các bài đăng trước <b>hôm nay</b></string>
 </resources>

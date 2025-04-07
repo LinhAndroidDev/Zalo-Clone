@@ -5,8 +5,8 @@ import android.os.Bundle
 import androidx.core.view.isVisible
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
-import com.example.messageapp.custom.swipe.SwipeRevealLayout
-import com.example.messageapp.custom.swipe.ViewBinderHelper
+import com.example.messageapp.library.swipe.SwipeRevealLayout
+import com.example.messageapp.library.swipe.ViewBinderHelper
 import com.example.messageapp.databinding.ItemListChatBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.utils.DateUtils
