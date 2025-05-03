@@ -18,6 +18,7 @@ import com.example.messageapp.databinding.FragmentHomeBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.service.ChatHeadService
 import com.example.messageapp.utils.AnimatorUtils
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +59,12 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         suggestFriendAdapter.onClickItem = { friend ->
             goToChatFragment(Conversation(friend))
         }
+    }
+
+    override fun initView() {
+        super.initView()
+        // log event: screen_home
+        FirebaseAnalyticsInstance.logHomeScreen()
     }
 
     override fun onClickView() {

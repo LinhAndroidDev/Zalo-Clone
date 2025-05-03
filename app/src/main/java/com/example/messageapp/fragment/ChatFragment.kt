@@ -45,6 +45,7 @@ import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -123,6 +124,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun initView() {
         super.initView()
+        // log event: screen_chat
+        FirebaseAnalyticsInstance.logChatScreen()
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
@@ -390,6 +393,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 val sender = viewModel?.shared?.getAuth().toString()
                 val time = DateUtils.getTimeCurrent()
                 val message = Message(msg, receiver, sender, time)
+                // log event: send_message
+                FirebaseAnalyticsInstance.logSendMessage(messageType = msg, messageLength = msg.length, receiverId = receiver)
                 viewModel?.sendMessage(message = message, time = time, conversation = cvt, sendFirst = isMessageEmpty)
                 binding?.edtMessage?.setText("")
             }

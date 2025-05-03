@@ -9,6 +9,7 @@ import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentFriendRequestBinding
 import com.example.messageapp.helper.avatars
 import com.example.messageapp.model.Friend
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.FragmentFriendRequestViewModel
 
 class FriendRequestFragment : BaseFragment<FragmentFriendRequestBinding, FragmentFriendRequestViewModel>() {
@@ -18,6 +19,8 @@ class FriendRequestFragment : BaseFragment<FragmentFriendRequestBinding, Fragmen
 
     override fun initView() {
         super.initView()
+        // log event: screen_friend_request
+        FirebaseAnalyticsInstance.logFriendRequestScreen()
 
         val names = mutableListOf("An", "Bảo", "Brian", "Alex", "Aiden", "Finn", "Khánh", "Duy", "Emma", "Samuel")
         names.forEachIndexed { index, s ->

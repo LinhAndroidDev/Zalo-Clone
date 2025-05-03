@@ -14,6 +14,7 @@ import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.AudioRecorderManager
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.DiaryFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,8 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
     override fun initView() {
         super.initView()
+        // log event: screen_diary
+        FirebaseAnalyticsInstance.logDiaryScreen()
 
         viewModel?.getInfoUser()
         lifecycleScope.launch(Dispatchers.Main) {
