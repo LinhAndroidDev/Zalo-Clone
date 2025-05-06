@@ -1,13 +1,123 @@
-## Zalo Clone
-- Zalo Clone is a chat app that helps users exchange messages and images with friends
-- Users can receive notifications from messages and make friends with people, update their profiles
+# Zalo Clone
 
-***App Screenshots***
+A modern messaging application built with Android, following the architecture and features of Zalo.
+
+## Features
+
+### 1. Authentication
+- User registration and login
+- Secure authentication using Firebase
+
+### 2. Chat Features
+- Real-time messaging
+- Support for text messages
+- Image sharing capabilities
+- Message reactions (like, laugh, cry, angry, favorite)
+- Message copy and delete options
+- Message seen status
+- Chat head floating window
+
+### 3. Contact Management
+- Phone book with alphabetical grouping
+- Sticky header for contact groups
+- Fast scroll alphabet navigation
+- Friend request system
+- Friend suggestions
+
+### 4. User Interface
+- Modern Material Design
+- Smooth animations and transitions
+- Custom header views
+- Bottom navigation
+- Responsive layouts
+
+### 5. Additional Features
+- Personal profile management
+- Diary/News feed
+- Discover section
+- Search functionality
+- Settings management
+
+## App Screenshots
 <div style="display: flex; justify-content: center;">
-  <img src="https://github.com/user-attachments/assets/dace1fce-7f7c-4732-9b94-10975e807bd1" alt="Screen Home" width="250""/>
-  ........
+  <img src="https://github.com/user-attachments/assets/dace1fce-7f7c-4732-9b94-10975e807bd1" alt="Screen Home" width="250"/>
   <img src="https://github.com/user-attachments/assets/c04bf373-8642-43d0-97ca-68d387c24081" alt="Screen Message" width="250"/>
 </div>
+
+## Project Structure
+```
+app/
+├── src/
+│   ├── main/
+│   │   ├── java/com/example/messageapp/
+│   │   │   ├── adapter/           # RecyclerView adapters
+│   │   │   ├── base/             # Base classes
+│   │   │   ├── bottom_sheet/     # Bottom sheet dialogs
+│   │   │   ├── custom/           # Custom views
+│   │   │   ├── fragment/         # UI fragments
+│   │   │   ├── helper/           # Helper classes
+│   │   │   ├── model/            # Data models
+│   │   │   ├── service/          # Background services
+│   │   │   ├── utils/            # Utility classes
+│   │   │   ├── viewmodel/        # ViewModels
+│   │   │   └── MainActivity.kt   # Main activity
+│   │   └── res/                  # Resources
+│   └── test/                     # Unit tests
+└── build.gradle                  # App level build config
+```
+
+## Technical Stack
+
+### Architecture
+- MVVM (Model-View-ViewModel) architecture
+- Clean Architecture principles
+- Dependency Injection using Hilt
+
+### Libraries
+- Firebase (Authentication, Realtime Database, Storage)
+- Coroutines for asynchronous operations
+- Navigation Component
+- ViewBinding
+- RecyclerView with custom adapters
+- Custom animations and transitions
+
+### Key Components
+
+#### Fragments
+- HomeFragment: Main chat list and friend suggestions
+- ChatFragment: Individual chat conversations
+- PersonalFragment: User profile management
+- DiaryFragment: News feed and posts
+- DiscoverFragment: Content discovery
+- SettingFragment: App settings
+- FriendRequestFragment: Friend request management
+- PhoneBookFragment: Contact management
+- SearchFragment: User search functionality
+
+#### Features
+- Real-time messaging
+- Image sharing
+- Message reactions
+- Contact management
+- User search
+- Profile management
+
+## Setup
+
+1. Clone the repository
+2. Add your Firebase configuration
+3. Build and run the project
+
+## Requirements
+- Android Studio Arctic Fox or newer
+- Android SDK 21+
+- Kotlin 1.5+
+
+## Contributing
+Feel free to submit issues and enhancement requests.
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Configure push notification with Firebase cloud messaging
 ### 1. Add library to dependencies:
