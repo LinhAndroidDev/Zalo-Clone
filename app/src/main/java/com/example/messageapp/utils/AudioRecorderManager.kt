@@ -96,9 +96,12 @@ class AudioRecorderManager(private val context: Context) {
         }
 
         audioWaveView?.onProgressChanged = { progress, byUser ->
-            if (byUser) {
-                exoPlayer?.seekTo((progress / 100 * (exoPlayer?.duration ?: 1)).toLong())
-                audioWaveView?.progress = progress
+            if (byUser && exoPlayer != null && exoPlayer?.isPlaying == true) {
+                val duration = exoPlayer?.duration ?: 0L
+                if (duration > 0) {
+                    val seekPosition = (progress / 100f * duration).toLong()
+                    exoPlayer?.seekTo(seekPosition)
+                }
             }
         }
     }
