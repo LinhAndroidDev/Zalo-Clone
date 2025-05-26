@@ -1,7 +1,5 @@
 package com.example.messageapp.fragment
 
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
@@ -42,34 +40,6 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
         val path = "https://firebasestorage.googleapis.com/v0/b/zalo-clone-45246.appspot.com/o/ChacAiDoSeVe-SonTungMTP-3666636.mp3?alt=media&token=2381255d-6983-4076-83bf-fdca2bcdd24e"
         binding?.recordWaveView?.loadDataWaveView(requireActivity(), path = path)
     }
-
-    private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
-                Toast.makeText(requireActivity(), "Quyền ghi âm đã được cấp!", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireActivity(), "Bạn cần cấp quyền để ghi âm!", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-//    private fun checkAndRequestPermission() {
-//        if (ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-//            Toast.makeText(requireActivity(), "Đã có quyền ghi âm!", Toast.LENGTH_SHORT).show()
-//            if (!startRecord) {
-//                startRecord = true
-//                binding?.btnRecord?.text = "Stop Recording..."
-//                audioRecorder?.startRecording(requireActivity())
-//            } else {
-//                startRecord = false
-//                binding?.btnRecord?.text = "Start Recording"
-//                recordedFilePath = audioRecorder?.stopRecording()
-//                val byteArray = FileUtils.fileToByteArray(recordedFilePath.toString())
-//                byteArray?.let { binding?.audioWaveView?.setRawData(it) }
-//            }
-//        } else {
-//            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-//        }
-//    }
 
     override fun onPause() {
         super.onPause()

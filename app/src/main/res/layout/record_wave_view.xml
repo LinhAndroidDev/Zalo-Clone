@@ -4,6 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:id="@+id/viewRecord"
+    android:gravity="center_vertical"
     android:background="@drawable/bg_sender">
 
     <LinearLayout
@@ -34,12 +36,13 @@
         android:visibility="gone" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginVertical="10dp"
+        android:layout_weight="1"
         android:orientation="vertical">
 
-        <rm.com.audiowave.AudioWaveView
+        <com.example.messageapp.library.audiowave.AudioWaveView
             android:id="@+id/audioWaveView"
             android:layout_width="match_parent"
             android:layout_height="20dp"
@@ -66,4 +69,20 @@
             android:textStyle="bold"
             tools:ignore="SmallSp" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/txtDurationListenAgain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/margin_20"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginEnd="20dp"
+        android:fontFamily="@font/font_noto_sans"
+        android:text="00:00"
+        android:textColor="@color/text_grey"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:ignore="SmallSp" />
 </LinearLayout>

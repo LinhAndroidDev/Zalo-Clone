@@ -35,6 +35,7 @@ import com.example.messageapp.adapter.PhotoClickData
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
+import com.example.messageapp.bottom_sheet.BottomSheetRecord
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
@@ -422,6 +423,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 //                Intent.createChooser(intent, "select multi"),
 //                REQUEST_CODE_MULTI_PICTURE
 //            )
+        }
+
+        binding?.btnMicro?.setOnClickListener {
+            val bottomSheetRecord = BottomSheetRecord()
+            bottomSheetRecord.onRecordListener = { path ->
+                
+            }
+            bottomSheetRecord.show(parentFragmentManager, "")
         }
     }
 
