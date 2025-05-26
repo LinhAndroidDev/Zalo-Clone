@@ -70,7 +70,6 @@ class AudioWaveView : View {
 
     var waveColor: Int = Color.BLACK
         set(value) {
-            wavePaint = smoothPaint(value.withAlpha(0xAA))
             waveFilledPaint = filterPaint(value)
             redrawData()
         }
@@ -133,7 +132,11 @@ class AudioWaveView : View {
         }
     }
 
-    private var wavePaint = smoothPaint(waveColor.withAlpha(0xAA))
+    var wavePaint = Color.GRAY
+        set(value) {
+            field = value
+            redrawData()
+        }
     private var waveFilledPaint = filterPaint(waveColor)
     private var waveBitmap: Bitmap? = null
 
@@ -146,7 +149,7 @@ class AudioWaveView : View {
 
         cv.transform {
             clipRect(0, 0, w, h)
-            waveBitmap?.let { drawBitmap(it, 0F, 0F, wavePaint) }
+            waveBitmap?.let { drawBitmap(it, 0F, 0F, smoothPaint(wavePaint)) }
         }
 
         cv.transform {
@@ -243,7 +246,7 @@ class AudioWaveView : View {
 
         scaledData.forEachIndexed { i, chunk ->
             val chunkHeight = ((chunk.abs.toFloat() / Byte.MAX_VALUE) * chunkHeight).toInt()
-            val clampedHeight = Math.max(chunkHeight, minChunkHeight)
+            val clampedHeight = chunkHeight.coerceAtLeast(minChunkHeight)
             val heightDiff = (clampedHeight - minChunkHeight).toFloat()
             val animatedDiff = (heightDiff * factor).toInt()
 
@@ -256,7 +259,7 @@ class AudioWaveView : View {
                 ),
                 chunkRadius.toFloat(),
                 chunkRadius.toFloat(),
-                wavePaint
+                smoothPaint(wavePaint)
             )
         }
 
@@ -285,6 +288,7 @@ class AudioWaveView : View {
             chunkRadius = getDimensionPixelSize(R.styleable.AudioWaveView_chunkRadius, chunkRadius)
             isTouchable = getBoolean(R.styleable.AudioWaveView_touchable, isTouchable)
             waveColor = getColor(R.styleable.AudioWaveView_waveColor, waveColor)
+            wavePaint = getColor(R.styleable.AudioWaveView_wavePaint, wavePaint)
             progress = getFloat(R.styleable.AudioWaveView_progress, progress)
             isExpansionAnimated = getBoolean(R.styleable.AudioWaveView_animateExpansion,
                 isExpansionAnimated)

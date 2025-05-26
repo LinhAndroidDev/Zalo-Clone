@@ -2,6 +2,7 @@ package com.example.messageapp.custom
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Handler
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.LinearLayout
@@ -40,6 +41,30 @@ class RecordWaveView @JvmOverloads constructor(
     private var isPlaying = false
     private var audioRecorder: AudioRecorderManager? = null
     private var recordedFilePath: String? = null
+    private var handlerAnimation = Handler()
+    private var runnable = object : Runnable {
+        override fun run() {
+            if (isPlaying) {
+                binding?.viewAnimation1?.animate()?.scaleX(1.4f)?.scaleY(1.4f)?.alpha(0f)
+                    ?.setDuration(1000)
+                    ?.withEndAction {
+                        binding?.viewAnimation1?.scaleX = 1f
+                        binding?.viewAnimation1?.scaleY = 1f
+                        binding?.viewAnimation1?.alpha = 1f
+                    }
+
+                binding?.viewAnimation2?.animate()?.scaleX(1.4f)?.scaleY(1.4f)?.alpha(0f)
+                    ?.setDuration(700)
+                    ?.withEndAction {
+                        binding?.viewAnimation2?.scaleX = 1f
+                        binding?.viewAnimation2?.scaleY = 1f
+                        binding?.viewAnimation2?.alpha = 1f
+                    }
+            }
+            handlerAnimation.postDelayed(this, 1500)
+        }
+
+    }
 
     init {
         binding = RecordWaveViewBinding.inflate(LayoutInflater.from(context))
@@ -49,24 +74,30 @@ class RecordWaveView @JvmOverloads constructor(
         )
         binding?.let { addView(it.root) }
         audioRecorder = AudioRecorderManager(context)
+        runnable.run()
 
         val array = context.theme.obtainStyledAttributes(attrs, R.styleable.RecordWaveView, 0, 0)
         val type = array.getInt(R.styleable.RecordWaveView_type, 0)
         when (TypeRecord.of(type)) {
             TypeRecord.LiSTEN -> {
                 binding?.viewRecord?.setBackgroundResource(R.drawable.bg_sender)
-                binding?.btnPlayAudio?.backgroundTintList = ContextCompat.getColorStateList(context, R.color.blue)
-                binding?.icPlay?.backgroundTintList = ContextCompat.getColorStateList(context, R.color.white)
+                binding?.btnPlayAudio?.backgroundTintList =
+                    ContextCompat.getColorStateList(context, R.color.blue)
+                binding?.icPlay?.backgroundTintList =
+                    ContextCompat.getColorStateList(context, R.color.white)
                 binding?.txtDuration?.isVisible = true
                 binding?.txtDurationListenAgain?.isVisible = false
             }
 
             TypeRecord.PREVIEW -> {
                 binding?.viewRecord?.setBackgroundResource(R.drawable.bg_corner_25_stroke_grey)
-                binding?.btnPlayAudio?.backgroundTintList = ContextCompat.getColorStateList(context, R.color.grey_bg)
-                binding?.icPlay?.imageTintList = ContextCompat.getColorStateList(context, R.color.black)
+                binding?.btnPlayAudio?.backgroundTintList =
+                    ContextCompat.getColorStateList(context, R.color.grey_bg)
+                binding?.icPlay?.imageTintList =
+                    ContextCompat.getColorStateList(context, R.color.black)
                 binding?.txtDuration?.isVisible = false
                 binding?.txtDurationListenAgain?.isVisible = true
+                binding?.audioWaveView?.wavePaint = ContextCompat.getColor(context, R.color.grey)
             }
         }
 
@@ -98,6 +129,8 @@ class RecordWaveView @JvmOverloads constructor(
 
     fun loadDataWaveView(context: Context, path: String, fromUrl: Boolean = true) {
         binding?.btnPlayAudio?.isVisible = false
+        binding?.viewAnimation1?.isVisible = false
+        binding?.viewAnimation2?.isVisible = false
         binding?.loading?.isVisible = true
 
         (context as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
@@ -110,8 +143,11 @@ class RecordWaveView @JvmOverloads constructor(
 
             withContext(Dispatchers.Main) {
                 byteArray?.let {
+                    binding?.audioWaveView?.progress = 0f
                     binding?.audioWaveView?.setRawData(it, callback = {
                         binding?.btnPlayAudio?.isVisible = true
+                        binding?.viewAnimation1?.isVisible = true
+                        binding?.viewAnimation2?.isVisible = true
                         binding?.loading?.isVisible = false
                     })
                 }
@@ -127,5 +163,7 @@ class RecordWaveView @JvmOverloads constructor(
         audioRecorder?.stopAudio()
         audioRecorder = null
         binding = null
+        handlerAnimation.removeCallbacks(runnable)
+        isPlaying = false
     }
 }

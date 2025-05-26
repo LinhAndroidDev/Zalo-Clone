@@ -136,6 +136,7 @@
 
     <declare-styleable name="AudioWaveView">
         <attr format="color" name="waveColor"/>
+        <attr format="color" name="wavePaint"/>
         <attr format="dimension" name="chunkWidth"/>
         <attr format="dimension" name="chunkHeight"/>
         <attr format="dimension" name="minChunkHeight"/>

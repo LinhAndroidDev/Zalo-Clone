@@ -19,10 +19,11 @@ class BottomSheetRecord : BottomSheetDialogFragment() {
     private var recording = false
     private var audioRecorder: AudioRecorderManager? = null
     var onRecordListener: ((String) -> Unit)? = null
+    private var recordedFilePath: String? = null
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
-                Toast.makeText(requireActivity(), "Quyền ghi âm đã được cấp!", Toast.LENGTH_SHORT).show()
+                startRecord()
             } else {
                 Toast.makeText(requireActivity(), "Bạn cần cấp quyền để ghi âm!", Toast.LENGTH_SHORT).show()
             }
@@ -47,7 +48,7 @@ class BottomSheetRecord : BottomSheetDialogFragment() {
             } else {
                 recording = false
                 binding?.imgRecord?.setImageResource(R.drawable.ic_micro_fill)
-                val recordedFilePath = audioRecorder?.stopRecording()
+                recordedFilePath = audioRecorder?.stopRecording()
                 binding?.recordWaveView?.loadDataWaveView(requireActivity(), recordedFilePath ?: "", fromUrl = false)
                 binding?.viewRecord?.isVisible = false
                 binding?.viewPreview?.isVisible = true
@@ -58,16 +59,24 @@ class BottomSheetRecord : BottomSheetDialogFragment() {
             binding?.viewRecord?.isVisible = true
             binding?.viewPreview?.isVisible = false
         }
+
+        binding?.btnSendRecord?.setOnClickListener {
+            dismiss()
+            onRecordListener?.invoke(recordedFilePath ?: "")
+        }
     }
 
     private fun checkAndRequestPermission() {
         if (ContextCompat.checkSelfPermission(requireActivity(), android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(requireActivity(), "Đã có quyền ghi âm!", Toast.LENGTH_SHORT).show()
-            recording = true
-            audioRecorder?.startRecording(requireActivity())
-            binding?.imgRecord?.setImageResource(R.drawable.ic_record_wave)
+            startRecord()
         } else {
             requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
         }
+    }
+
+    private fun startRecord() {
+        recording = true
+        audioRecorder?.startRecording(requireActivity())
+        binding?.imgRecord?.setImageResource(R.drawable.ic_record_wave)
     }
 }

@@ -8,24 +8,49 @@
     android:gravity="center_vertical"
     android:background="@drawable/bg_sender">
 
-    <LinearLayout
-        android:id="@+id/btnPlayAudio"
+    <RelativeLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginStart="10dp"
-        android:background="@drawable/bg_circle"
-        android:backgroundTint="@color/blue">
+        android:layout_height="wrap_content">
 
-        <ImageView
-            android:id="@+id/icPlay"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+        <LinearLayout
+            android:id="@+id/viewAnimation1"
             android:layout_margin="10dp"
-            android:importantForAccessibility="no"
-            android:src="@drawable/ic_play"
-            app:tint="@color/white" />
-    </LinearLayout>
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#5EB4FF"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/viewAnimation2"
+            android:layout_margin="10dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#5EB4FF"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/btnPlayAudio"
+            android:layout_margin="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="@color/blue">
+
+            <ImageView
+                android:id="@+id/icPlay"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_margin="10dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_play"
+                app:tint="@color/white" />
+        </LinearLayout>
+    </RelativeLayout>
 
     <ProgressBar
         android:id="@+id/loading"
@@ -54,7 +79,8 @@
             app:chunkWidth="3dp"
             app:minChunkHeight="2dp"
             app:touchable="true"
-            app:waveColor="@color/blue1" />
+            app:waveColor="@color/blue1"
+            app:wavePaint="#DDBFBFBF"/>
 
         <TextView
             android:id="@+id/txtDuration"
