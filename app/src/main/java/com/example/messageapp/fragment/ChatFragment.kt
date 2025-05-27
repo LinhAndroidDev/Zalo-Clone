@@ -52,6 +52,7 @@ import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 @AndroidEntryPoint
 class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() {
@@ -428,7 +429,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         binding?.btnMicro?.setOnClickListener {
             val bottomSheetRecord = BottomSheetRecord()
             bottomSheetRecord.onRecordListener = { path ->
-                
+                val file = File(path)
+                viewModel?.uploadAudio(uriAudio = Uri.fromFile(file))
             }
             bottomSheetRecord.show(parentFragmentManager, "")
         }

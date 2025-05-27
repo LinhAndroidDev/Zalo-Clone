@@ -32,7 +32,8 @@ class AudioRecorderManager(private val context: Context) {
     private var isResumingAudio = false
 
     fun startRecording(context: Context) {
-        outputFilePath = "${context.getExternalFilesDir(Environment.DIRECTORY_MUSIC)}/record_${System.currentTimeMillis()}.mp3"
+        outputFilePath =
+            "${context.getExternalFilesDir(Environment.DIRECTORY_MUSIC)}/record_${System.currentTimeMillis()}.mp3"
 
         mediaRecorder = MediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -61,7 +62,13 @@ class AudioRecorderManager(private val context: Context) {
 
     @OptIn(UnstableApi::class)
     @SuppressLint("SimpleDateFormat")
-    fun playRecordedAudio(filePath: String, audioWaveView: AudioWaveView?, scope: CoroutineScope, onFinish: () -> Unit, timeCurrent: (String) -> Unit) {
+    fun playRecordedAudio(
+        filePath: String,
+        audioWaveView: AudioWaveView?,
+        scope: CoroutineScope,
+        onFinish: () -> Unit,
+        timeCurrent: (String) -> Unit
+    ) {
         if (isResumingAudio) {
             resumeAudio(audioWaveView, scope, timeCurrent)
             return
@@ -70,7 +77,8 @@ class AudioRecorderManager(private val context: Context) {
 
         exoPlayer = ExoPlayer.Builder(context).build().apply {
             val dataSourceFactory = DefaultDataSource.Factory(context)
-            val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(MediaItem.fromUri(filePath))
+            val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(filePath))
             setMediaSource(mediaSource)
             prepare()
             play()
@@ -141,7 +149,11 @@ class AudioRecorderManager(private val context: Context) {
     }
 
     @SuppressLint("SimpleDateFormat")
-    private fun resumeAudio(audioWaveView: AudioWaveView?, scope: CoroutineScope, timeCurrent: (String) -> Unit) {
+    private fun resumeAudio(
+        audioWaveView: AudioWaveView?,
+        scope: CoroutineScope,
+        timeCurrent: (String) -> Unit
+    ) {
         exoPlayer?.seekTo(currentListen)
         exoPlayer?.play()
         job?.cancel()

@@ -112,7 +112,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     /**
      * This function used to upload photo to FireStore
      * @param context context
-     * @param uri data uri of photo
+     * @param uris data uri of photo
      * @param conversation data friend
      * @param time time message sent
      */
@@ -123,33 +123,30 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         time: String,
         sendFirst: Boolean
     ) {
+        val idRoom = listOf(conversation.friendId, shared.getAuth()).sorted()
         FireBaseInstance.uploadListPhoto(
             context = context,
             uris = uris,
-            friendId = conversation.friendId,
-            userId = shared.getAuth(),
-            process = {
-
-            },
+            roomId = idRoom,
+            process = {},
             success = { photos ->
-                val photosData = if (photos.size > 1) photos else arrayListOf()
-                val singlePhoto = arrayListOf<String>()
-                var type = TypeMessage.PHOTOS
-                if (photos.size == 1) {
-                    type = TypeMessage.SINGLE_PHOTO
-                    val data = getImageDimensions(context, uris[0])
-                    singlePhoto.add(photos[0])
-                    singlePhoto.add(data?.first.toString())
-                    singlePhoto.add(data?.second.toString())
-                }
+                val isSinglePhoto = photos.size == 1
+                val type = if (isSinglePhoto) TypeMessage.SINGLE_PHOTO else TypeMessage.PHOTOS
+
+                val singlePhoto = if (isSinglePhoto) {
+                    val (width, height) = getImageDimensions(context, uris[0]) ?: (0 to 0)
+                    arrayListOf(photos[0], width.toString(), height.toString())
+                } else arrayListOf()
+
                 val message = Message(
                     receiver = conversation.friendId,
                     sender = shared.getAuth(),
                     time = time,
-                    photos = photosData,
+                    photos = if (isSinglePhoto) arrayListOf() else photos,
                     singlePhoto = singlePhoto,
                     type = type.ordinal
                 )
+
                 FireBaseInstance.sendMessage(
                     message = message,
                     userId = shared.getAuth(),
@@ -161,6 +158,16 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                 ) {}
             }
         )
+    }
+
+    fun uploadAudio(uriAudio: Uri) {
+        val idRoom = listOf("1", shared.getAuth()).sorted()
+        FireBaseInstance.uploadAudio(
+            roomId = idRoom,
+            uriAudio = uriAudio
+        ) { audioUrl ->
+
+        }
     }
 
     /**

@@ -43,6 +43,8 @@ object FireBaseInstance {
     private const val PATH_CHAT = "chats"
     private const val PATH_TOKEN = "Tokens"
     private const val PATH_IMAGE = "images"
+    private const val PATH_PHOTO = "photo"
+    private const val PATH_AUDIO = "audios"
 
     /**
      * This function is used to check the login of the user
@@ -464,24 +466,21 @@ object FireBaseInstance {
      * This function is used to upload list photo to the Storage Firebase
      * @param context context of activity
      * @param uris list uri of photo
-     * @param friendId key auth of friend
-     * @param userId key auth of user
+     * @param roomId list id room of photo
      * @param process callback when upload is processing
      * @param success callback when upload is successful
      */
     fun uploadListPhoto(
         context: Context,
         uris: ArrayList<Uri>,
-        friendId: String,
-        userId: String,
+        roomId: List<String>,
         process: (Pair<Int, Double>) -> Unit,
         success: (ArrayList<String>) -> Unit
     ) = CoroutineScope(Dispatchers.IO).launch {
-            val idRoom = listOf(friendId, userId).sorted()
             val photos = arrayListOf<String>()
             val deferredList = uris.map { uri ->
                 async {
-                    val photoUrl = uploadPhoto(context, uri, idRoom)
+                    val photoUrl = uploadPhoto(context, uri, roomId)
                     photoUrl?.let { photos.add(it) }
                 }
             }
@@ -497,7 +496,7 @@ object FireBaseInstance {
      */
     private suspend fun uploadPhoto(context: Context, uri: Uri, idRoom: List<String>): String? {
         return suspendCoroutine { continuation ->
-            val storageRef = storage.child("photo")
+            val storageRef = storage.child(PATH_PHOTO)
                 .child(idRoom.toString())
                 .child(UUID.randomUUID().toString())
 
@@ -513,6 +512,26 @@ object FireBaseInstance {
                     continuation.resumeWithException(it)  // Đảm bảo xử lý lỗi
                 }
         }
+    }
+
+    /**
+     * This function is used to upload audio to the Storage Firebase
+     * @param roomId id room of audio
+     * @param uriAudio uri of audio
+     * @param success callback when upload is successful
+     */
+    fun uploadAudio(roomId: List<String>, uriAudio: Uri, success: (String) -> Unit) {
+        storage.child(PATH_AUDIO)
+            .child(roomId.toString())
+            .child(UUID.randomUUID().toString())
+            .putFile(uriAudio)
+            .addOnSuccessListener { taskSnapshot ->
+                taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
+                    success.invoke(uri.toString())
+                }
+            }.addOnFailureListener {
+                Log.e("Upload Audio", "Fail")
+            }
     }
 
     /**
