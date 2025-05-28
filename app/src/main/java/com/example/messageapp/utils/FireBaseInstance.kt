@@ -211,6 +211,10 @@ object FireBaseInstance {
                             TypeMessage.SINGLE_PHOTO -> {
                                 "$nameSender đã gửi 1 ảnh cho bạn"
                             }
+
+                            TypeMessage.AUDIO -> {
+                                "$nameSender đã gửi 1 file ghi âm cho bạn"
+                            }
                         },
                         senderId = userId
                     )
@@ -253,6 +257,10 @@ object FireBaseInstance {
 
                 TypeMessage.SINGLE_PHOTO -> {
                     "Bạn đã gửi 1 ảnh cho ${conversation.name}"
+                }
+
+                TypeMessage.AUDIO -> {
+                    "Bạn đã gửi 1 file ghi âm cho ${conversation.name}"
                 }
             },
             name = conversation.name,

@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -110,6 +111,41 @@ object FileUtils {
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        }
+    }
+
+    suspend fun downloadAudioFile(context: Context, fileUrl: String): File? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = URL(fileUrl)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.connect()
+
+                if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                    Log.e("Download", "Server returned HTTP ${connection.responseCode}")
+                    return@withContext null
+                }
+
+                // Tạo file trong thư mục internal
+                val audioDir = File(context.filesDir, "audios")
+                if (!audioDir.exists()) {
+                    audioDir.mkdirs()
+                }
+
+                val outputFile = File(audioDir, getFileNameFromUrl(fileUrl))
+
+                connection.inputStream.use { input ->
+                    FileOutputStream(outputFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                Log.d("Download", "Saved to: ${outputFile.absolutePath}")
+                return@withContext outputFile
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return@withContext null
+            }
         }
     }
 }

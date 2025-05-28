@@ -35,7 +35,7 @@
         android:id="@+id/tvSavePhotoVideo"
         android:paddingStart="15dp"
         android:paddingVertical="15dp"
-        android:text="@string/save_photo_video"
+        android:text="@string/save_photo_video_audio"
         android:textSize="16sp"
         android:textColor="@color/text_common"
         android:layout_width="match_parent"

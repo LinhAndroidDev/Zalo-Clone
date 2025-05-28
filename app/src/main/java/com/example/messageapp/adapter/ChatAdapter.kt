@@ -123,10 +123,16 @@ class ChatAdapter(
                         holder.initViewSinglePhoto(context)
                         loadSinglePhoto(holder.v.viewPhotos, message)
                     }
+
+                    TypeMessage.AUDIO -> {
+                        holder.initViewAudio(context, message) {
+                            mCallBack?.onOptionMenuClick(message)
+                        }
+                    }
                 }
                 checkShowSeenMessage(holder, position)
                 holder.v.optionMenuPhoto.setOnClickListener {
-                    mCallBack?.onPhotoOptionMenuClick(message)
+                    mCallBack?.onOptionMenuClick(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
@@ -151,9 +157,15 @@ class ChatAdapter(
                         holder.initViewSinglePhoto(context)
                         loadSinglePhoto(holder.v.viewPhotos, message, false)
                     }
+
+                    TypeMessage.AUDIO -> {
+                        holder.initViewAudio(context, message) {
+                            mCallBack?.onOptionMenuClick(message)
+                        }
+                    }
                 }
                 holder.v.optionMenuPhoto.setOnClickListener {
-                    mCallBack?.onPhotoOptionMenuClick(message)
+                    mCallBack?.onOptionMenuClick(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
             }
@@ -213,7 +225,14 @@ class ChatAdapter(
         imageView.layoutParams =
             ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
         imageView.setOnClickListener {
-            mCallBack?.onPhotoClick(PhotoClickData(message = message, indexOfPhoto = 0, photoData = arrayListOf(photo), fromSender = fromSender))
+            mCallBack?.onPhotoClick(
+                PhotoClickData(
+                    message = message,
+                    indexOfPhoto = 0,
+                    photoData = arrayListOf(photo),
+                    fromSender = fromSender
+                )
+            )
         }
         viewPhoto.addView(imageView)
         context.loadImg(
@@ -275,7 +294,7 @@ class ChatAdapter(
         fun onSenderLongClick(data: (Pair<View, Message>))
         fun onReceiverLongClick(data: (Pair<View, Message>))
         fun onPhotoClick(data: PhotoClickData)
-        fun onPhotoOptionMenuClick(msg: Message)
+        fun onOptionMenuClick(msg: Message)
     }
 
     /**
@@ -285,5 +304,6 @@ class ChatAdapter(
         fun initViewMessage(context: Context, message: Message, longClick: (View) -> Unit)
         fun initViewMultiPhoto(context: Context)
         fun initViewSinglePhoto(context: Context)
+        fun initViewAudio(context: Context, message: Message, longClick: (View) -> Unit)
     }
 }

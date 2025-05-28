@@ -169,7 +169,7 @@ class AudioWaveView : View {
             return
         }
 
-        if (changed) {
+        if (changed && w > 0 && h > 0) {
             waveBitmap.safeRecycle()
             waveBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
 

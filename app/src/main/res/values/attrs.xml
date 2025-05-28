@@ -129,8 +129,9 @@
 
     <declare-styleable name="RecordWaveView">
         <attr name="type" format="enum">
-            <enum name="listen" value="0" />
+            <enum name="sender" value="0" />
             <enum name="preview" value="1" />
+            <enum name="receiver" value="2" />
         </attr>
     </declare-styleable>
 

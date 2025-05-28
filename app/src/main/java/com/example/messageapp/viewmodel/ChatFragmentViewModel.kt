@@ -160,13 +160,34 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
-    fun uploadAudio(uriAudio: Uri) {
-        val idRoom = listOf("1", shared.getAuth()).sorted()
+    fun uploadAudio(
+        friendId: String,
+        uriAudio: Uri,
+        time: String,
+        conversation: Conversation,
+        sendFirst: Boolean
+    ) {
+        val idRoom = listOf(friendId, shared.getAuth()).sorted()
         FireBaseInstance.uploadAudio(
             roomId = idRoom,
             uriAudio = uriAudio
         ) { audioUrl ->
-
+            val message = Message(
+                receiver = friendId,
+                sender = shared.getAuth(),
+                time = time,
+                audio = audioUrl,
+                type = TypeMessage.AUDIO.ordinal
+            )
+            FireBaseInstance.sendMessage(
+                message = message,
+                userId = shared.getAuth(),
+                time = time,
+                conversation = conversation,
+                nameSender = shared.getNameUser(),
+                type = TypeMessage.AUDIO,
+                sendFirst = sendFirst
+            ) {}
         }
     }
 

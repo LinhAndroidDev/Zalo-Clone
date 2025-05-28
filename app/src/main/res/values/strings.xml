@@ -85,7 +85,7 @@
     <string name="replied_to_message_of">Đã trả lời tin nhắn của %s</string>
     <string name="received">Đã nhận</string>
     <string name="option">Tuỳ chọn</string>
-    <string name="save_photo_video">Lưu ảnh, video</string>
+    <string name="save_photo_video_audio">Lưu ảnh, video, audio</string>
     <string name="un_read">Chưa đọc</string>
     <string name="turn_off_notification">Tắt thông báo</string>
     <string name="account_and_security">Tài khoản và bảo mật</string>

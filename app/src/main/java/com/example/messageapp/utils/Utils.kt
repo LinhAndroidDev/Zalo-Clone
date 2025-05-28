@@ -103,3 +103,7 @@ fun removeAccent(input: String): String {
     val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
     return pattern.matcher(normalized).replaceAll("")
 }
+
+fun getFileNameFromUrl(url: String): String {
+    return url.substringAfterLast("/")
+}

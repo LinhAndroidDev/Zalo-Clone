@@ -20,12 +20,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class TypeRecord(val value: Int) {
-    LiSTEN(0),
-    PREVIEW(1);
+    SENDER(0),
+    PREVIEW(1),
+    RECEIVER(2);
 
     companion object {
         fun of(value: Int): TypeRecord {
-            return entries.firstOrNull { it.value == value } ?: LiSTEN
+            return entries.firstOrNull { it.value == value } ?: SENDER
         }
     }
 }
@@ -79,7 +80,7 @@ class RecordWaveView @JvmOverloads constructor(
         val array = context.theme.obtainStyledAttributes(attrs, R.styleable.RecordWaveView, 0, 0)
         val type = array.getInt(R.styleable.RecordWaveView_type, 0)
         when (TypeRecord.of(type)) {
-            TypeRecord.LiSTEN -> {
+            TypeRecord.SENDER -> {
                 binding?.viewRecord?.setBackgroundResource(R.drawable.bg_sender)
                 binding?.btnPlayAudio?.backgroundTintList =
                     ContextCompat.getColorStateList(context, R.color.blue)
@@ -97,6 +98,17 @@ class RecordWaveView @JvmOverloads constructor(
                     ContextCompat.getColorStateList(context, R.color.black)
                 binding?.txtDuration?.isVisible = false
                 binding?.txtDurationListenAgain?.isVisible = true
+                binding?.audioWaveView?.wavePaint = ContextCompat.getColor(context, R.color.grey)
+            }
+
+            TypeRecord.RECEIVER -> {
+                binding?.viewRecord?.setBackgroundResource(R.drawable.bg_receiver)
+                binding?.btnPlayAudio?.backgroundTintList =
+                    ContextCompat.getColorStateList(context, R.color.grey_bg)
+                binding?.icPlay?.imageTintList =
+                    ContextCompat.getColorStateList(context, R.color.black)
+                binding?.txtDuration?.isVisible = true
+                binding?.txtDurationListenAgain?.isVisible = false
                 binding?.audioWaveView?.wavePaint = ContextCompat.getColor(context, R.color.grey)
             }
         }

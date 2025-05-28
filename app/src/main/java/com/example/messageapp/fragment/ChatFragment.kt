@@ -92,7 +92,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             activity?.startActivity(intent)
         }
 
-        override fun onPhotoOptionMenuClick(msg: Message) {
+        override fun onOptionMenuClick(msg: Message) {
             val bottomSheetOptionPhoto = BottomSheetOptionPhoto()
             bottomSheetOptionPhoto.show(parentFragmentManager, "")
             bottomSheetOptionPhoto.setOnClickOptionPho(object :
@@ -108,6 +108,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                         TypeMessage.PHOTOS -> {
                             lifecycleScope.launch {
                                 viewModel?.saveMultiPhotoWithCombine(requireActivity(), msg.photos)
+                            }
+                        }
+
+                        TypeMessage.AUDIO -> {
+                            lifecycleScope.launch {
+                                FileUtils.downloadAudioFile(requireActivity(), msg.audio ?: "")
                             }
                         }
 
@@ -429,8 +435,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         binding?.btnMicro?.setOnClickListener {
             val bottomSheetRecord = BottomSheetRecord()
             bottomSheetRecord.onRecordListener = { path ->
-                val file = File(path)
-                viewModel?.uploadAudio(uriAudio = Uri.fromFile(file))
+                conversation?.let { cvt ->
+                    val file = File(path)
+                    viewModel?.uploadAudio(
+                        friendId = cvt.friendId,
+                        uriAudio = Uri.fromFile(file),
+                        time = DateUtils.getTimeCurrent(),
+                        conversation = cvt,
+                        sendFirst = isMessageEmpty
+                    )
+                }
             }
             bottomSheetRecord.show(parentFragmentManager, "")
         }
