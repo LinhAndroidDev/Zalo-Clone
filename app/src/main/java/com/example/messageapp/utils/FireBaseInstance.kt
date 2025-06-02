@@ -39,12 +39,18 @@ object FireBaseInstance {
     private val storage by lazy { Firebase.storage.reference }
 
     private const val PATH_USER = "users"
+    private const val PATH_EMAIL = "email"
+    private const val PATH_PASSWORD = "password"
+    private const val PATH_AVATAR = "avatar"
     private const val PATH_MESSAGE = "messages"
     private const val PATH_CHAT = "chats"
     private const val PATH_TOKEN = "Tokens"
+    private const val PATH_IMAGE_COVER = "imageCover"
     private const val PATH_IMAGE = "images"
     private const val PATH_PHOTO = "photo"
+    private const val PATH_EMOTION = "emotion"
     private const val PATH_AUDIO = "audios"
+    private const val PATH_TYPING = "typing"
 
     /**
      * This function is used to check the login of the user
@@ -61,8 +67,8 @@ object FireBaseInstance {
         failure: (String) -> Unit
     ) {
         db.collection(PATH_USER)
-            .whereEqualTo("email", email)
-            .whereEqualTo("password", password)
+            .whereEqualTo(PATH_EMAIL, email)
+            .whereEqualTo(PATH_PASSWORD, password)
             .get()
             .addOnSuccessListener { querySnapshot ->
                 success.invoke(querySnapshot)
@@ -395,7 +401,7 @@ object FireBaseInstance {
     fun updateAvatarUser(avatar: String, userId: String) {
         db.collection(PATH_USER)
             .document(userId)
-            .update("avatar", avatar)
+            .update(PATH_AVATAR, avatar)
     }
 
     /**
@@ -565,7 +571,7 @@ object FireBaseInstance {
     fun updateImageCover(userId: String, imageCover: String) {
         db.collection(PATH_USER)
             .document(userId)
-            .update("imageCover", imageCover)
+            .update(PATH_IMAGE_COVER, imageCover)
     }
 
     /**
@@ -605,14 +611,20 @@ object FireBaseInstance {
             .collection(PATH_CHAT)
             .document(time)
             .set(
-                mapOf("emotion" to data),
-                SetOptions.mergeFields("emotion")
+                mapOf(PATH_EMOTION to data),
+                SetOptions.mergeFields(PATH_EMOTION)
             )
     }
 
+    /**
+     * This function is used to update typing message for conversation
+     * @param userId key auth of user
+     * @param friendId key auth of friend
+     * @param typing boolean value to indicate if the user is typing
+     */
     fun updateTypingMessage(userId: String, friendId: String, typing: Boolean) {
         db.collection("Conversation${userId}")
             .document(friendId)
-            .update("typing", typing)
+            .update(PATH_TYPING, typing)
     }
 }
