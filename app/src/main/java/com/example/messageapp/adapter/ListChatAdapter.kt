@@ -13,7 +13,7 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 
-class ListChatAdapter :
+class ListChatAdapter(private val userId: String) :
     BaseAdapter<Conversation, ItemListChatBinding>() {
 
     private val binderHelper = ViewBinderHelper()
@@ -41,6 +41,10 @@ class ListChatAdapter :
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
         v.tvNameFriend.text = conversation.name
+        FireBaseInstance.getConversationRlt(conversation.friendId, userId) { cvt ->
+            v.typingView.isVisible = cvt.typing
+            v.tvMessage.isVisible = !cvt.typing
+        }
         v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         v.tvTime.text = DateUtils.formatTime(conversation.time)
         this.handleWhenConversationIsChanged(conversation)

@@ -43,7 +43,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        listChatAdapter = ListChatAdapter()
+        listChatAdapter = ListChatAdapter(viewModel?.shared?.getAuth() ?: "")
         listChatAdapter?.onClickView = { conversation ->
             goToChatFragment(conversation)
         }

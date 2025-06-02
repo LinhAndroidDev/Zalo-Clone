@@ -609,4 +609,10 @@ object FireBaseInstance {
                 SetOptions.mergeFields("emotion")
             )
     }
+
+    fun updateTypingMessage(userId: String, friendId: String, typing: Boolean) {
+        db.collection("Conversation${userId}")
+            .document(friendId)
+            .update("typing", typing)
+    }
 }

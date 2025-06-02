@@ -14,6 +14,9 @@ import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.Intent
 import android.media.MediaPlayer
 import android.net.Uri
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -150,6 +153,10 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 binding?.viewOptions?.isVisible = true
                 binding?.btnSend?.isVisible = false
             }
+        }
+
+        binding?.edtMessage?.setOnFocusChangeListener { _, hasFocus ->
+            viewModel?.updateTyping(conversation?.friendId.toString(), hasFocus)
         }
     }
 
@@ -462,4 +469,15 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         super.onPause()
     }
 
+    override fun onStop() {
+        super.onStop()
+        Log.e("ChatFragment", "onStop: update typing false")
+        viewModel?.updateTyping(conversation?.friendId.toString(), false)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.e("ChatFragment", "onDestroy: update typing false")
+        viewModel?.updateTyping(conversation?.friendId.toString(), false)
+    }
 }

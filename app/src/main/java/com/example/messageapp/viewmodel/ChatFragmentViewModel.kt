@@ -245,4 +245,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             }
         }
     }
+
+    fun updateTyping(friendId: String, typing: Boolean) {
+        FireBaseInstance.updateTypingMessage(
+            friendId = friendId,
+            userId = shared.getAuth(),
+            typing = typing
+        )
+    }
 }

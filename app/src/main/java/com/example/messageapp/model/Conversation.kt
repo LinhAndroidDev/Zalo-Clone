@@ -13,7 +13,8 @@ data class Conversation(
     var sender: String = "",
     var time: String = "",
     var seen: String = "0",
-    var numberUnSeen: Int = 0
+    var numberUnSeen: Int = 0,
+    var typing: Boolean = false,
 ) : Parcelable {
     constructor(user: User) : this (
         friendId = user.keyAuth ?: "",
