@@ -2,6 +2,7 @@ package com.example.messageapp
 
 import android.graphics.Color
 import android.os.Bundle
+import android.transition.TransitionInflater
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -30,6 +31,9 @@ class PreviewPhotoActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.sharedElementEnterTransition = TransitionInflater.from(this)
+            .inflateTransition(android.R.transition.move)
+        supportPostponeEnterTransition()
         setContentView(binding.root)
         setUpFullScreen()
         initView()
@@ -40,7 +44,7 @@ class PreviewPhotoActivity : AppCompatActivity() {
         previewPhotoArgument = intent.getParcelableExtra(PREVIEW_PHOTO_ARGUMENT)
         previewPhotoArgument?.let { arg ->
             binding.tvTimeSend.text = DateUtils.formatDateTimeApp(arg.message.time)
-            val adapter = PhotoAdapter(this)
+            val adapter = PhotoAdapter(this, arg.message.time, arg.indexOfPhoto)
             adapter.items = arg.photoData
             adapter.onClickPhoto = {
                 if (isShowHeader) {

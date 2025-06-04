@@ -26,11 +26,12 @@ import kotlin.math.ceil
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
 
-data class PhotoClickData(
+data class ClickPhotoModel(
     val message: Message,
     val indexOfPhoto: Int,
     val photoData: ArrayList<String>,
-    val fromSender: Boolean
+    val fromSender: Boolean,
+    val imageView: ImageView
 )
 
 class ChatAdapter(
@@ -224,13 +225,15 @@ class ChatAdapter(
         }
         imageView.layoutParams =
             ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
+        imageView.transitionName = message.time
         imageView.setOnClickListener {
             mCallBack?.onPhotoClick(
-                PhotoClickData(
+                ClickPhotoModel(
                     message = message,
                     indexOfPhoto = 0,
                     photoData = arrayListOf(photo),
-                    fromSender = fromSender
+                    fromSender = fromSender,
+                    imageView = imageView
                 )
             )
         }
@@ -268,8 +271,17 @@ class ChatAdapter(
                         bottomMargin = if (i == row - 1) 0 else 8
                         rightMargin = if (j == 3 * i + 2) 0 else 8
                     }
+                imgPhoto.transitionName = message.time
                 imgPhoto.setOnClickListener {
-                    mCallBack?.onPhotoClick(PhotoClickData(message = message, indexOfPhoto = j, photoData = photos, fromSender = fromSender))
+                    mCallBack?.onPhotoClick(
+                        ClickPhotoModel(
+                            message = message,
+                            indexOfPhoto = j,
+                            photoData = photos,
+                            fromSender = fromSender,
+                            imageView = imgPhoto
+                        )
+                    )
                 }
                 imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
                 context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
@@ -293,7 +305,7 @@ class ChatAdapter(
     interface CallBackClickItem {
         fun onSenderLongClick(data: (Pair<View, Message>))
         fun onReceiverLongClick(data: (Pair<View, Message>))
-        fun onPhotoClick(data: PhotoClickData)
+        fun onPhotoClick(data: ClickPhotoModel)
         fun onOptionMenuClick(msg: Message)
     }
 

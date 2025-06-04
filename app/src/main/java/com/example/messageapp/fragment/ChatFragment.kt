@@ -23,6 +23,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
@@ -32,7 +33,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
-import com.example.messageapp.adapter.PhotoClickData
+import com.example.messageapp.adapter.ClickPhotoModel
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
@@ -79,7 +80,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             showPopupOption(data.first, data.second, false)
         }
 
-        override fun onPhotoClick(data: PhotoClickData) {
+        override fun onPhotoClick(data: ClickPhotoModel) {
             val keyId = if (data.fromSender) viewModel?.shared?.getAuth()
                 .toString() else conversation?.friendId.toString()
             val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
@@ -90,7 +91,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 photoData = data.photoData
             )
             intent.putExtra(PreviewPhotoActivity.PREVIEW_PHOTO_ARGUMENT, previewPhotoArgument)
-            activity?.startActivity(intent)
+            val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                requireActivity(),
+                data.imageView,
+                data.message.time
+            )
+            activity?.startActivity(intent, options.toBundle())
         }
 
         override fun onOptionMenuClick(msg: Message) {
