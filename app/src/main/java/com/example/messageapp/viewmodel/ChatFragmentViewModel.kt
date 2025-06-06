@@ -3,6 +3,7 @@ package com.example.messageapp.viewmodel
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
@@ -33,6 +34,9 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     private val _messages: MutableStateFlow<ArrayList<Message>?> = MutableStateFlow(null)
     val messages = _messages.asStateFlow()
+
+    private val _typing: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val typing = _typing.asStateFlow()
 
     /**
      * This function used to send message to FireStore
@@ -252,5 +256,11 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             userId = shared.getAuth(),
             typing = typing
         )
+    }
+
+    fun checkShowTyping(friendId: String) {
+        FireBaseInstance.getConversationRlt(friendId, shared.getAuth()) { cvt ->
+            _typing.value = cvt.typing
+        }
     }
 }

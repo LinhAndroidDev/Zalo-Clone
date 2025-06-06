@@ -132,4 +132,5 @@
     <string name="post_to_diary">Đăng lên Nhật ký</string>
     <string name="choose">Chọn</string>
     <string name="note_select_date_diary">Bạn bè sẽ không thấy các bài đăng trước <b>hôm nay</b></string>
+    <string name="typing">Đang nhập...</string>
 </resources>

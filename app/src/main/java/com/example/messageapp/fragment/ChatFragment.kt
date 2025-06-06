@@ -347,6 +347,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         conversation?.let { cvt ->
             viewModel?.getMessage(friendId = cvt.friendId)
+            viewModel?.checkShowTyping(friendId = cvt.friendId)
 
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -366,6 +367,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                         }
                     }
                 }
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel?.typing?.collect { typing ->
+                binding?.typingView?.isVisible = typing
             }
         }
     }
