@@ -7,9 +7,11 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.databinding.CustomHeaderViewBinding
+import com.example.messageapp.fragment.HomeFragment
 import com.example.messageapp.model.ActionBottomBar
 import com.example.messageapp.utils.getFragmentActivity
 import com.example.messageapp.utils.showKeyboard
@@ -112,6 +114,24 @@ class CustomHeaderView @JvmOverloads constructor(
 
         binding?.viewSearch?.edtSearch?.doOnTextChanged { text, start, before, count ->
             mTypeSearchListener?.callBackKeySearch(text.toString())
+        }
+
+        binding?.qrCode?.setOnClickListener {
+            val navController =
+                context.getFragmentActivity()?.supportFragmentManager?.findFragmentById(R.id.navHostFragment)
+                    ?.findNavController()
+            val navHostFragment = context.getFragmentActivity()
+                ?.supportFragmentManager
+                ?.findFragmentById(R.id.navHostFragment) as? NavHostFragment
+            val currentFragment = navHostFragment
+                ?.childFragmentManager
+                ?.fragments
+                ?.firstOrNull()
+            if (currentFragment is HomeFragment) {
+                navController?.navigate(R.id.action_homeFragment_to_scanQRFragment)
+            } else {
+                navController?.navigate(R.id.action_discoverFragment_to_scanQRFragment)
+            }
         }
     }
 
