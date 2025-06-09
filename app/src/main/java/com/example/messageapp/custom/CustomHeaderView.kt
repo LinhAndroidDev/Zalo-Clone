@@ -23,6 +23,7 @@ class CustomHeaderView @JvmOverloads constructor(
 ) : LinearLayout(context, attrs, defStyleAttr) {
     private var binding: CustomHeaderViewBinding? = null
     private var mTypeSearchListener: OnTypeSearchListener? = null
+    var showMenuOther: (() -> Unit)? = null
 
     interface OnTypeSearchListener {
         fun callBackKeySearch(keySearch: String)
@@ -132,6 +133,10 @@ class CustomHeaderView @JvmOverloads constructor(
             } else {
                 navController?.navigate(R.id.action_discoverFragment_to_scanQRFragment)
             }
+        }
+
+        binding?.menuAdd?.setOnClickListener {
+            showMenuOther?.invoke()
         }
     }
 

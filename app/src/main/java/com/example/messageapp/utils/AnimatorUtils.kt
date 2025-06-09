@@ -95,4 +95,23 @@ object AnimatorUtils {
             TypeNews.Edit -> R.drawable.ic_camera_news
         }
     }
+
+    fun expandView(view: View, duration: Long = 300) {
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec((view.parent as View).width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.UNSPECIFIED
+        )
+        val targetHeight = view.measuredHeight
+
+        view.layoutParams.height = 0
+        view.visibility = View.VISIBLE
+
+        val animator = ValueAnimator.ofInt(0, targetHeight)
+        animator.addUpdateListener { animation ->
+            view.layoutParams.height = animation.animatedValue as Int
+            view.requestLayout()
+        }
+        animator.duration = duration
+        animator.start()
+    }
 }

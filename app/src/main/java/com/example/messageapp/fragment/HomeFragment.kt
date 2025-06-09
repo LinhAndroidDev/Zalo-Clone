@@ -35,6 +35,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     private val suggestFriendAdapter by lazy { SuggestFriendAdapter() }
     private var listChatAdapter: ListChatAdapter? = null
     private var updateJob: Job? = null
+    private var menuOtherShowing = false
 
     companion object {
         private const val REQUEST_OVERLAY_PERMISSION = 1001
@@ -76,6 +77,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
             } else {
                 requestOverlayPermission()
             }
+        }
+
+        binding?.header?.showMenuOther = {
+            menuOtherShowing = !menuOtherShowing
+            binding?.menuOther?.showView(menuOtherShowing)
         }
     }
 
