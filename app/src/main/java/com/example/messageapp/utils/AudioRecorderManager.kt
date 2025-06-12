@@ -2,16 +2,10 @@ package com.example.messageapp.utils
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Environment
 import android.util.Log
-import androidx.annotation.OptIn
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.example.messageapp.library.audiowave.AudioWaveView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,12 +17,12 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.text.SimpleDateFormat
 
-class AudioRecorderManager(private val context: Context) {
+class AudioRecorderManager {
     private var mediaRecorder: MediaRecorder? = null
     private var outputFilePath: String? = null
-    private var exoPlayer: ExoPlayer? = null
-    private var job: Job? = null // Job để hủy coroutine khi cần
-    private var currentListen: Long = 0L
+    private var mediaPlayer: MediaPlayer? = null
+    private var job: Job? = null
+    private var currentListen: Int = 0
     private var isResumingAudio = false
 
     fun startRecording(context: Context) {
@@ -60,7 +54,6 @@ class AudioRecorderManager(private val context: Context) {
         return outputFilePath
     }
 
-    @OptIn(UnstableApi::class)
     @SuppressLint("SimpleDateFormat")
     fun playRecordedAudio(
         filePath: String,
@@ -75,40 +68,34 @@ class AudioRecorderManager(private val context: Context) {
         }
         releasePlayer()
 
-        exoPlayer = ExoPlayer.Builder(context).build().apply {
-            val dataSourceFactory = DefaultDataSource.Factory(context)
-            val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(filePath))
-            setMediaSource(mediaSource)
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(filePath)
             prepare()
-            play()
+            start()
 
             isResumingAudio = true
             job?.cancel()
             job = scope.launch {
                 updateAudioProgress(audioWaveView, scope) { position ->
-                    timeCurrent(SimpleDateFormat(DateUtils.MINUTE_TIME).format(position))
+                    timeCurrent(SimpleDateFormat(DateUtils.MINUTE_TIME).format(position.toLong()))
                 }
             }
 
-            addListener(object : Player.Listener {
-                override fun onPlaybackStateChanged(state: Int) {
-                    if (state == Player.STATE_ENDED) {
-                        isResumingAudio = false
-                        audioWaveView?.progress = 100f
-                        job?.cancel()
-                        onFinish()
-                    }
-                }
-            })
+            setOnCompletionListener {
+                isResumingAudio = false
+                audioWaveView?.progress = 100f
+                job?.cancel()
+                onFinish()
+            }
         }
 
         audioWaveView?.onProgressChanged = { progress, byUser ->
-            if (byUser && exoPlayer != null && exoPlayer?.isPlaying == true) {
-                val duration = exoPlayer?.duration ?: 0L
+            if (byUser && mediaPlayer != null) {
+                val duration = mediaPlayer?.duration ?: 0
                 if (duration > 0) {
-                    val seekPosition = (progress / 100f * duration).toLong()
-                    exoPlayer?.seekTo(seekPosition)
+                    val seekPosition = (progress / 100f * duration).toInt()
+                    mediaPlayer?.seekTo(seekPosition)
+                    currentListen = seekPosition
                 }
             }
         }
@@ -117,35 +104,34 @@ class AudioRecorderManager(private val context: Context) {
     private fun updateAudioProgress(
         audioWaveView: AudioWaveView?,
         scope: CoroutineScope,
-        position: (Long) -> Unit
+        position: (Int) -> Unit
     ) {
         scope.launch(Dispatchers.Main) {
-            while (isActive) { // Kiểm tra coroutine còn hoạt động
-                if (exoPlayer != null && exoPlayer?.isPlaying == true) {
-                    val currentPosition = exoPlayer?.currentPosition ?: 0L
-                    val duration = exoPlayer?.duration ?: 1L
+            while (isActive) {
+                if (mediaPlayer != null) {
+                    val currentPosition = mediaPlayer?.currentPosition ?: 0
+                    val duration = mediaPlayer?.duration ?: 1
                     val progress = (currentPosition.toFloat() / duration) * 100
 
                     withContext(Dispatchers.Main) {
-                        Log.e("ExoAudioPlayer", "Progress: $progress")
-                        audioWaveView?.progress = progress
+                        audioWaveView?.progress = if (progress > 100) 100f else progress
                     }
 
                     position(currentPosition)
                 }
-                delay(100) // Cập nhật mỗi 100ms
+                delay(100)
             }
         }
     }
 
     fun stopAudio() {
-        exoPlayer?.stop()
+        mediaPlayer?.stop()
         releasePlayer()
     }
 
     private fun releasePlayer() {
-        exoPlayer?.release()
-        exoPlayer = null
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 
     @SuppressLint("SimpleDateFormat")
@@ -154,18 +140,18 @@ class AudioRecorderManager(private val context: Context) {
         scope: CoroutineScope,
         timeCurrent: (String) -> Unit
     ) {
-        exoPlayer?.seekTo(currentListen)
-        exoPlayer?.play()
+        mediaPlayer?.seekTo(currentListen)
+        mediaPlayer?.start()
         job?.cancel()
         job = scope.launch {
             updateAudioProgress(audioWaveView, this) { position ->
-                timeCurrent(SimpleDateFormat(DateUtils.MINUTE_TIME).format(position))
+                timeCurrent(SimpleDateFormat(DateUtils.MINUTE_TIME).format(position.toLong()))
             }
         }
     }
 
     fun pauseAudio() {
-        exoPlayer?.apply {
+        mediaPlayer?.apply {
             currentListen = currentPosition
             pause()
         }

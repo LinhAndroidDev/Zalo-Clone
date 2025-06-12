@@ -41,7 +41,7 @@ class BottomSheetRecord : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        audioRecorder = AudioRecorderManager(requireActivity())
+        audioRecorder = AudioRecorderManager()
         binding?.btnRecord?.setOnClickListener {
             if (!recording) {
                 checkAndRequestPermission()

@@ -114,4 +114,25 @@ object AnimatorUtils {
         animator.duration = duration
         animator.start()
     }
+
+    fun collapseView(view: View, duration: Long = 300) {
+        val initialHeight = view.measuredHeight
+
+        val animator = ValueAnimator.ofInt(initialHeight, 0)
+        animator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Int
+            view.layoutParams.height = value
+            view.requestLayout()
+        }
+
+        animator.duration = duration
+        animator.start()
+
+        animator.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                super.onAnimationEnd(animation)
+                view.visibility = View.GONE
+            }
+        })
+    }
 }

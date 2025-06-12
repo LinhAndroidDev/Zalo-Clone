@@ -31,9 +31,11 @@ class MenuOtherView @JvmOverloads constructor(
     }
 
     fun showView(isVisible: Boolean) {
-        binding?.bgView?.isVisible = isVisible
         if (isVisible) {
             binding?.viewMenu?.let { AnimatorUtils.expandView(it) }
+        } else {
+            binding?.viewMenu?.let { AnimatorUtils.collapseView(it) }
         }
+        binding?.bgView?.isVisible = isVisible
     }
 }

@@ -283,7 +283,23 @@ object FireBaseInstance {
         //Create Data Conversation For Receiver
         val conversationFriend = Conversation(
             friendId = userId,
-            message = if (type == TypeMessage.MESSAGE) message.message else "$nameSender đã gửi ảnh cho bạn",
+            message = when (type) {
+                TypeMessage.MESSAGE -> {
+                    message.message
+                }
+
+                TypeMessage.PHOTOS -> {
+                    "${conversation.name} đã gửi ảnh cho bạn"
+                }
+
+                TypeMessage.SINGLE_PHOTO -> {
+                    "${conversation.name} đã gửi 1 ảnh cho bạn"
+                }
+
+                TypeMessage.AUDIO -> {
+                    "${conversation.name} đã gửi 1 file ghi âm cho bạn"
+                }
+            },
             name = nameSender,
             person = nameSender,
             sender = userId,

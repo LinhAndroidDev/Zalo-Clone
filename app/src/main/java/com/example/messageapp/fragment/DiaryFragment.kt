@@ -37,8 +37,14 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
         AnimatorUtils.scaleNews(binding?.iconNews, TypeNews.Camera)
 
-        val path = "https://firebasestorage.googleapis.com/v0/b/zalo-clone-45246.appspot.com/o/ChacAiDoSeVe-SonTungMTP-3666636.mp3?alt=media&token=2381255d-6983-4076-83bf-fdca2bcdd24e"
+        val path =
+            "https://firebasestorage.googleapis.com/v0/b/zalo-clone-45246.appspot.com/o/ChacAiDoSeVe-SonTungMTP-3666636.mp3?alt=media&token=2381255d-6983-4076-83bf-fdca2bcdd24e"
         binding?.recordWaveView?.loadDataWaveView(requireActivity(), path = path)
+
+        // URL video
+        val videoUrl =
+            "https://firebasestorage.googleapis.com/v0/b/zalo-clone-45246.appspot.com/o/Mo%CC%82%CC%83i%20Ti%CC%80nh%20Kho%CC%82ng%20Te%CC%82n%20-%20%C4%90i%CC%80nh%20Nguye%CC%82%CC%83n%20x%20Le%CC%82%20Chi%CC%81%20Trung%20_%20Tu%CC%81%20Na%20Cover.mp4?alt=media&token=54f1b86d-a36a-454d-acf8-9079e92de810"
+        binding?.videoView?.initVideo(videoUrl)
     }
 
     override fun onPause() {
@@ -49,5 +55,6 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
     override fun onStop() {
         super.onStop()
         binding?.recordWaveView?.destroy()
+        binding?.videoView?.cancel()
     }
 }

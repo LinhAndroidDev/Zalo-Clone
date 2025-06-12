@@ -74,7 +74,7 @@ class RecordWaveView @JvmOverloads constructor(
             LayoutParams.WRAP_CONTENT
         )
         binding?.let { addView(it.root) }
-        audioRecorder = AudioRecorderManager(context)
+        audioRecorder = AudioRecorderManager()
         runnable.run()
 
         val array = context.theme.obtainStyledAttributes(attrs, R.styleable.RecordWaveView, 0, 0)

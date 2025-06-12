@@ -113,7 +113,7 @@ class CustomHeaderView @JvmOverloads constructor(
             navController?.navigate(R.id.action_personalFragment_to_settingFragment, null)
         }
 
-        binding?.viewSearch?.edtSearch?.doOnTextChanged { text, start, before, count ->
+        binding?.viewSearch?.edtSearch?.doOnTextChanged { text, _, _, _ ->
             mTypeSearchListener?.callBackKeySearch(text.toString())
         }
 
