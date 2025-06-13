@@ -38,11 +38,11 @@ fun View.showViewAboveKeyBoard(rootView: View) {
         val r = Rect()
         rootView.getWindowVisibleDisplayFrame(r)
         val screenHeight = rootView.height
-        val keypadHeight = screenHeight - r.bottom
+        val keypadHeight = screenHeight - r.height()
 
         if (keypadHeight > screenHeight * 0.15) {
             // Bàn phím đã xuất hiện
-            this.translationY = -keypadHeight.toFloat() - this.height - 15 // Đẩy view lên
+            this.translationY = -keypadHeight.toFloat()
         } else {
             // Bàn phím đã ẩn
             this.translationY = 0f

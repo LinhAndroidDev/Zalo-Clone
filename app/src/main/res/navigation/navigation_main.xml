@@ -84,6 +84,9 @@
         <action
             android:id="@+id/action_diaryFragment_to_searchFragment"
             app:destination="@id/searchFragment" />
+        <action
+            android:id="@+id/action_diaryFragment_to_statusFragment"
+            app:destination="@id/statusFragment" />
     </fragment>
     <fragment
         android:id="@+id/personalFragment"
@@ -169,4 +172,9 @@
         android:name="com.example.messageapp.fragment.ScanQRFragment"
         android:label="ScanQRFragment"
         tools:layout="@layout/fragment_scan_q_r" />
+    <fragment
+        android:id="@+id/statusFragment"
+        android:name="com.example.messageapp.fragment.StatusFragment"
+        android:label="StatusFragment"
+        tools:layout="@layout/fragment_status"/>
 </navigation>
