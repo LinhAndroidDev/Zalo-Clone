@@ -289,15 +289,15 @@ object FireBaseInstance {
                 }
 
                 TypeMessage.PHOTOS -> {
-                    "${conversation.name} đã gửi ảnh cho bạn"
+                    "$nameSender đã gửi ảnh cho bạn"
                 }
 
                 TypeMessage.SINGLE_PHOTO -> {
-                    "${conversation.name} đã gửi 1 ảnh cho bạn"
+                    "$nameSender đã gửi 1 ảnh cho bạn"
                 }
 
                 TypeMessage.AUDIO -> {
-                    "${conversation.name} đã gửi 1 file ghi âm cho bạn"
+                    "$nameSender đã gửi 1 file ghi âm cho bạn"
                 }
             },
             name = nameSender,
