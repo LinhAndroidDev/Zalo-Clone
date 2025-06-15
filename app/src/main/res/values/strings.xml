@@ -85,7 +85,7 @@
     <string name="replied_to_message_of">Đã trả lời tin nhắn của %s</string>
     <string name="received">Đã nhận</string>
     <string name="option">Tuỳ chọn</string>
-    <string name="save_photo_video">Lưu ảnh, video</string>
+    <string name="save_photo_video_audio">Lưu ảnh, video, audio</string>
     <string name="un_read">Chưa đọc</string>
     <string name="turn_off_notification">Tắt thông báo</string>
     <string name="account_and_security">Tài khoản và bảo mật</string>
@@ -130,4 +130,7 @@
     <string name="what_happy_today">Hôm nay %s có gì vui?</string>
     <string name="note_happy_today">Đây là Nhật ký của bạn - Hãy làm đầy Nhật ký với những dấu ấn cuộc đời và kỷ niệm đáng nhớ nhé</string>
     <string name="post_to_diary">Đăng lên Nhật ký</string>
+    <string name="choose">Chọn</string>
+    <string name="note_select_date_diary">Bạn bè sẽ không thấy các bài đăng trước <b>hôm nay</b></string>
+    <string name="typing">Đang nhập...</string>
 </resources>

@@ -19,4 +19,8 @@
         <item name="android:textColor">@color/text_common</item>
         <item name="hintTextColor">@color/text_hint</item>
     </style>
+
+    <string name="Year">Y</string>
+    <string name="Month">M</string>
+    <string name="Day">D</string>
 </resources>

@@ -15,12 +15,13 @@ import com.example.messageapp.R
 import com.example.messageapp.adapter.PhoneBookAdapter
 import com.example.messageapp.adapter.TypePhoneBook
 import com.example.messageapp.base.BaseFragment
-import com.example.messageapp.custom.sticky_header.StickyHeaderItemDecorator
+import com.example.messageapp.library.sticky_header.StickyHeaderItemDecorator
 import com.example.messageapp.databinding.FragmentPhoneBookBinding
 import com.example.messageapp.helper.avatars
 import com.example.messageapp.helper.capitalLetters
 import com.example.messageapp.model.GroupPhoneBook
 import com.example.messageapp.model.PhoneBook
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.PhoneBookFragmentViewModel
 
 /**
@@ -35,6 +36,8 @@ class PhoneBookFragment : BaseFragment<FragmentPhoneBookBinding, PhoneBookFragme
     @SuppressLint("InflateParams", "ClickableViewAccessibility")
     override fun initView() {
         super.initView()
+        // log event: screen_phone_book
+        FirebaseAnalyticsInstance.logPhoneBookScreen()
 
         binding?.root?.post {
             binding?.viewBottom?.layoutParams = LinearLayout.LayoutParams(

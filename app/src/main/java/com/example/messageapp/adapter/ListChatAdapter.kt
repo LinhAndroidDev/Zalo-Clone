@@ -5,15 +5,15 @@ import android.os.Bundle
 import androidx.core.view.isVisible
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
-import com.example.messageapp.custom.swipe.SwipeRevealLayout
-import com.example.messageapp.custom.swipe.ViewBinderHelper
+import com.example.messageapp.library.swipe.SwipeRevealLayout
+import com.example.messageapp.library.swipe.ViewBinderHelper
 import com.example.messageapp.databinding.ItemListChatBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.loadImg
 
-class ListChatAdapter :
+class ListChatAdapter(private val userId: String) :
     BaseAdapter<Conversation, ItemListChatBinding>() {
 
     private val binderHelper = ViewBinderHelper()
@@ -41,6 +41,10 @@ class ListChatAdapter :
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
         v.tvNameFriend.text = conversation.name
+        FireBaseInstance.getConversationRlt(conversation.friendId, userId) { cvt ->
+            v.typingView.isVisible = cvt.typing
+            v.tvMessage.isVisible = !cvt.typing
+        }
         v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         v.tvTime.text = DateUtils.formatTime(conversation.time)
         this.handleWhenConversationIsChanged(conversation)

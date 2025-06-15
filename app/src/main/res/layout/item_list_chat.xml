@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <com.example.messageapp.custom.swipe.SwipeRevealLayout
+    <com.example.messageapp.library.swipe.SwipeRevealLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/swipe_layout"
@@ -146,6 +146,13 @@
                         android:layout_marginTop="2dp"
                         android:gravity="center_vertical">
 
+                        <com.example.messageapp.custom.TypingIndicatorView
+                            android:id="@+id/typingView"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+
                         <TextView
                             android:id="@+id/tvMessage"
                             android:layout_width="0dp"
@@ -153,7 +160,7 @@
                             android:layout_weight="1"
                             android:ellipsize="end"
                             android:maxLines="1"
-                            android:text="Chúc một ngày tốt lành, thời tiết Hà Nội hôm nay 23/10: Mây dải rác"
+                            tools:text="Chúc một ngày tốt lành, thời tiết Hà Nội hôm nay 23/10: Mây dải rác"
                             android:textColor="@color/text_common"
                             android:textSize="14sp" />
 
@@ -203,5 +210,5 @@
                 android:layout_marginStart="90dp"
                 android:background="#E1E1E1" />
         </LinearLayout>
-    </com.example.messageapp.custom.swipe.SwipeRevealLayout>
+    </com.example.messageapp.library.swipe.SwipeRevealLayout>
 </layout>

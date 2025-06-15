@@ -35,69 +35,86 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:background="@color/white"
-            android:gravity="center_vertical">
+            android:orientation="vertical">
 
-            <ImageView
-                android:layout_width="25dp"
-                android:layout_height="25dp"
-                android:layout_marginStart="10dp"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_sticker_smile" />
-
-            <EditText
-                android:id="@+id/edtMessage"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
+            <TextView
+                android:id="@+id/typingView"
+                android:text="@string/typing"
+                android:paddingHorizontal="10dp"
                 android:background="@color/white"
-                android:hint="@string/message"
-                android:importantForAutofill="no"
-                android:textColor="@color/text_common"
-                android:textSize="16sp"
-                tools:ignore="TextFields" />
+                android:textColor="@color/orange_dark"
+                android:textSize="12sp"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
 
             <LinearLayout
-                android:id="@+id/viewOptions"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginVertical="10dp">
+                android:background="@color/white"
+                android:gravity="center_vertical">
 
                 <ImageView
                     android:layout_width="25dp"
                     android:layout_height="25dp"
+                    android:layout_marginStart="10dp"
                     android:importantForAccessibility="no"
-                    android:src="@drawable/ic_menu_circle" />
+                    android:src="@drawable/ic_sticker_smile" />
+
+                <EditText
+                    android:id="@+id/edtMessage"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@color/white"
+                    android:hint="@string/message"
+                    android:importantForAutofill="no"
+                    android:textColor="@color/text_common"
+                    android:textSize="16sp"
+                    tools:ignore="TextFields" />
+
+                <LinearLayout
+                    android:id="@+id/viewOptions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="10dp">
+
+                    <ImageView
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_menu_circle" />
+
+                    <ImageView
+                        android:id="@+id/btnMicro"
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:layout_marginStart="20dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_micro" />
+
+                    <ImageView
+                        android:id="@+id/btnSelectImage"
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginEnd="10dp"
+                        android:background="@drawable/ic_image"
+                        android:importantForAccessibility="no" />
+                </LinearLayout>
 
                 <ImageView
-                    android:id="@+id/btnMicro"
-                    android:layout_width="25dp"
-                    android:layout_height="25dp"
-                    android:layout_marginStart="20dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_micro" />
-
-                <ImageView
-                    android:id="@+id/btnSelectImage"
-                    android:layout_width="25dp"
-                    android:layout_height="25dp"
-                    android:layout_marginStart="20dp"
+                    android:id="@+id/btnSend"
+                    android:layout_width="33dp"
+                    android:layout_height="35dp"
+                    android:layout_marginTop="3dp"
                     android:layout_marginEnd="10dp"
-                    android:background="@drawable/ic_image"
-                    android:importantForAccessibility="no" />
+                    android:layout_marginBottom="7dp"
+                    android:background="@drawable/ic_send"
+                    android:importantForAccessibility="no"
+                    android:visibility="gone" />
             </LinearLayout>
-
-            <ImageView
-                android:id="@+id/btnSend"
-                android:layout_width="33dp"
-                android:layout_height="35dp"
-                android:layout_marginTop="3dp"
-                android:layout_marginEnd="10dp"
-                android:layout_marginBottom="7dp"
-                android:background="@drawable/ic_send"
-                android:importantForAccessibility="no"
-                android:visibility="gone" />
         </LinearLayout>
 
         <View

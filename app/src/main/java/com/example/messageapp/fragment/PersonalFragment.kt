@@ -7,7 +7,9 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentPersonalBinding
 import com.example.messageapp.utils.AnimatorUtils
-import com.example.messageapp.utils.loadImg
+import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
+import com.example.messageapp.utils.setOnSingleClickListener
 import com.example.messageapp.viewmodel.PersonalFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +21,8 @@ class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentV
 
     override fun initView() {
         super.initView()
+        // log event: screen_personal
+        FirebaseAnalyticsInstance.logPersonalScreen()
 
         viewModel?.getInfoUser()
         lifecycleScope.launch(Dispatchers.Main) {
@@ -36,7 +40,7 @@ class PersonalFragment : BaseFragment<FragmentPersonalBinding, PersonalFragmentV
     override fun onClickView() {
         super.onClickView()
 
-        binding?.personal?.setOnClickListener {
+        binding?.personal?.setOnSingleClickListener {
             val intent = Intent(requireActivity(), PersonalActivity::class.java)
             startActivity(intent)
             activity?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)

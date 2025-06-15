@@ -12,7 +12,8 @@ data class Message(
     var emotion: Emotion? = null,
     val photos: ArrayList<String> = arrayListOf(),
     val singlePhoto: ArrayList<String> = arrayListOf(),
-    val type: Int = 0 // 0: message, 1: photos, 2: single photo
+    val audio: String? = null,
+    val type: Int = 0 // 0: message, 1: photos, 2: single photo, 3: audio
 ) : Parcelable
 
 @Parcelize

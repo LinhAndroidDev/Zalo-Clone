@@ -58,7 +58,7 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <com.example.messageapp.custom.CircleIndicator
+        <com.example.messageapp.library.indicator.CircleIndicator
             android:id="@+id/indicator"
             android:layout_marginTop="10dp"
             android:layout_width="match_parent"

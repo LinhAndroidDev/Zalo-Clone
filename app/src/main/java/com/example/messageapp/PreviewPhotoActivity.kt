@@ -2,15 +2,18 @@ package com.example.messageapp
 
 import android.graphics.Color
 import android.os.Bundle
+import android.transition.TransitionInflater
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.Glide
+import com.example.messageapp.adapter.PhotoAdapter
+import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.databinding.ActivityPreviewPhotoBinding
-import com.example.messageapp.model.Message
 import com.example.messageapp.utils.AnimatorUtils
-import com.example.messageapp.utils.loadImg
+import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.viewmodel.PreviewPhotoActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -22,13 +25,15 @@ class PreviewPhotoActivity : AppCompatActivity() {
     private val viewModel by viewModels<PreviewPhotoActivityViewModel>()
     private var isShowHeader = true
     companion object {
-        const val OBJECT_MESSAGE = "OBJECT_MESSAGE"
-        const val PHOTO_DATA = "PHOTO_DATA"
-        const val KEY_ID = "KEY_ID"
+        const val PREVIEW_PHOTO_ARGUMENT = "PREVIEW_PHOTO_ARGUMENT"
     }
+    private var previewPhotoArgument: PreviewPhotoArgument? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.sharedElementEnterTransition = TransitionInflater.from(this)
+            .inflateTransition(android.R.transition.move)
+        supportPostponeEnterTransition()
         setContentView(binding.root)
         setUpFullScreen()
         initView()
@@ -36,17 +41,22 @@ class PreviewPhotoActivity : AppCompatActivity() {
     }
 
     private fun initView() {
-        val photoData = intent.getStringExtra(PHOTO_DATA)
-        photoData?.let {
-            Glide.with(this)
-                .load(it)
-                .into(binding.photo)
-        }
-
-        val message: Message? = intent.getParcelableExtra(OBJECT_MESSAGE)
-        val keyId = intent.getStringExtra(KEY_ID)
-        message?.let {
-            viewModel.getInfo(it, keyId.toString())
+        previewPhotoArgument = intent.getParcelableExtra(PREVIEW_PHOTO_ARGUMENT)
+        previewPhotoArgument?.let { arg ->
+            binding.tvTimeSend.text = DateUtils.formatDateTimeApp(arg.message.time)
+            val adapter = PhotoAdapter(this, arg.message.time, arg.indexOfPhoto)
+            adapter.items = arg.photoData
+            adapter.onClickPhoto = {
+                if (isShowHeader) {
+                    AnimatorUtils.fadeOut(binding.header)
+                } else {
+                    AnimatorUtils.fadeIn(binding.header)
+                }
+                isShowHeader = !isShowHeader
+            }
+            binding.photoPager.adapter = adapter
+            binding.photoPager.setCurrentItem(arg.indexOfPhoto, false)
+            viewModel.getInfo(arg.message, arg.keyId)
         }
 
         lifecycleScope.launch(Dispatchers.Main) {
@@ -60,13 +70,22 @@ class PreviewPhotoActivity : AppCompatActivity() {
     private fun onClickView() {
         binding.backPreview.setOnClickListener { onBackPressed() }
 
-        binding.photo.setOnClickListener {
+        binding.photoPager.setOnClickListener {
             if (isShowHeader) {
                 AnimatorUtils.fadeOut(binding.header)
             } else {
                 AnimatorUtils.fadeIn(binding.header)
             }
             isShowHeader = !isShowHeader
+        }
+
+        binding.btnSaveImageToGallery.setOnClickListener {
+            val index = binding.photoPager.currentItem
+            previewPhotoArgument?.let {
+                lifecycleScope.launch {
+                    FileUtils.downloadAndSaveImage(this@PreviewPhotoActivity, it.photoData[index])
+                }
+            }
         }
     }
 

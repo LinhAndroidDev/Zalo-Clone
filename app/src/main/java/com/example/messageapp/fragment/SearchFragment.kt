@@ -6,6 +6,7 @@ import com.example.messageapp.adapter.SearchAdapter
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.custom.CustomHeaderView
 import com.example.messageapp.databinding.FragmentSearchBinding
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.SearchFragmentViewModel
 import kotlinx.coroutines.launch
 
@@ -15,6 +16,8 @@ class SearchFragment : BaseFragment<FragmentSearchBinding, SearchFragmentViewMod
 
     override fun initView() {
         super.initView()
+        // log event: screen_search
+        FirebaseAnalyticsInstance.logSearchScreen()
 
         binding?.root?.post {
             binding?.header?.focusSearch()

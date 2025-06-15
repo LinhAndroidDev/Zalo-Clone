@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_corner_top_15"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_corner_top_15"
+        android:backgroundTint="@color/grey_light"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="10dp">
+
+        <ImageView
+            android:id="@+id/icBack"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="15dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_back"
+            android:visibility="gone"
+            app:tint="@color/grey_1" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/font_noto_sans"
+            android:text="Cho phép bạn bè xem nhật ký"
+            android:textColor="@color/text_common"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/btnClose"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_close"
+            app:tint="@color/grey" />
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:id="@+id/viewSettingDiary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <View
+                android:id="@+id/divider"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:background="@color/grey_1" />
+
+            <LinearLayout
+                android:id="@+id/btnAllDiary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+
+                <com.example.messageapp.custom.RadioCommon
+                    android:id="@+id/radioAllDiary"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:layout_marginVertical="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Toàn bộ nhật ký"
+                    android:textColor="@color/text_common"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnLast7Days"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+
+                <com.example.messageapp.custom.RadioCommon
+                    android:id="@+id/radioLast7Days"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:layout_marginVertical="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Trong 7 ngày gần nhất"
+                    android:textColor="@color/text_common"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btn1MonthAgo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+
+                <com.example.messageapp.custom.RadioCommon
+                    android:id="@+id/radio1MonthAgo"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:layout_marginVertical="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Trong 1 tháng gần nhất"
+                    android:textColor="@color/text_common"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btn6MonthAgo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+
+                <com.example.messageapp.custom.RadioCommon
+                    android:id="@+id/radio6MonthAgo"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:layout_marginVertical="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Trong 6 tháng gần nhất"
+                    android:textColor="@color/text_common"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnCustom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+
+                <com.example.messageapp.custom.RadioCommon
+                    android:id="@+id/radioCustom"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:layout_marginVertical="15dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tuỳ chỉnh"
+                        android:textColor="@color/text_common"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:text="Bấm chọn khoảng thời gian"
+                        android:textColor="@color/text_grey"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:layout_marginEnd="15dp"
+                    android:rotation="180"
+                    android:src="@drawable/ic_back"
+                    app:tint="@color/text_grey" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="15dp"
+                android:layout_marginVertical="25dp"
+                android:background="@drawable/bg_corner_20_blue"
+                android:backgroundTint="@color/back_common"
+                android:fontFamily="@font/font_noto_sans"
+                android:gravity="center"
+                android:paddingVertical="10dp"
+                android:text="Lưu"
+                android:textAllCaps="true"
+                android:textColor="@color/text_white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/viewSelectDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="15dp"
+                android:layout_marginEnd="100dp"
+                android:text="@string/note_select_date_diary"
+                android:textColor="@color/text_common"
+                android:textSize="14sp" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="35dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginHorizontal="30dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_white_corner_10"
+                    android:backgroundTint="@color/grey_light" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <com.example.messageapp.library.wheel_picker.WheelPicker
+                        android:id="@+id/main_wheel_left"
+                        android:layout_weight="1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        app:wheel_atmospheric="true"
+                        app:wheel_curved="true"
+                        app:wheel_cyclic="true"
+                        app:wheel_data="@array/WheelArrayDay"
+                        app:wheel_item_align="right"
+                        app:wheel_item_text_color="@color/text_grey"
+                        app:wheel_item_text_size="23sp"
+                        app:wheel_selected_item_text_color="@color/text_common" />
+
+                    <com.example.messageapp.library.wheel_picker.WheelPicker
+                        android:id="@+id/main_wheel_center"
+                        android:layout_width="150dp"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        app:wheel_atmospheric="true"
+                        app:wheel_curved="true"
+                        app:wheel_cyclic="true"
+                        app:wheel_data="@array/WheelArrayMonth"
+                        app:wheel_item_align="center"
+                        app:wheel_item_text_color="@color/text_grey"
+                        app:wheel_item_text_size="23sp"
+                        app:wheel_selected_item_text_color="@color/text_common" />
+
+                    <com.example.messageapp.library.wheel_picker.WheelPicker
+                        android:id="@+id/main_wheel_right"
+                        android:layout_weight="1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        app:wheel_atmospheric="true"
+                        app:wheel_curved="true"
+                        app:wheel_cyclic="true"
+                        app:wheel_data="@array/WheelArrayYear"
+                        app:wheel_item_align="left"
+                        app:wheel_item_text_color="@color/text_grey"
+                        app:wheel_item_text_size="23sp"
+                        app:wheel_selected_item_text_color="@color/text_common" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="15dp"
+                android:layout_marginVertical="25dp"
+                android:background="@drawable/bg_corner_20_blue"
+                android:backgroundTint="@color/blue_light"
+                android:fontFamily="@font/font_noto_sans"
+                android:gravity="center"
+                android:paddingVertical="10dp"
+                android:text="@string/choose"
+                android:textAllCaps="true"
+                android:textColor="@color/back_common_end"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </RelativeLayout>
+
+</LinearLayout>
