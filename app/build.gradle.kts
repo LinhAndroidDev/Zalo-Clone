@@ -93,4 +93,5 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer-dash:1.3.1")
     implementation("androidx.media3:media3-ui:1.3.1")
     implementation("com.github.yuriy-budiyev:code-scanner:2.3.0")
+    implementation("com.github.Baseflow:PhotoView:2.3.0")
 }
