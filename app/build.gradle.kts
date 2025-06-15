@@ -89,6 +89,9 @@ dependencies {
 
     implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
 
-    //Zoom layout
-    implementation("com.otaliastudios:zoomlayout:1.9.0")
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
+    implementation("com.github.yuriy-budiyev:code-scanner:2.3.0")
+    implementation("com.github.Baseflow:PhotoView:2.3.0")
 }

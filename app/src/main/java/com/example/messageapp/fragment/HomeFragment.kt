@@ -18,6 +18,7 @@ import com.example.messageapp.databinding.FragmentHomeBinding
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.service.ChatHeadService
 import com.example.messageapp.utils.AnimatorUtils
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     private val suggestFriendAdapter by lazy { SuggestFriendAdapter() }
     private var listChatAdapter: ListChatAdapter? = null
     private var updateJob: Job? = null
+    private var menuOtherShowing = false
 
     companion object {
         private const val REQUEST_OVERLAY_PERMISSION = 1001
@@ -42,7 +44,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        listChatAdapter = ListChatAdapter()
+        listChatAdapter = ListChatAdapter(viewModel?.shared?.getAuth() ?: "")
         listChatAdapter?.onClickView = { conversation ->
             goToChatFragment(conversation)
         }
@@ -60,6 +62,12 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         }
     }
 
+    override fun initView() {
+        super.initView()
+        // log event: screen_home
+        FirebaseAnalyticsInstance.logHomeScreen()
+    }
+
     override fun onClickView() {
         super.onClickView()
 
@@ -69,6 +77,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
             } else {
                 requestOverlayPermission()
             }
+        }
+
+        binding?.header?.showMenuOther = {
+            menuOtherShowing = !menuOtherShowing
+            binding?.menuOther?.showView(menuOtherShowing)
         }
     }
 

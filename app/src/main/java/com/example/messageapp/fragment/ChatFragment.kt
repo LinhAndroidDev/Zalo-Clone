@@ -22,6 +22,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
@@ -31,21 +32,28 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
+import com.example.messageapp.adapter.ClickPhotoModel
+import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
+import com.example.messageapp.bottom_sheet.BottomSheetRecord
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 @AndroidEntryPoint
 class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() {
@@ -63,32 +71,60 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     }
 
     private val mCallBackClickItem = object : ChatAdapter.CallBackClickItem {
-        override fun longClickItemSender(data: Pair<View, Message>) {
+        override fun onSenderLongClick(data: Pair<View, Message>) {
             showPopupOption(data.first, data.second)
         }
 
-        override fun longClickItemReceiver(data: Pair<View, Message>) {
+        override fun onReceiverLongClick(data: Pair<View, Message>) {
             showPopupOption(data.first, data.second, false)
         }
 
-        override fun clickPhoto(data: Pair<Pair<Message, String>, Boolean>) {
-            val fromSender = data.second
-            val keyId = if (fromSender) viewModel?.shared?.getAuth()
+        override fun onPhotoClick(data: ClickPhotoModel) {
+            val keyId = if (data.fromSender) viewModel?.shared?.getAuth()
                 .toString() else conversation?.friendId.toString()
             val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
-            intent.putExtra(PreviewPhotoActivity.OBJECT_MESSAGE, data.first.first)
-            intent.putExtra(PreviewPhotoActivity.PHOTO_DATA, data.first.second)
-            intent.putExtra(PreviewPhotoActivity.KEY_ID, keyId)
-            activity?.startActivity(intent)
+            val previewPhotoArgument = PreviewPhotoArgument(
+                message = data.message,
+                indexOfPhoto = data.indexOfPhoto,
+                keyId = keyId,
+                photoData = data.photoData
+            )
+            intent.putExtra(PreviewPhotoActivity.PREVIEW_PHOTO_ARGUMENT, previewPhotoArgument)
+            val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                requireActivity(),
+                data.imageView,
+                data.message.time
+            )
+            activity?.startActivity(intent, options.toBundle())
         }
 
-        override fun clickOptionMenuPhoto(msg: Message) {
+        override fun onOptionMenuClick(msg: Message) {
             val bottomSheetOptionPhoto = BottomSheetOptionPhoto()
             bottomSheetOptionPhoto.show(parentFragmentManager, "")
             bottomSheetOptionPhoto.setOnClickOptionPho(object :
                 BottomSheetOptionPhoto.OnClickOptionPhoto {
                 override fun savePhotoOrVideo() {
+                    when (TypeMessage.of(msg.type)) {
+                        TypeMessage.SINGLE_PHOTO -> {
+                            lifecycleScope.launch {
+                                FileUtils.downloadAndSaveImage(context = requireActivity(), imageUrl = msg.singlePhoto[0])
+                            }
+                        }
 
+                        TypeMessage.PHOTOS -> {
+                            lifecycleScope.launch {
+                                viewModel?.saveMultiPhotoWithCombine(requireActivity(), msg.photos)
+                            }
+                        }
+
+                        TypeMessage.AUDIO -> {
+                            lifecycleScope.launch {
+                                FileUtils.downloadAudioFile(requireActivity(), msg.audio ?: "")
+                            }
+                        }
+
+                        else -> {}
+                    }
                 }
 
                 override fun remove() {
@@ -102,6 +138,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun initView() {
         super.initView()
+        // log event: screen_chat
+        FirebaseAnalyticsInstance.logChatScreen()
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
         conversation?.let {
@@ -118,6 +156,10 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 binding?.viewOptions?.isVisible = true
                 binding?.btnSend?.isVisible = false
             }
+        }
+
+        binding?.edtMessage?.setOnFocusChangeListener { _, hasFocus ->
+            viewModel?.updateTyping(conversation?.friendId.toString(), hasFocus)
         }
     }
 
@@ -304,6 +346,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         conversation?.let { cvt ->
             viewModel?.getMessage(friendId = cvt.friendId)
+            viewModel?.checkShowTyping(friendId = cvt.friendId)
 
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -323,6 +366,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                         }
                     }
                 }
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel?.typing?.collect { typing ->
+                binding?.typingView?.isVisible = typing
             }
         }
     }
@@ -369,6 +418,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 val sender = viewModel?.shared?.getAuth().toString()
                 val time = DateUtils.getTimeCurrent()
                 val message = Message(msg, receiver, sender, time)
+                // log event: send_message
+                FirebaseAnalyticsInstance.logSendMessage(messageType = msg, messageLength = msg.length, receiverId = receiver)
                 viewModel?.sendMessage(message = message, time = time, conversation = cvt, sendFirst = isMessageEmpty)
                 binding?.edtMessage?.setText("")
             }
@@ -397,6 +448,23 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 //                REQUEST_CODE_MULTI_PICTURE
 //            )
         }
+
+        binding?.btnMicro?.setOnClickListener {
+            val bottomSheetRecord = BottomSheetRecord()
+            bottomSheetRecord.onRecordListener = { path ->
+                conversation?.let { cvt ->
+                    val file = File(path)
+                    viewModel?.uploadAudio(
+                        friendId = cvt.friendId,
+                        uriAudio = Uri.fromFile(file),
+                        time = DateUtils.getTimeCurrent(),
+                        conversation = cvt,
+                        sendFirst = isMessageEmpty
+                    )
+                }
+            }
+            bottomSheetRecord.show(parentFragmentManager, "")
+        }
     }
 
     override fun onResume() {
@@ -411,4 +479,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         super.onPause()
     }
 
+    override fun onStop() {
+        super.onStop()
+        viewModel?.updateTyping(conversation?.friendId.toString(), false)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel?.updateTyping(conversation?.friendId.toString(), false)
+    }
 }

@@ -2,7 +2,8 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/navigation">
+    android:id="@+id/navigation"
+    app:startDestination="@id/scanQRFragment">
 
     <fragment
         android:id="@+id/splashFragment"
@@ -35,6 +36,13 @@
         <action
             android:id="@+id/action_homeFragment_to_searchFragment"
             app:destination="@id/searchFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_scanQRFragment"
+            app:destination="@id/scanQRFragment"
+            app:enterAnim="@anim/slide_up"
+            app:exitAnim="@anim/no_animation"
+            app:popEnterAnim="@anim/no_animation"
+            app:popExitAnim="@anim/slide_down" />
     </fragment>
     <fragment
         android:id="@+id/phoneBookFragment"
@@ -60,6 +68,13 @@
         <action
             android:id="@+id/action_discoverFragment_to_searchFragment"
             app:destination="@id/searchFragment" />
+        <action
+            android:id="@+id/action_discoverFragment_to_scanQRFragment"
+            app:destination="@id/scanQRFragment"
+            app:enterAnim="@anim/slide_up"
+            app:exitAnim="@anim/no_animation"
+            app:popEnterAnim="@anim/no_animation"
+            app:popExitAnim="@anim/slide_down" />
     </fragment>
     <fragment
         android:id="@+id/diaryFragment"
@@ -69,6 +84,9 @@
         <action
             android:id="@+id/action_diaryFragment_to_searchFragment"
             app:destination="@id/searchFragment" />
+        <action
+            android:id="@+id/action_diaryFragment_to_statusFragment"
+            app:destination="@id/statusFragment" />
     </fragment>
     <fragment
         android:id="@+id/personalFragment"
@@ -149,4 +167,14 @@
         android:name="com.example.messageapp.fragment.SettingFragment"
         android:label="SettingFragment"
         tools:layout="@layout/fragment_setting"/>
+    <fragment
+        android:id="@+id/scanQRFragment"
+        android:name="com.example.messageapp.fragment.ScanQRFragment"
+        android:label="ScanQRFragment"
+        tools:layout="@layout/fragment_scan_q_r" />
+    <fragment
+        android:id="@+id/statusFragment"
+        android:name="com.example.messageapp.fragment.StatusFragment"
+        android:label="StatusFragment"
+        tools:layout="@layout/fragment_status"/>
 </navigation>

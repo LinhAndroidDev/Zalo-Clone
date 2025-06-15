@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/viewRecord"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_sender">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:id="@+id/viewAnimation1"
+            android:layout_margin="10dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#5EB4FF"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/viewAnimation2"
+            android:layout_margin="10dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#5EB4FF"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/btnPlayAudio"
+            android:layout_margin="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="@color/blue">
+
+            <ImageView
+                android:id="@+id/icPlay"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_margin="10dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_play"
+                app:tint="@color/white" />
+        </LinearLayout>
+    </RelativeLayout>
+
+    <ProgressBar
+        android:id="@+id/loading"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_gravity="center"
+        android:layout_marginHorizontal="10dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <com.example.messageapp.library.audiowave.AudioWaveView
+            android:id="@+id/audioWaveView"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:layout_marginEnd="10dp"
+            app:animateExpansion="false"
+            app:chunkHeight="16dp"
+            app:chunkRadius="5dp"
+            app:chunkSpacing="3dp"
+            app:chunkWidth="3dp"
+            app:minChunkHeight="2dp"
+            app:touchable="true"
+            app:waveColor="@color/blue1"
+            app:wavePaint="#DDBFBFBF"/>
+
+        <TextView
+            android:id="@+id/txtDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:fontFamily="@font/font_noto_sans"
+            android:text="00:00"
+            android:textColor="@color/text_grey"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            tools:ignore="SmallSp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/txtDurationListenAgain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/margin_20"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginEnd="20dp"
+        android:fontFamily="@font/font_noto_sans"
+        android:text="00:00"
+        android:textColor="@color/text_grey"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:ignore="SmallSp" />
+</LinearLayout>

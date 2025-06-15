@@ -8,7 +8,9 @@ import java.util.TimeZone
 
 object DateUtils {
     private const val DATE_TIME = "yyyy_MM_dd_HH_mm_ss"
+    private const val DATE_TIME_APP = "dd-MM-yyyy • HH:mm"
     private const val HOUR_TIME = "HH:mm"
+    const val MINUTE_TIME = "mm:ss"
 
     fun getTimeCurrent(): String {
         val sdf = SimpleDateFormat(DATE_TIME, Locale.getDefault())
@@ -21,6 +23,18 @@ object DateUtils {
         val output = SimpleDateFormat(HOUR_TIME, Locale.getDefault())
         val date = input.parse(time)
         return output.format(date ?: "")
+    }
+
+    fun formatDateTimeApp(input: String): String {
+        val inputFormat = SimpleDateFormat(DATE_TIME, Locale.getDefault())
+        val outputFormat = SimpleDateFormat(DATE_TIME_APP, Locale.getDefault())
+
+        return try {
+            val date = inputFormat.parse(input)
+            outputFormat.format(date!!)
+        } catch (e: Exception) {
+            "Invalid date"
+        }
     }
 
     fun formatTime(input: String): String {

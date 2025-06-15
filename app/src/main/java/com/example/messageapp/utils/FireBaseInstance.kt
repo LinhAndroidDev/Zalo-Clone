@@ -13,6 +13,7 @@ import com.example.messageapp.remote.Token
 import com.example.messageapp.remote.request.Data
 import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
+import com.example.messageapp.utils.FileUtils.compressImage
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -38,10 +39,18 @@ object FireBaseInstance {
     private val storage by lazy { Firebase.storage.reference }
 
     private const val PATH_USER = "users"
+    private const val PATH_EMAIL = "email"
+    private const val PATH_PASSWORD = "password"
+    private const val PATH_AVATAR = "avatar"
     private const val PATH_MESSAGE = "messages"
     private const val PATH_CHAT = "chats"
     private const val PATH_TOKEN = "Tokens"
+    private const val PATH_IMAGE_COVER = "imageCover"
     private const val PATH_IMAGE = "images"
+    private const val PATH_PHOTO = "photo"
+    private const val PATH_EMOTION = "emotion"
+    private const val PATH_AUDIO = "audios"
+    private const val PATH_TYPING = "typing"
 
     /**
      * This function is used to check the login of the user
@@ -58,8 +67,8 @@ object FireBaseInstance {
         failure: (String) -> Unit
     ) {
         db.collection(PATH_USER)
-            .whereEqualTo("email", email)
-            .whereEqualTo("password", password)
+            .whereEqualTo(PATH_EMAIL, email)
+            .whereEqualTo(PATH_PASSWORD, password)
             .get()
             .addOnSuccessListener { querySnapshot ->
                 success.invoke(querySnapshot)
@@ -176,7 +185,6 @@ object FireBaseInstance {
      * @param conversation data conversation
      * @param nameSender name of sender
      * @param type type of message
-     * @param idRoom id of conversation
      * @param numberUnSeen quantity of message unseen
      */
     private fun handleSendMessage(
@@ -208,6 +216,10 @@ object FireBaseInstance {
 
                             TypeMessage.SINGLE_PHOTO -> {
                                 "$nameSender đã gửi 1 ảnh cho bạn"
+                            }
+
+                            TypeMessage.AUDIO -> {
+                                "$nameSender đã gửi 1 file ghi âm cho bạn"
                             }
                         },
                         senderId = userId
@@ -252,6 +264,10 @@ object FireBaseInstance {
                 TypeMessage.SINGLE_PHOTO -> {
                     "Bạn đã gửi 1 ảnh cho ${conversation.name}"
                 }
+
+                TypeMessage.AUDIO -> {
+                    "Bạn đã gửi 1 file ghi âm cho ${conversation.name}"
+                }
             },
             name = conversation.name,
             person = "Bạn",
@@ -267,7 +283,23 @@ object FireBaseInstance {
         //Create Data Conversation For Receiver
         val conversationFriend = Conversation(
             friendId = userId,
-            message = if (type == TypeMessage.MESSAGE) message.message else "$nameSender đã gửi ảnh cho bạn",
+            message = when (type) {
+                TypeMessage.MESSAGE -> {
+                    message.message
+                }
+
+                TypeMessage.PHOTOS -> {
+                    "$nameSender đã gửi ảnh cho bạn"
+                }
+
+                TypeMessage.SINGLE_PHOTO -> {
+                    "$nameSender đã gửi 1 ảnh cho bạn"
+                }
+
+                TypeMessage.AUDIO -> {
+                    "$nameSender đã gửi 1 file ghi âm cho bạn"
+                }
+            },
             name = nameSender,
             person = nameSender,
             sender = userId,
@@ -385,7 +417,7 @@ object FireBaseInstance {
     fun updateAvatarUser(avatar: String, userId: String) {
         db.collection(PATH_USER)
             .document(userId)
-            .update("avatar", avatar)
+            .update(PATH_AVATAR, avatar)
     }
 
     /**
@@ -464,24 +496,21 @@ object FireBaseInstance {
      * This function is used to upload list photo to the Storage Firebase
      * @param context context of activity
      * @param uris list uri of photo
-     * @param friendId key auth of friend
-     * @param userId key auth of user
+     * @param roomId list id room of photo
      * @param process callback when upload is processing
      * @param success callback when upload is successful
      */
     fun uploadListPhoto(
         context: Context,
         uris: ArrayList<Uri>,
-        friendId: String,
-        userId: String,
+        roomId: List<String>,
         process: (Pair<Int, Double>) -> Unit,
         success: (ArrayList<String>) -> Unit
     ) = CoroutineScope(Dispatchers.IO).launch {
-            val idRoom = listOf(friendId, userId).sorted()
             val photos = arrayListOf<String>()
             val deferredList = uris.map { uri ->
                 async {
-                    val photoUrl = uploadPhoto(context, uri, idRoom)
+                    val photoUrl = uploadPhoto(context, uri, roomId)
                     photoUrl?.let { photos.add(it) }
                 }
             }
@@ -497,7 +526,7 @@ object FireBaseInstance {
      */
     private suspend fun uploadPhoto(context: Context, uri: Uri, idRoom: List<String>): String? {
         return suspendCoroutine { continuation ->
-            val storageRef = storage.child("photo")
+            val storageRef = storage.child(PATH_PHOTO)
                 .child(idRoom.toString())
                 .child(UUID.randomUUID().toString())
 
@@ -513,6 +542,26 @@ object FireBaseInstance {
                     continuation.resumeWithException(it)  // Đảm bảo xử lý lỗi
                 }
         }
+    }
+
+    /**
+     * This function is used to upload audio to the Storage Firebase
+     * @param roomId id room of audio
+     * @param uriAudio uri of audio
+     * @param success callback when upload is successful
+     */
+    fun uploadAudio(roomId: List<String>, uriAudio: Uri, success: (String) -> Unit) {
+        storage.child(PATH_AUDIO)
+            .child(roomId.toString())
+            .child(UUID.randomUUID().toString())
+            .putFile(uriAudio)
+            .addOnSuccessListener { taskSnapshot ->
+                taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
+                    success.invoke(uri.toString())
+                }
+            }.addOnFailureListener {
+                Log.e("Upload Audio", "Fail")
+            }
     }
 
     /**
@@ -538,7 +587,7 @@ object FireBaseInstance {
     fun updateImageCover(userId: String, imageCover: String) {
         db.collection(PATH_USER)
             .document(userId)
-            .update("imageCover", imageCover)
+            .update(PATH_IMAGE_COVER, imageCover)
     }
 
     /**
@@ -578,8 +627,20 @@ object FireBaseInstance {
             .collection(PATH_CHAT)
             .document(time)
             .set(
-                mapOf("emotion" to data),
-                SetOptions.mergeFields("emotion")
+                mapOf(PATH_EMOTION to data),
+                SetOptions.mergeFields(PATH_EMOTION)
             )
+    }
+
+    /**
+     * This function is used to update typing message for conversation
+     * @param userId key auth of user
+     * @param friendId key auth of friend
+     * @param typing boolean value to indicate if the user is typing
+     */
+    fun updateTypingMessage(userId: String, friendId: String, typing: Boolean) {
+        db.collection("Conversation${userId}")
+            .document(friendId)
+            .update(PATH_TYPING, typing)
     }
 }

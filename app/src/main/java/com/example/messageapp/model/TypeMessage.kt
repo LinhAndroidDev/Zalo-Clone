@@ -3,7 +3,8 @@ package com.example.messageapp.model
 enum class TypeMessage(val rawValue: Int) {
     MESSAGE(0),
     PHOTOS(1),
-    SINGLE_PHOTO(2);
+    SINGLE_PHOTO(2),
+    AUDIO(3);
 
     companion object {
         fun of(value: Int): TypeMessage {

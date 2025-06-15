@@ -2,25 +2,19 @@ package com.example.messageapp.utils
 
 import android.content.Context
 import android.content.ContextWrapper
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.provider.MediaStore
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
-import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
-import com.bumptech.glide.Glide
-import com.example.messageapp.R
-import java.io.ByteArrayOutputStream
 import java.text.Normalizer
 import java.util.regex.Pattern
 
@@ -44,11 +38,11 @@ fun View.showViewAboveKeyBoard(rootView: View) {
         val r = Rect()
         rootView.getWindowVisibleDisplayFrame(r)
         val screenHeight = rootView.height
-        val keypadHeight = screenHeight - r.bottom
+        val keypadHeight = screenHeight - r.height()
 
         if (keypadHeight > screenHeight * 0.15) {
             // Bàn phím đã xuất hiện
-            this.translationY = -keypadHeight.toFloat() - this.height - 15 // Đẩy view lên
+            this.translationY = -keypadHeight.toFloat()
         } else {
             // Bàn phím đã ẩn
             this.translationY = 0f
@@ -79,13 +73,6 @@ fun Context?.getFragmentActivity(): FragmentActivity? {
     return null
 }
 
-fun Context.compressImage(uri: Uri): ByteArray {
-    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
-    val outputStream = ByteArrayOutputStream()
-    bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
-    return outputStream.toByteArray()
-}
-
 fun Fragment.backRemoveFragmentCurrent(toId: Int) {
     val navController = findNavController()
     val currentDestination = navController.currentDestination
@@ -97,27 +84,17 @@ fun Fragment.backRemoveFragmentCurrent(toId: Int) {
     }
 }
 
-fun Context.loadImg(url: String, cir: ImageView, imgDefault: Int = R.mipmap.ic_launcher) {
-    Glide.with(this)
-        .load(url)
-        .placeholder(imgDefault)
-        .error(imgDefault)
-        .into(cir)
-}
-
 fun getImageDimensions(context: Context, imageUri: Uri): Pair<Int, Int>? {
     val inputStream = context.contentResolver.openInputStream(imageUri) ?: return null
-    return try {
+    return inputStream.use { stream ->
         // Chỉ lấy thông tin kích thước của ảnh
         val options = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
-        BitmapFactory.decodeStream(inputStream, null, options)
+        BitmapFactory.decodeStream(stream, null, options)
 
         // Trả về chiều rộng và chiều cao của ảnh
         Pair(options.outWidth, options.outHeight)
-    } finally {
-        inputStream.close()
     }
 }
 
@@ -125,4 +102,8 @@ fun removeAccent(input: String): String {
     val normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
     val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
     return pattern.matcher(normalized).replaceAll("")
+}
+
+fun getFileNameFromUrl(url: String): String {
+    return url.substringAfterLast("/")
 }
