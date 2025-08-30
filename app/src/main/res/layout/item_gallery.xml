@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="2dp">
+
+    <com.example.messageapp.custom.SquareImageView
+        android:id="@+id/imgGallery"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:id="@+id/bgCoverVideo"
+        android:background="#45000000"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <ImageView
+        android:id="@+id/icVideo"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_play"
+        android:visibility="gone"
+        app:tint="@color/white" />
+
+    <TextView
+        android:id="@+id/tvDuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="8dp"
+        android:fontFamily="@font/font_noto_sans"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="2dp"
+        android:text="00:00"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <View
+        android:background="@drawable/bg_shadow"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"/>
+
+    <FrameLayout
+        android:layout_gravity="top|end"
+        android:layout_margin="8dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <View
+            android:id="@+id/bgCoverCheck"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="@color/white"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:visibility="gone"/>
+
+        <ImageView
+            android:id="@+id/icCheck"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_un_check_gallery"
+            android:visibility="visible" />
+    </FrameLayout>
+
+</FrameLayout>

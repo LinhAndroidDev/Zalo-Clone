@@ -1,5 +1,12 @@
 package com.example.messageapp.fragment
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiscoverBinding
@@ -7,9 +14,27 @@ import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.DiscoverFragmentViewModel
+import com.example.messageapp.bottom_sheet.GalleryBottomSheet
+import com.google.android.material.snackbar.Snackbar
 
 class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_discover
+
+    private var galleryBottomSheet: GalleryBottomSheet? = null
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            showGalleryBottomSheet()
+        } else {
+            Snackbar.make(
+                binding?.root ?: return@registerForActivityResult,
+                "Cần quyền truy cập thư viện để xem ảnh và video",
+                Snackbar.LENGTH_LONG
+            ).show()
+        }
+    }
 
     override fun initView() {
         super.initView()
@@ -24,5 +49,59 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
         }
 
         binding?.viewParent?.let { AnimatorUtils.fadeInViewItem(requireActivity(), it) }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupClickListeners()
+    }
+
+    private fun setupClickListeners() {
+        binding?.btnGallery?.setOnClickListener {
+            checkPermissionAndShowGallery()
+        }
+    }
+
+    private fun checkPermissionAndShowGallery() {
+        when {
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                showGalleryBottomSheet()
+            }
+            shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE) -> {
+                Snackbar.make(
+                    binding?.root ?: return,
+                    "Cần quyền truy cập thư viện để xem ảnh và video",
+                    Snackbar.LENGTH_LONG
+                ).show()
+            }
+            else -> {
+                requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }
+    }
+
+    private fun showGalleryBottomSheet() {
+        galleryBottomSheet = GalleryBottomSheet(
+            context = requireContext(),
+            coroutineScope = lifecycleScope
+        )
+        
+        galleryBottomSheet?.show { selectedItems ->
+            // Handle selected items
+            Snackbar.make(
+                binding?.root ?: return@show,
+                "Đã chọn ${selectedItems.size} items",
+                Snackbar.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        galleryBottomSheet?.dismiss()
+        galleryBottomSheet = null
     }
 }

@@ -135,6 +135,18 @@
                 app:show_according="true"
                 app:title="@string/mini_app" />
 
+            <com.example.messageapp.custom.DividerCommon
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <com.example.messageapp.custom.ItemViewProfile
+                android:id="@+id/btnGallery"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/ic_image"
+                app:show_according="false"
+                app:title="Thư viện ảnh và video" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
