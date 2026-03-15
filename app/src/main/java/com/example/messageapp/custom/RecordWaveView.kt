@@ -13,11 +13,18 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.example.messageapp.R
 import com.example.messageapp.databinding.RecordWaveViewBinding
+import com.example.messageapp.library.audiowave.Sampler
 import com.example.messageapp.utils.AudioRecorderManager
+import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Locale
+import android.util.LruCache
 
 enum class TypeRecord(val value: Int) {
     SENDER(0),
@@ -31,6 +38,11 @@ enum class TypeRecord(val value: Int) {
     }
 }
 
+data class AudioPlaybackState(
+    val progress: Float = 0f,
+    val positionMs: Int = 0
+)
+
 @SuppressLint("ResourceType")
 class RecordWaveView @JvmOverloads constructor(
     context: Context,
@@ -42,6 +54,12 @@ class RecordWaveView @JvmOverloads constructor(
     private var isPlaying = false
     private var audioRecorder: AudioRecorderManager? = null
     private var recordedFilePath: String? = null
+    private var audioLoadJob: Job? = null
+    private var currentAudioKey: String? = null
+    private var isAudioLoading = false
+    private var isAudioReady = false
+    private var playbackState = AudioPlaybackState()
+    private var onPlaybackStateChanged: ((AudioPlaybackState) -> Unit)? = null
     private var handlerAnimation = Handler()
     private var runnable = object : Runnable {
         override fun run() {
@@ -62,9 +80,16 @@ class RecordWaveView @JvmOverloads constructor(
                         binding?.viewAnimation2?.alpha = 1f
                     }
             }
-            handlerAnimation.postDelayed(this, 1500)
+            if (isPlaying) {
+                handlerAnimation.postDelayed(this, 1500)
+            }
         }
 
+    }
+
+    companion object {
+        // Cache sampled waveform by file path + chunk count to reduce rebinding cost.
+        private val waveformCache = LruCache<String, ByteArray>(120)
     }
 
     init {
@@ -75,7 +100,6 @@ class RecordWaveView @JvmOverloads constructor(
         )
         binding?.let { addView(it.root) }
         audioRecorder = AudioRecorderManager()
-        runnable.run()
 
         val array = context.theme.obtainStyledAttributes(attrs, R.styleable.RecordWaveView, 0, 0)
         val type = array.getInt(R.styleable.RecordWaveView_type, 0)
@@ -114,68 +138,188 @@ class RecordWaveView @JvmOverloads constructor(
         }
 
         binding?.btnPlayAudio?.setOnClickListener {
+            if (isAudioLoading || !isAudioReady) return@setOnClickListener
+
             if (isPlaying) {
+                val currentPosition = audioRecorder?.currentPositionMs() ?: playbackState.positionMs
+                playbackState = playbackState.copy(positionMs = currentPosition)
+                onPlaybackStateChanged?.invoke(playbackState)
                 audioRecorder?.pauseAudio()
                 binding?.icPlay?.setImageResource(R.drawable.ic_play)
                 isPlaying = false
+                stopAnimationLoop()
             } else {
+                val filePath = recordedFilePath.orEmpty()
+                val isPlayablePath =
+                    filePath.isNotBlank() && (File(filePath).exists() || filePath.startsWith("http"))
+                if (!isPlayablePath) {
+                    binding?.icPlay?.setImageResource(R.drawable.ic_play)
+                    isPlaying = false
+                    return@setOnClickListener
+                }
                 isPlaying = true
                 binding?.icPlay?.setImageResource(R.drawable.ic_pause)
-                findViewTreeLifecycleOwner()?.let { own ->
-                    audioRecorder?.playRecordedAudio(
-                        recordedFilePath ?: "",
-                        binding?.audioWaveView,
-                        own.lifecycleScope,
-                        onFinish = {
-                            binding?.icPlay?.setImageResource(R.drawable.ic_play)
-                            isPlaying = false
-                        },
-                        timeCurrent = {
-                            binding?.txtDuration?.text = it
-                            binding?.txtDurationListenAgain?.text = it
-                        })
+                startAnimationLoop()
+                val scope =
+                    findViewTreeLifecycleOwner()?.lifecycleScope
+                        ?: (context as? AppCompatActivity)?.lifecycleScope
+                if (scope == null) {
+                    binding?.icPlay?.setImageResource(R.drawable.ic_play)
+                    isPlaying = false
+                    stopAnimationLoop()
+                    return@setOnClickListener
                 }
+                audioRecorder?.playRecordedAudio(
+                    filePath,
+                    binding?.audioWaveView,
+                    scope,
+                    onFinish = {
+                        playbackState = AudioPlaybackState(progress = 100f, positionMs = 0)
+                        onPlaybackStateChanged?.invoke(playbackState)
+                        updateDurationText(0)
+                        binding?.icPlay?.setImageResource(R.drawable.ic_play)
+                        isPlaying = false
+                        stopAnimationLoop()
+                    },
+                    timeCurrent = {
+                        binding?.txtDuration?.text = it
+                        binding?.txtDurationListenAgain?.text = it
+                    },
+                    startPositionMs = playbackState.positionMs,
+                    onProgress = { positionMs, progress ->
+                        playbackState = playbackState.copy(progress = progress, positionMs = positionMs)
+                        onPlaybackStateChanged?.invoke(playbackState)
+                    }
+                )
             }
         }
     }
 
-    fun loadDataWaveView(context: Context, path: String, fromUrl: Boolean = true) {
-        binding?.btnPlayAudio?.isVisible = false
-        binding?.viewAnimation1?.isVisible = false
-        binding?.viewAnimation2?.isVisible = false
-        binding?.loading?.isVisible = true
+    fun loadDataWaveView(
+        context: Context,
+        path: String,
+        fromUrl: Boolean = true,
+        state: AudioPlaybackState? = null,
+        onStateChanged: ((AudioPlaybackState) -> Unit)? = null
+    ) {
+        audioLoadJob?.cancel()
+        audioRecorder?.pauseAudio()
+        isPlaying = false
+        stopAnimationLoop()
+        recordedFilePath = null
+        currentAudioKey = null
+        playbackState = state ?: AudioPlaybackState()
+        onPlaybackStateChanged = onStateChanged
+        isAudioReady = false
+        isAudioLoading = false
+        binding?.icPlay?.setImageResource(R.drawable.ic_play)
+        currentAudioKey = "${fromUrl}_$path"
+        val requestKey = currentAudioKey
+        val lifecycleScope =
+            findViewTreeLifecycleOwner()?.lifecycleScope
+                ?: (context as? AppCompatActivity)?.lifecycleScope
+        if (path.isBlank() || lifecycleScope == null) {
+            showLoading(false)
+            return
+        }
 
-        (context as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
-            recordedFilePath = path
+        showLoading(true)
+
+        audioLoadJob = lifecycleScope.launch(Dispatchers.IO) {
+            val localAudioFile = if (fromUrl) {
+                FileUtils.getOrDownloadAudioFile(context, path)
+            } else {
+                File(path)
+            }
+            recordedFilePath = localAudioFile?.absolutePath
             val byteArray = if (fromUrl) {
-                FileUtils.convertMp3UrlToByteArray(recordedFilePath ?: "")
+                localAudioFile?.let { FileUtils.fileToByteArray(it.absolutePath) }
             } else {
                 FileUtils.fileToByteArray(recordedFilePath ?: "")
             }
 
             withContext(Dispatchers.Main) {
+                if (requestKey != currentAudioKey) return@withContext
                 byteArray?.let {
-                    binding?.audioWaveView?.progress = 0f
-                    binding?.audioWaveView?.setRawData(it, callback = {
-                        binding?.btnPlayAudio?.isVisible = true
-                        binding?.viewAnimation1?.isVisible = true
-                        binding?.viewAnimation2?.isVisible = true
-                        binding?.loading?.isVisible = false
+                    val waveView = binding?.audioWaveView
+                    val chunksCount = (waveView?.chunksCount ?: 0).coerceAtLeast(1)
+                    val waveformKey = "${recordedFilePath.orEmpty()}_$chunksCount"
+                    val cachedScaledData = waveformCache.get(waveformKey)
+
+                    if (cachedScaledData != null && waveView != null) {
+                        waveView.scaledData = cachedScaledData
+                        waveView.progress = playbackState.progress.coerceIn(0f, 100f)
+                        updateDurationText(playbackState.positionMs)
+                        isAudioReady = true
+                        showLoading(false)
+                        return@withContext
+                    }
+
+                    waveView?.progress = 0f
+                    waveView?.setRawData(it, callback = {
+                        if (requestKey != currentAudioKey) return@setRawData
+                        waveView?.scaledData?.let { scaled ->
+                            waveformCache.put(waveformKey, scaled)
+                        }
+                        waveView?.progress = playbackState.progress.coerceIn(0f, 100f)
+                        updateDurationText(playbackState.positionMs)
+                        isAudioReady = true
+                        showLoading(false)
                     })
+                } ?: run {
+                    isAudioReady = false
+                    showLoading(false)
                 }
             }
         }
     }
 
     fun pause() {
+        val currentPosition = audioRecorder?.currentPositionMs() ?: playbackState.positionMs
+        playbackState = playbackState.copy(positionMs = currentPosition)
+        onPlaybackStateChanged?.invoke(playbackState)
         audioRecorder?.pauseAudio()
+        binding?.icPlay?.setImageResource(R.drawable.ic_play)
+        isPlaying = false
+        stopAnimationLoop()
     }
 
     fun destroy() {
+        audioLoadJob?.cancel()
         audioRecorder?.stopAudio()
         audioRecorder = null
+        recordedFilePath = null
+        currentAudioKey = null
+        isAudioReady = false
+        isAudioLoading = false
         binding = null
         handlerAnimation.removeCallbacks(runnable)
         isPlaying = false
+    }
+
+    private fun showLoading(loading: Boolean) {
+        isAudioLoading = loading
+        binding?.loading?.isVisible = loading
+        binding?.btnPlayAudio?.isVisible = !loading && isAudioReady
+        binding?.btnPlayAudio?.isEnabled = !loading && isAudioReady
+        binding?.viewAnimation1?.isVisible = !loading && isAudioReady
+        binding?.viewAnimation2?.isVisible = !loading && isAudioReady
+    }
+
+    private fun updateDurationText(positionMs: Int) {
+        val safePosition = if (positionMs < 0) 0 else positionMs
+        val timeText =
+            SimpleDateFormat(DateUtils.MINUTE_TIME, Locale.getDefault()).format(safePosition.toLong())
+        binding?.txtDuration?.text = timeText
+        binding?.txtDurationListenAgain?.text = timeText
+    }
+
+    private fun startAnimationLoop() {
+        handlerAnimation.removeCallbacks(runnable)
+        handlerAnimation.post(runnable)
+    }
+
+    private fun stopAnimationLoop() {
+        handlerAnimation.removeCallbacks(runnable)
     }
 }

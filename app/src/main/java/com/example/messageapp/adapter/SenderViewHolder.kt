@@ -8,6 +8,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter.ViewTypeMessage
+import com.example.messageapp.custom.AudioPlaybackState
 import com.example.messageapp.databinding.ItemChatSenderBinding
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
@@ -60,9 +61,20 @@ class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v
         showViewMessage(TypeMessage.SINGLE_PHOTO)
     }
 
-    override fun initViewAudio(context: Context, message: Message, longClick: (View) -> Unit) {
+    override fun initViewAudio(
+        context: Context,
+        message: Message,
+        state: AudioPlaybackState?,
+        onStateChanged: (AudioPlaybackState) -> Unit,
+        longClick: (View) -> Unit
+    ) {
         showViewMessage(TypeMessage.AUDIO)
-        v.viewRecordWave.loadDataWaveView(context, path = message.audio ?: "")
+        v.viewRecordWave.loadDataWaveView(
+            context = context,
+            path = message.audio ?: "",
+            state = state,
+            onStateChanged = onStateChanged
+        )
         v.viewRecordWave.setOnLongClickListener {
             longClick.invoke(it)
             false

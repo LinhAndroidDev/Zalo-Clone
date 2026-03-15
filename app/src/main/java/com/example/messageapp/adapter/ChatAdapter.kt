@@ -17,6 +17,7 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter.BaseDiffUtil
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.helper.screenWidth
+import com.example.messageapp.custom.AudioPlaybackState
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.FileUtils.loadImg
@@ -39,8 +40,13 @@ class ChatAdapter(
     private val friendId: String,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
+    private val audioPlaybackStateMap = hashMapOf<String, AudioPlaybackState>()
     var seen: Boolean = false
     private var mCallBack: CallBackClickItem? = null
+
+    init {
+        setHasStableIds(true)
+    }
 
     /**
      * This function used to set on click item in chat adapter
@@ -126,7 +132,11 @@ class ChatAdapter(
                     }
 
                     TypeMessage.AUDIO -> {
-                        holder.initViewAudio(context, message) {
+                        val key = buildAudioKey(message)
+                        val state = audioPlaybackStateMap[key]
+                        holder.initViewAudio(context, message, state, { newState ->
+                            audioPlaybackStateMap[key] = newState
+                        }) {
                             mCallBack?.onOptionMenuClick(message)
                         }
                     }
@@ -160,7 +170,11 @@ class ChatAdapter(
                     }
 
                     TypeMessage.AUDIO -> {
-                        holder.initViewAudio(context, message) {
+                        val key = buildAudioKey(message)
+                        val state = audioPlaybackStateMap[key]
+                        holder.initViewAudio(context, message, state, { newState ->
+                            audioPlaybackStateMap[key] = newState
+                        }) {
                             mCallBack?.onOptionMenuClick(message)
                         }
                     }
@@ -299,6 +313,28 @@ class ChatAdapter(
         return if (messages[position].sender != friendId) VIEW_SENDER else VIEW_RECEIVER
     }
 
+    override fun getItemId(position: Int): Long {
+        return messages[position].time.hashCode().toLong()
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        when (holder) {
+            is SenderViewHolder -> holder.v.viewRecordWave.pause()
+            is ReceiverViewHolder -> holder.v.viewRecordWave.pause()
+        }
+    }
+
+    override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewDetachedFromWindow(holder)
+        when (holder) {
+            is SenderViewHolder -> holder.v.viewRecordWave.pause()
+            is ReceiverViewHolder -> holder.v.viewRecordWave.pause()
+        }
+    }
+
+    private fun buildAudioKey(message: Message): String = "${message.time}_${message.audio.orEmpty()}"
+
     /**
      * This interface used to handle click item in chat adapter
      */
@@ -316,6 +352,12 @@ class ChatAdapter(
         fun initViewMessage(context: Context, message: Message, longClick: (View) -> Unit)
         fun initViewMultiPhoto(context: Context)
         fun initViewSinglePhoto(context: Context)
-        fun initViewAudio(context: Context, message: Message, longClick: (View) -> Unit)
+        fun initViewAudio(
+            context: Context,
+            message: Message,
+            state: AudioPlaybackState?,
+            onStateChanged: (AudioPlaybackState) -> Unit,
+            longClick: (View) -> Unit
+        )
     }
 }
