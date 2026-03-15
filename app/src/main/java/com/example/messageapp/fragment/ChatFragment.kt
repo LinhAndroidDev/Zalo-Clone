@@ -37,6 +37,7 @@ import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.bottom_sheet.BottomSheetRecord
+import com.example.messageapp.bottom_sheet.BottomSheetSticker
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
@@ -464,6 +465,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 }
             }
             bottomSheetRecord.show(parentFragmentManager, "")
+        }
+
+        binding?.btnSticker?.setOnClickListener {
+            val bottomSheetSticker = BottomSheetSticker()
+            bottomSheetSticker.show(parentFragmentManager, "")
         }
     }
 

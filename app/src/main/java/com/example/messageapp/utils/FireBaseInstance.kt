@@ -6,6 +6,7 @@ import android.util.Log
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.Sticker
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.User
 import com.example.messageapp.remote.ApiClient
@@ -51,6 +52,7 @@ object FireBaseInstance {
     private const val PATH_EMOTION = "emotion"
     private const val PATH_AUDIO = "audios"
     private const val PATH_TYPING = "typing"
+    private const val PATH_STICKER = "sticker"
 
     /**
      * This function is used to check the login of the user
@@ -642,5 +644,27 @@ object FireBaseInstance {
         db.collection("Conversation${userId}")
             .document(friendId)
             .update(PATH_TYPING, typing)
+    }
+
+    fun getSticker(sticker: Sticker, onSuccess: (List<String>) -> Unit) {
+        if (sticker == Sticker.CONGRATULATION) {
+            Log.e("getSticker", "init")
+        }
+        val stickerPaths = arrayListOf<String>()
+        db.collection(PATH_STICKER)
+            .document(sticker.value)
+            .get()
+            .addOnSuccessListener {
+                it.data?.map { doc ->
+                    if (sticker == Sticker.CONGRATULATION) {
+                        Log.e("getSticker", "key: ${doc.key}, value: ${doc.value}")
+                    }
+                    stickerPaths.add(doc.key)
+                }
+                onSuccess.invoke(stickerPaths)
+            }
+            .addOnFailureListener {
+                Log.e("getSticker", it.message.toString())
+            }
     }
 }
