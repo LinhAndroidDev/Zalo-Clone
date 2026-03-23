@@ -20,7 +20,6 @@ import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -29,6 +28,7 @@ import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
 import java.util.HashMap
 import java.util.UUID
 import kotlin.coroutines.resume
@@ -37,7 +37,6 @@ import kotlin.coroutines.suspendCoroutine
 
 object FireBaseInstance {
     private val db by lazy { Firebase.firestore }
-    private val storage by lazy { Firebase.storage.reference }
 
     private const val PATH_USER = "users"
     private const val PATH_EMAIL = "email"
@@ -399,16 +398,20 @@ object FireBaseInstance {
      * @param success callback when upload is successful
      */
     fun uploadImage(context: Context, uriPhoto: Uri, success: (String) -> Unit) {
-        storage.child(PATH_IMAGE)
-            .child(UUID.randomUUID().toString())
-            .putBytes(context.compressImage(uriPhoto))
-            .addOnSuccessListener { taskSnapshot->
-                taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
-                    success.invoke(uri.toString())
-                }
-            }.addOnFailureListener {
-                Log.e("Upload Photo", "Fail")
+        val bytes = context.compressImage(uriPhoto)
+        val fileName = "${UUID.randomUUID()}.jpg"
+        val folder = PATH_IMAGE // Firebase path: images/*
+
+        CloudinaryManager.uploadBytes(
+            fileBytes = bytes,
+            fileName = fileName,
+            mimeType = "image/jpeg",
+            folder = folder,
+            onSuccess = success,
+            onFailure = { e ->
+                Log.e("Check fail uploadImage Cloudinary", "uploadImage failed: ${e.message}", e)
             }
+        )
     }
 
     /**
@@ -528,21 +531,27 @@ object FireBaseInstance {
      */
     private suspend fun uploadPhoto(context: Context, uri: Uri, idRoom: List<String>): String? {
         return suspendCoroutine { continuation ->
-            val storageRef = storage.child(PATH_PHOTO)
-                .child(idRoom.toString())
-                .child(UUID.randomUUID().toString())
+            try {
+                val bytes = context.compressImage(uri)
+                val fileName = "${UUID.randomUUID()}.jpg"
+                // Firebase path: photo/<roomId.toString()>/*
+                val folder = "$PATH_PHOTO/$idRoom"
 
-            storageRef.putBytes(context.compressImage(uri))
-                .addOnSuccessListener { taskSnapshot ->
-                    taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
-                        continuation.resume(uri.toString())  // Trả về URL của ảnh
-                    }.addOnFailureListener {
-                        continuation.resumeWithException(it)  // Đảm bảo xử lý lỗi
+                CloudinaryManager.uploadBytes(
+                    fileBytes = bytes,
+                    fileName = fileName,
+                    mimeType = "image/jpeg",
+                    folder = folder,
+                    onSuccess = { url ->
+                        continuation.resume(url)
+                    },
+                    onFailure = { e ->
+                        continuation.resumeWithException(e)
                     }
-                }
-                .addOnFailureListener {
-                    continuation.resumeWithException(it)  // Đảm bảo xử lý lỗi
-                }
+                )
+            } catch (t: Throwable) {
+                continuation.resumeWithException(t)
+            }
         }
     }
 
@@ -553,17 +562,32 @@ object FireBaseInstance {
      * @param success callback when upload is successful
      */
     fun uploadAudio(roomId: List<String>, uriAudio: Uri, success: (String) -> Unit) {
-        storage.child(PATH_AUDIO)
-            .child(roomId.toString())
-            .child(UUID.randomUUID().toString())
-            .putFile(uriAudio)
-            .addOnSuccessListener { taskSnapshot ->
-                taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
-                    success.invoke(uri.toString())
-                }
-            }.addOnFailureListener {
-                Log.e("Upload Audio", "Fail")
+        val audioFilePath = uriAudio.path
+        val audioFile = audioFilePath?.let { File(it) }
+        val bytes = audioFile?.takeIf { it.exists() }?.readBytes()
+
+        if (bytes == null) {
+            Log.e(
+                "Check fail uploadAudio Cloudinary",
+                "uploadAudio failed: cannot read file from uri=$uriAudio path=$audioFilePath"
+            )
+            return
+        }
+
+        val fileName = "${UUID.randomUUID()}.mp3"
+        // Firebase path: audios/<roomId.toString()>/*
+        val folder = "$PATH_AUDIO/$roomId"
+
+        CloudinaryManager.uploadBytes(
+            fileBytes = bytes,
+            fileName = fileName,
+            mimeType = "audio/mpeg",
+            folder = folder,
+            onSuccess = success,
+            onFailure = { e ->
+                Log.e("Check fail uploadAudio Cloudinary", "uploadAudio failed: ${e.message}", e)
             }
+        )
     }
 
     /**
