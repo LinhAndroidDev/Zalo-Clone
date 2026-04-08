@@ -1,114 +1,162 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <RelativeLayout xmlns:tools="http://schemas.android.com/tools"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/white"
-        android:orientation="vertical"
         tools:context=".fragment.StatusFragment">
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:id="@+id/layoutHeaderStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@color/grey_emotion"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="30dp"
+            android:paddingBottom="10dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/btnClose"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginHorizontal="15dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_close"
+                app:tint="@color/grey" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:background="@color/grey_emotion"
-                android:gravity="center_vertical"
-                android:paddingTop="30dp"
-                android:paddingBottom="5dp">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <ImageView
-                    android:id="@+id/btnClose"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_marginHorizontal="15dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_close"
-                    app:tint="@color/grey" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/font_noto_sans"
+                    android:text="Tạo bài viết"
+                    android:textColor="@color/text_common"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:layout_marginTop="2dp"
+                    android:background="@drawable/bg_corner_25_blue_light"
+                    android:backgroundTint="@color/white"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="6dp"
+                    android:paddingBottom="4dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:importantForAccessibility="no"
-                            android:src="@drawable/ic_friend"
-                            app:tint="@color/black" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:fontFamily="@font/font_noto_sans"
-                            android:text="Tất cả bạn bè"
-                            android:textColor="@color/text_common"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:importantForAccessibility="no"
-                            android:rotation="270"
-                            android:src="@drawable/ic_triangle"
-                            app:tint="@color/black" />
-                    </LinearLayout>
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_friend"
+                        app:tint="@color/black" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Xem bởi bạn bè trên Zalo"
-                        android:textColor="@color/text_grey" />
-                </LinearLayout>
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="@font/font_noto_sans"
+                        android:text="Bạn bè"
+                        android:textColor="@color/text_common"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-                <ImageView
-                    android:id="@+id/btnSend"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_marginEnd="15dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_send"
-                    app:tint="@color/blue" />
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_marginStart="2dp"
+                        android:importantForAccessibility="no"
+                        android:rotation="270"
+                        android:src="@drawable/ic_triangle"
+                        app:tint="@color/black" />
+                </LinearLayout>
             </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/grey_bg" />
+            <androidx.cardview.widget.CardView
+                android:id="@+id/btnSend"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="15dp"
+                app:cardBackgroundColor="@color/blue"
+                app:cardCornerRadius="30dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_send"
+                    app:tint="@color/white" />
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+
+        <View
+            android:id="@+id/viewLineHeader"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:background="@color/grey_bg"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutHeaderStatus" />
+
+        <LinearLayout
+            android:id="@+id/layoutContentStatus"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toTopOf="@id/footerViewStatus"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/viewLineHeader">
 
             <EditText
+                android:id="@+id/edtStatusContent"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_marginHorizontal="15dp"
-                android:layout_marginTop="20dp"
-                android:layout_weight="1"
-                android:background="@color/white"
-                android:gravity="start"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:background="@android:color/transparent"
+                android:gravity="start|top"
                 android:hint="Bạn đang nghĩ gì?"
-                android:maxLines="12"
+                android:maxLines="8"
+                android:minLines="4"
+                android:textColor="@color/text_common"
                 android:textColorHint="@color/text_grey"
-                android:textSize="16sp" />
+                android:textSize="17sp" />
+
+            <FrameLayout
+                android:id="@+id/layoutMediaPreviewContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/footerViewStatus"
-            android:layout_alignParentBottom="true"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
 
             <View
                 android:layout_width="match_parent"
@@ -119,12 +167,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:paddingVertical="5dp">
+                android:paddingVertical="8dp">
 
                 <ImageView
                     android:layout_width="25dp"
                     android:layout_height="25dp"
-                    android:layout_marginStart="10dp"
+                    android:layout_marginStart="12dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_sticker_smile"
                     app:tint="@color/grey" />
@@ -135,6 +183,7 @@
                     android:layout_weight="1" />
 
                 <ImageView
+                    android:id="@+id/btnPickImage"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_marginEnd="20dp"
@@ -143,9 +192,11 @@
                     app:tint="@color/grey" />
 
                 <ImageView
+                    android:id="@+id/btnPickVideo"
                     android:layout_width="40dp"
                     android:layout_height="33dp"
                     android:layout_marginEnd="20dp"
+                    android:importantForAccessibility="no"
                     android:src="@drawable/ic_video"
                     app:tint="@color/grey" />
 
@@ -166,6 +217,5 @@
                     app:tint="@color/grey" />
             </LinearLayout>
         </LinearLayout>
-
-    </RelativeLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
