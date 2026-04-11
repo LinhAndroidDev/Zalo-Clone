@@ -101,6 +101,7 @@
         tools:text="Nguyen Huu Linh" />
 
     <LinearLayout
+        android:id="@+id/viewUpdateProfile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
@@ -122,58 +123,78 @@
             android:textSize="13sp" />
     </LinearLayout>
 
-    <include
-        layout="@layout/layout_feature_personal"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp" />
-
-    <ImageView
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="30dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/img_what_happy" />
-
     <TextView
-        android:id="@+id/txtWhatHappy"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
+        android:id="@+id/txtNoteFriend"
         android:layout_marginTop="20dp"
-        android:fontFamily="@font/font_noto_sans"
-        android:text="@string/what_happy_today"
-        android:textColor="@color/text_common"
-        android:textSize="15sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
+        android:layout_marginHorizontal="40dp"
+        android:gravity="center_horizontal"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="50dp"
-        android:layout_marginTop="10dp"
-        android:fontFamily="@font/font_noto_sans"
-        android:gravity="center"
-        android:text="@string/note_happy_today"
+        android:text="@string/friend_profile_empty_activity"
         android:textColor="@color/text_grey"
-        android:textSize="13sp" />
-
-    <TextView
-        android:id="@+id/btnFindMoreFriend"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="20dp"
-        android:background="@drawable/bg_corner_20_blue"
-        android:fontFamily="@font/font_noto_sans"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="8dp"
-        android:text="@string/post_to_diary"
-        android:textColor="@color/text_white"
         android:textSize="14sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvNoteChat" />
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:id="@+id/layoutInfoUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <include
+            layout="@layout/layout_feature_personal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp" />
+
+        <ImageView
+            android:id="@+id/viewStatus"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="30dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/img_what_happy" />
+
+        <TextView
+            android:id="@+id/txtWhatHappy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="20dp"
+            android:fontFamily="@font/font_noto_sans"
+            android:text="@string/what_happy_today"
+            android:textColor="@color/text_common"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="50dp"
+            android:layout_marginTop="10dp"
+            android:fontFamily="@font/font_noto_sans"
+            android:gravity="center"
+            android:text="@string/note_happy_today"
+            android:textColor="@color/text_grey"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/btnFindMoreFriend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_corner_20_blue"
+            android:fontFamily="@font/font_noto_sans"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="8dp"
+            android:text="@string/post_to_diary"
+            android:textColor="@color/text_white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvNoteChat" />
+    </LinearLayout>
 </LinearLayout>

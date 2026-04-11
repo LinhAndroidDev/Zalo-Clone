@@ -29,6 +29,10 @@
         android:theme="@style/Theme.MessageApp"
         tools:targetApi="31">
         <activity
+            android:name=".PreviewAvatarActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MessageApp" />
+        <activity
             android:name=".PreviewPhotoActivity"
             android:exported="false" />
         <activity
