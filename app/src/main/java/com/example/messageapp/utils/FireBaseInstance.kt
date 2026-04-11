@@ -93,27 +93,6 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to get information user by id from the FireStore database
-     * @param userId key auth of user
-     * @param success callback when query is successful
-     * @param failure callback when query is failed
-     */
-    fun getUserById(userId: String, success: (User) -> Unit, failure: (String) -> Unit) {
-        db.collection(PATH_USER).document(userId).get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val user = document.toObject(User::class.java)
-                    user?.let { success.invoke(it) }
-                } else {
-                    failure.invoke("User not found")
-                }
-            }
-            .addOnFailureListener { e ->
-                failure.invoke(e.message.toString())
-            }
-    }
-
-    /**
      * This function is used to add a new user to the FiresStore database
      * @param user data user
      * @param success callback when query is successful
