@@ -6,6 +6,8 @@ data class FriendRequest(
     val toId: String = "",
     val fromName: String = "",
     val fromAvatar: String = "",
+    val toName: String = "",
+    val toAvatar: String = "",
     val status: String = STATUS_PENDING,
     val createdAt: Long = 0L
 ) {

@@ -38,13 +38,15 @@
                 android:textSize="14sp" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_marginStart="5dp"
-                android:textColor="@color/text_grey"
-                android:textSize="14sp"
-                android:text="(7)" />
+                    android:id="@+id/tvFriendRequestCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="5dp"
+                    android:textColor="@color/text_grey"
+                    android:textSize="14sp"
+                    android:visibility="gone"
+                    android:text="(7)" />
         </LinearLayout>
 
         <LinearLayout

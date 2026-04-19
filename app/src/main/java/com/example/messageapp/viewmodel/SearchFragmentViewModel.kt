@@ -68,9 +68,32 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
                 fromName = me.name.orEmpty(),
                 fromAvatar = me.avatar.orEmpty(),
                 toId = target.keyAuth.orEmpty(),
-                success = { showMessage("Đã gửi lời mời kết bạn") },
+                toName = target.name.orEmpty(),
+                toAvatar = target.avatar.orEmpty(),
+                success = {
+                    showMessage("Đã gửi lời mời kết bạn")
+                    updateUserStatus(target.keyAuth.orEmpty(), "pending_sent")
+                },
                 failure = { showError(it) }
             )
+        }
+    }
+
+    fun cancelFriendRequest(target: User) = viewModelScope.launch {
+        FireBaseInstance.cancelFriendRequest(
+            fromId = shared.getAuth(),
+            toId = target.keyAuth.orEmpty(),
+            success = {
+                showMessage("Đã huỷ lời mời kết bạn")
+                updateUserStatus(target.keyAuth.orEmpty(), "none")
+            },
+            failure = { showError(it) }
+        )
+    }
+
+    private fun updateUserStatus(keyAuth: String, newStatus: String) {
+        _users.value = _users.value.map { item ->
+            if (item.user.keyAuth == keyAuth) item.copy(status = newStatus) else item
         }
     }
 

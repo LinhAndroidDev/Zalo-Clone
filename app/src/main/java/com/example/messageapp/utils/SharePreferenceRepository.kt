@@ -9,6 +9,7 @@ interface SharePreferenceRepository {
         const val NAME_USER = "NAME_USER"
         const val CHANNEL_ID = "CHANNEL_ID"
         const val STATUS_LOGGED_IN = "STATUS_LOGGED_IN"
+        const val LAST_SEEN_FRIEND_REQUEST_AT = "LAST_SEEN_FRIEND_REQUEST_AT"
     }
 
     fun saveLanguageSelected(language: Language)
@@ -30,4 +31,8 @@ interface SharePreferenceRepository {
     fun saveStatusLoggedIn(status: Boolean)
 
     fun getStatusLoggedIn(): Boolean
+
+    fun saveLastSeenFriendRequestAt(time: Long)
+
+    fun getLastSeenFriendRequestAt(): Long
 }

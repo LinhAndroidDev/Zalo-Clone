@@ -36,6 +36,7 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
     private var sectionsTranslator = HashMap<Int, Int>()
     var onClickPhoneBook: ((PhoneBook) -> Unit)? = null
     var onClickFriendRequest: (() -> Unit)? = null
+    var friendRequestCount: Int = 0
 
     inner class HeaderViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
 
@@ -131,6 +132,12 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
             TypePhoneBook.HEADER_PHONE_BOOK -> {
                 holder as HeaderViewHolder
                 holder.v.tvAllPhoneBook.text = "Tất cả  ${itemPhoneBooks.size}"
+                if (friendRequestCount > 0) {
+                    holder.v.tvFriendRequestCount.visibility = android.view.View.VISIBLE
+                    holder.v.tvFriendRequestCount.text = "($friendRequestCount)"
+                } else {
+                    holder.v.tvFriendRequestCount.visibility = android.view.View.GONE
+                }
                 holder.v.friendRequest.setOnClickListener {
                     onClickFriendRequest?.invoke()
                 }

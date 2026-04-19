@@ -694,6 +694,8 @@ object FireBaseInstance {
         fromName: String,
         fromAvatar: String,
         toId: String,
+        toName: String = "",
+        toAvatar: String = "",
         success: () -> Unit,
         failure: (String) -> Unit
     ) {
@@ -714,6 +716,8 @@ object FireBaseInstance {
                     toId = toId,
                     fromName = fromName,
                     fromAvatar = fromAvatar,
+                    toName = toName,
+                    toAvatar = toAvatar,
                     status = FriendRequest.STATUS_PENDING,
                     createdAt = System.currentTimeMillis()
                 )
@@ -734,6 +738,29 @@ object FireBaseInstance {
     ) {
         db.collection(PATH_FRIEND_REQUESTS)
             .whereEqualTo("toId", userId)
+            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    failure.invoke(error.message.toString())
+                    return@addSnapshotListener
+                }
+                val list = value?.documents
+                    ?.mapNotNull { it.toObject(FriendRequest::class.java) }
+                    ?: emptyList()
+                success.invoke(list)
+            }
+    }
+
+    /**
+     * Real-time listener for outgoing pending friend requests sent by [userId].
+     */
+    fun getOutgoingFriendRequests(
+        userId: String,
+        success: (List<FriendRequest>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS)
+            .whereEqualTo("fromId", userId)
             .whereEqualTo("status", FriendRequest.STATUS_PENDING)
             .addSnapshotListener { value, error ->
                 if (error != null) {
@@ -802,6 +829,35 @@ object FireBaseInstance {
         db.collection(PATH_FRIEND_REQUESTS).document(requestId)
             .update("status", FriendRequest.STATUS_REJECTED)
             .addOnSuccessListener { success.invoke() }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Cancel an outgoing friend request sent from [fromId] to [toId].
+     * Deletes the pending request document from Firestore.
+     */
+    fun cancelFriendRequest(
+        fromId: String,
+        toId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS)
+            .whereEqualTo("fromId", fromId)
+            .whereEqualTo("toId", toId)
+            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+            .get()
+            .addOnSuccessListener { result ->
+                if (result.isEmpty) {
+                    success.invoke()
+                    return@addOnSuccessListener
+                }
+                val batch = db.batch()
+                result.documents.forEach { batch.delete(it.reference) }
+                batch.commit()
+                    .addOnSuccessListener { success.invoke() }
+                    .addOnFailureListener { failure.invoke(it.message.toString()) }
+            }
             .addOnFailureListener { failure.invoke(it.message.toString()) }
     }
 

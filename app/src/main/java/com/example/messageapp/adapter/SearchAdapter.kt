@@ -11,6 +11,7 @@ import com.example.messageapp.viewmodel.UserWithStatus
 class SearchAdapter : BaseAdapter<UserWithStatus, ItemSearchFriendBinding>() {
 
     var onAddFriend: ((User) -> Unit)? = null
+    var onCancelFriend: ((User) -> Unit)? = null
     var onChat: ((User) -> Unit)? = null
     var onItemClick: ((User) -> Unit)? = null
 
@@ -39,12 +40,11 @@ class SearchAdapter : BaseAdapter<UserWithStatus, ItemSearchFriendBinding>() {
                 holder.v.btnAction.setOnClickListener { onChat?.invoke(user) }
             }
             "pending_sent" -> {
-                holder.v.btnAction.text = ctx.getString(R.string.sent_request)
-                holder.v.btnAction.setTextColor(ctx.getColor(R.color.grey_1))
-                holder.v.btnAction.setBackgroundResource(R.drawable.bg_corner_25_blue_light)
-                holder.v.btnAction.backgroundTintList =
-                    android.content.res.ColorStateList.valueOf(ctx.getColor(R.color.grey_light))
-                holder.v.btnAction.setOnClickListener(null)
+                holder.v.btnAction.text = ctx.getString(R.string.cancel_friend_request)
+                holder.v.btnAction.setTextColor(ctx.getColor(R.color.text_grey))
+                holder.v.btnAction.setBackgroundResource(R.drawable.bg_corner_25_stroke_grey)
+                holder.v.btnAction.backgroundTintList = null
+                holder.v.btnAction.setOnClickListener { onCancelFriend?.invoke(user) }
             }
             "pending_received" -> {
                 holder.v.btnAction.text = ctx.getString(R.string.agree)

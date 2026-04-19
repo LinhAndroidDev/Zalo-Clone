@@ -17,13 +17,24 @@ class FragmentFriendRequestViewModel @Inject constructor() : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
 
-    private val _requests = MutableStateFlow<List<FriendRequest>>(emptyList())
-    val requests = _requests.asStateFlow()
+    private val _receivedRequests = MutableStateFlow<List<FriendRequest>>(emptyList())
+    val receivedRequests = _receivedRequests.asStateFlow()
+
+    private val _sentRequests = MutableStateFlow<List<FriendRequest>>(emptyList())
+    val sentRequests = _sentRequests.asStateFlow()
 
     fun getIncomingFriendRequests() = viewModelScope.launch {
         FireBaseInstance.getIncomingFriendRequests(
             userId = shared.getAuth(),
-            success = { _requests.value = it },
+            success = { _receivedRequests.value = it },
+            failure = { showError(it) }
+        )
+    }
+
+    fun getOutgoingFriendRequests() = viewModelScope.launch {
+        FireBaseInstance.getOutgoingFriendRequests(
+            userId = shared.getAuth(),
+            success = { _sentRequests.value = it },
             failure = { showError(it) }
         )
     }
@@ -44,6 +55,15 @@ class FragmentFriendRequestViewModel @Inject constructor() : BaseViewModel() {
         FireBaseInstance.rejectFriendRequest(
             requestId = requestId,
             success = { showMessage("Đã từ chối lời mời kết bạn") },
+            failure = { showError(it) }
+        )
+    }
+
+    fun cancelSentRequest(request: FriendRequest) = viewModelScope.launch {
+        FireBaseInstance.cancelFriendRequest(
+            fromId = shared.getAuth(),
+            toId = request.toId,
+            success = { showMessage("Đã huỷ lời mời kết bạn") },
             failure = { showError(it) }
         )
     }

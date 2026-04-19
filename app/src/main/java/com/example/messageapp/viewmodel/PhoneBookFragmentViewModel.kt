@@ -20,10 +20,22 @@ class PhoneBookFragmentViewModel @Inject constructor() : BaseViewModel() {
     private val _friends = MutableStateFlow<List<Friend>>(emptyList())
     val friends = _friends.asStateFlow()
 
+    /** Total count of pending incoming requests — displayed in header as "(N)" */
+    private val _totalRequestCount = MutableStateFlow(0)
+    val totalRequestCount = _totalRequestCount.asStateFlow()
+
     fun getFriends() = viewModelScope.launch {
         FireBaseInstance.getFriends(
             userId = shared.getAuth(),
             success = { _friends.value = it },
+            failure = { showError(it) }
+        )
+    }
+
+    fun getPendingRequestCounts() = viewModelScope.launch {
+        FireBaseInstance.getIncomingFriendRequests(
+            userId = shared.getAuth(),
+            success = { requests -> _totalRequestCount.value = requests.size },
             failure = { showError(it) }
         )
     }

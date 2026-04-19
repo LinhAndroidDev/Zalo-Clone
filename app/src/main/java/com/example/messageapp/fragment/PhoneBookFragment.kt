@@ -73,6 +73,7 @@ class PhoneBookFragment :
         setupStickyHeader()
         setupAlphabetScroll()
         viewModel?.getFriends()
+        viewModel?.getPendingRequestCounts()
     }
 
     override fun bindData() {
@@ -80,6 +81,12 @@ class PhoneBookFragment :
         lifecycleScope.launch {
             viewModel?.friends?.collect { friends ->
                 buildPhoneBookList(friends)
+            }
+        }
+        lifecycleScope.launch {
+            viewModel?.totalRequestCount?.collect { count ->
+                phoneBookAdapter.friendRequestCount = count
+                phoneBookAdapter.notifyItemChanged(0)
             }
         }
     }

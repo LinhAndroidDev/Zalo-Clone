@@ -6,6 +6,8 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
+import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
@@ -13,17 +15,20 @@ import com.example.messageapp.databinding.ActivityMainBinding
 import com.example.messageapp.fragment.SplashFragment
 import com.example.messageapp.model.User
 import com.example.messageapp.service.ReceiverMessageService
+import com.example.messageapp.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private var binding: ActivityMainBinding? = null
     private var isDoubleTab = false
+    val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         initView()
+        observeBadge()
     }
 
     private fun initView() {
@@ -52,6 +57,16 @@ class MainActivity : AppCompatActivity() {
                 else -> binding?.viewBottomNav?.visibility = View.GONE
             }
         }
+
+        mainViewModel.startListening()
+    }
+
+    private fun observeBadge() {
+        lifecycleScope.launch {
+            mainViewModel.newFriendRequestCount.collect { count ->
+                setUpFriendRequestBadge(count)
+            }
+        }
     }
 
     /**
@@ -61,6 +76,15 @@ class MainActivity : AppCompatActivity() {
         val badge = binding?.bottomNav?.getOrCreateBadge(R.id.homeFragment)
         badge?.isVisible = num > 0
         badge?.text = if (num <= 5) num.toString() else "+5"
+        badge?.backgroundColor = getColor(R.color.red)
+        badge?.badgeTextColor = getColor(R.color.text_white)
+        badge?.horizontalOffset = 10
+    }
+
+    internal fun setUpFriendRequestBadge(num: Int) {
+        val badge = binding?.bottomNav?.getOrCreateBadge(R.id.phoneBookFragment)
+        badge?.isVisible = num > 0
+        badge?.number = num
         badge?.backgroundColor = getColor(R.color.red)
         badge?.badgeTextColor = getColor(R.color.text_white)
         badge?.horizontalOffset = 10

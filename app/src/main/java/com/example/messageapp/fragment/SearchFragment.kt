@@ -28,6 +28,7 @@ class SearchFragment : BaseFragment<FragmentSearchBinding, SearchFragmentViewMod
 
     private val searchAdapter = SearchAdapter().apply {
         onAddFriend = { user -> viewModel?.sendFriendRequest(user) }
+        onCancelFriend = { user -> viewModel?.cancelFriendRequest(user) }
         onChat = { user ->
             val action = SearchFragmentDirections.actionSearchFragmentToChatFragment(
                 Conversation(user)
