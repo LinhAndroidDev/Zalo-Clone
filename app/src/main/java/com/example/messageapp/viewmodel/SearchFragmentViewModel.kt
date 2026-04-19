@@ -22,13 +22,27 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
     private val _users: MutableStateFlow<List<UserWithStatus>> = MutableStateFlow(emptyList())
     val users = _users.asStateFlow()
 
+    private val _history: MutableStateFlow<List<User>> = MutableStateFlow(emptyList())
+    val history = _history.asStateFlow()
+
+    // Tracks the most recent query to discard stale async callbacks
+    @Volatile private var currentQuery: String = ""
+
     fun searchFriend(keySearch: String) {
+        currentQuery = keySearch
+        if (keySearch.isBlank()) {
+            _users.value = emptyList()
+            getSearchHistory()
+            return
+        }
         FireBaseInstance.searchFriend(queryText = keySearch) { results ->
+            // Discard results if a newer query has already been issued
+            if (keySearch != currentQuery) return@searchFriend
+
             val myId = shared.getAuth()
-            // Filter out self
             val others = results.filter { it.keyAuth != myId }
             if (others.isEmpty()) {
-                _users.value = emptyList()
+                if (keySearch == currentQuery) _users.value = emptyList()
                 return@searchFriend
             }
             val output = mutableListOf<UserWithStatus>()
@@ -38,7 +52,7 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
                     synchronized(output) {
                         output.add(UserWithStatus(user, status))
                         pending--
-                        if (pending == 0) {
+                        if (pending == 0 && keySearch == currentQuery) {
                             _users.value = output.sortedBy { it.user.name }
                         }
                     }
@@ -58,5 +72,21 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
                 failure = { showError(it) }
             )
         }
+    }
+
+    fun getSearchHistory() = viewModelScope.launch {
+        FireBaseInstance.getSearchHistory(
+            myId = shared.getAuth(),
+            success = { _history.value = it },
+            failure = { showError(it) }
+        )
+    }
+
+    fun saveSearchHistory(user: User) = viewModelScope.launch {
+        FireBaseInstance.saveSearchHistory(
+            myId = shared.getAuth(),
+            user = user,
+            failure = { showError(it) }
+        )
     }
 }

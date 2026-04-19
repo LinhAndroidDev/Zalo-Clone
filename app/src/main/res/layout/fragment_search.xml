@@ -23,6 +23,38 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <!-- Search history section: visible when search text is empty -->
+                <TextView
+                    android:id="@+id/tvSearchHistory"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="@font/font_noto_sans"
+                    android:text="@string/recently_searched"
+                    android:textColor="@color/text_common"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rcvSearchHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:nestedScrollingEnabled="false"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+                <View
+                    android:id="@+id/dividerHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:background="@color/grey_bg"
+                    android:visibility="gone" />
+
+                <!-- Search results section -->
                 <TextView
                     android:id="@+id/tvNumberFriend"
                     android:layout_marginTop="10dp"
@@ -30,7 +62,8 @@
                     android:text="@string/you_may_be_familiar_with"
                     android:textColor="@color/text_common"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rcvSearchFriend"

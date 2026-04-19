@@ -12,6 +12,7 @@ class SearchAdapter : BaseAdapter<UserWithStatus, ItemSearchFriendBinding>() {
 
     var onAddFriend: ((User) -> Unit)? = null
     var onChat: ((User) -> Unit)? = null
+    var onItemClick: ((User) -> Unit)? = null
 
     override fun getLayout(): Int = R.layout.item_search_friend
 
@@ -26,6 +27,7 @@ class SearchAdapter : BaseAdapter<UserWithStatus, ItemSearchFriendBinding>() {
             R.drawable.bg_grey_equal
         )
         holder.v.nameFriend.text = user.name
+        holder.v.root.setOnClickListener { onItemClick?.invoke(user) }
 
         val ctx = holder.v.root.context
         when (status) {

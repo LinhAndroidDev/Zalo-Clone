@@ -56,6 +56,8 @@ object FireBaseInstance {
     private const val PATH_STICKER = "sticker"
     private const val PATH_FRIEND_REQUESTS = "friendRequests"
     private const val PATH_FRIENDS = "friends"
+    private const val PATH_SEARCH_HISTORY = "searchHistory"
+    private const val PATH_ITEMS = "items"
 
     /**
      * This function is used to check the login of the user
@@ -866,6 +868,58 @@ object FireBaseInstance {
                     .addOnFailureListener { result.invoke("none") }
             }
             .addOnFailureListener { result.invoke("none") }
+    }
+
+    /**
+     * Save a user to the current user's search history.
+     * Uses the friend's keyAuth as the document ID so duplicate entries are overwritten.
+     */
+    fun saveSearchHistory(
+        myId: String,
+        user: User,
+        success: () -> Unit = {},
+        failure: (String) -> Unit = {}
+    ) {
+        val data = hashMapOf(
+            "name" to (user.name ?: ""),
+            "avatar" to (user.avatar ?: ""),
+            "keyAuth" to (user.keyAuth ?: ""),
+            "searchedAt" to System.currentTimeMillis()
+        )
+        db.collection(PATH_SEARCH_HISTORY)
+            .document(myId)
+            .collection(PATH_ITEMS)
+            .document(user.keyAuth ?: return)
+            .set(data)
+            .addOnSuccessListener { success.invoke() }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Fetch the current user's search history ordered by most recent first.
+     */
+    fun getSearchHistory(
+        myId: String,
+        success: (List<User>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_SEARCH_HISTORY)
+            .document(myId)
+            .collection(PATH_ITEMS)
+            .orderBy("searchedAt", Query.Direction.DESCENDING)
+            .get()
+            .addOnSuccessListener { result ->
+                val list = result.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    User(
+                        name = data["name"]?.toString() ?: "",
+                        avatar = data["avatar"]?.toString() ?: "",
+                        keyAuth = data["keyAuth"]?.toString() ?: doc.id
+                    )
+                }
+                success.invoke(list)
+            }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
     }
 
     fun getSticker(sticker: Sticker, onSuccess: (List<String>) -> Unit) {

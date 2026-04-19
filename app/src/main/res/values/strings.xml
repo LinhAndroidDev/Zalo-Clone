@@ -136,4 +136,5 @@
     <string name="friend_profile_empty_activity">Chưa có hoạt động nào. Hãy trò chuyện để hiểu nhau hơn!</string>
     <string name="add_friend">Kết bạn</string>
     <string name="sent_request">Đã gửi</string>
+    <string name="recently_searched">Đã tìm kiếm gần đây</string>
 </resources>
