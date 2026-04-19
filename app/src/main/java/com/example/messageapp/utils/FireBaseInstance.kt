@@ -5,6 +5,8 @@ import android.net.Uri
 import android.util.Log
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
+import com.example.messageapp.model.Friend
+import com.example.messageapp.model.FriendRequest
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.Sticker
 import com.example.messageapp.model.TypeMessage
@@ -52,6 +54,8 @@ object FireBaseInstance {
     private const val PATH_AUDIO = "audios"
     private const val PATH_TYPING = "typing"
     private const val PATH_STICKER = "sticker"
+    private const val PATH_FRIEND_REQUESTS = "friendRequests"
+    private const val PATH_FRIENDS = "friends"
 
     /**
      * This function is used to check the login of the user
@@ -627,13 +631,22 @@ object FireBaseInstance {
         db.collection(PATH_USER)
             .get()
             .addOnSuccessListener { result ->
-                val friends = result.documents.mapNotNull { it.toObject(User::class.java) }
-                    .filter { friend ->
-                        val nameFriendAccent = removeAccent(friend.name?.lowercase().toString())
-                        nameFriendAccent.contains(queryLowerCase)
-                    }
+                // toObject() does not include the document ID, so set keyAuth manually
+                val friends = result.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    User(
+                        name = data["name"]?.toString() ?: "",
+                        email = data["email"]?.toString() ?: "",
+                        avatar = data["avatar"]?.toString() ?: "",
+                        imageCover = data["imageCover"]?.toString() ?: "",
+                        keyAuth = doc.id
+                    )
+                }.filter { friend ->
+                    val nameFriendAccent = removeAccent(friend.name?.lowercase().toString())
+                    nameFriendAccent.contains(queryLowerCase)
+                }
                 if (queryText.isNotEmpty()) {
-                    success.invoke(friends as ArrayList<User>)
+                    success.invoke(ArrayList(friends))
                 } else {
                     success.invoke(arrayListOf())
                 }
@@ -668,6 +681,191 @@ object FireBaseInstance {
         db.collection("Conversation${userId}")
             .document(friendId)
             .update(PATH_TYPING, typing)
+    }
+
+    /**
+     * Send a friend request from [fromId] to [toId].
+     * Checks for an existing pending request before creating a new one.
+     */
+    fun sendFriendRequest(
+        fromId: String,
+        fromName: String,
+        fromAvatar: String,
+        toId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS)
+            .whereEqualTo("fromId", fromId)
+            .whereEqualTo("toId", toId)
+            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    failure.invoke("Đã gửi lời mời kết bạn rồi")
+                    return@addOnSuccessListener
+                }
+                val docRef = db.collection(PATH_FRIEND_REQUESTS).document()
+                val request = FriendRequest(
+                    requestId = docRef.id,
+                    fromId = fromId,
+                    toId = toId,
+                    fromName = fromName,
+                    fromAvatar = fromAvatar,
+                    status = FriendRequest.STATUS_PENDING,
+                    createdAt = System.currentTimeMillis()
+                )
+                docRef.set(request)
+                    .addOnSuccessListener { success.invoke() }
+                    .addOnFailureListener { failure.invoke(it.message.toString()) }
+            }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Real-time listener for incoming pending friend requests for [userId].
+     */
+    fun getIncomingFriendRequests(
+        userId: String,
+        success: (List<FriendRequest>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS)
+            .whereEqualTo("toId", userId)
+            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    failure.invoke(error.message.toString())
+                    return@addSnapshotListener
+                }
+                val list = value?.documents
+                    ?.mapNotNull { it.toObject(FriendRequest::class.java) }
+                    ?: emptyList()
+                success.invoke(list)
+            }
+    }
+
+    /**
+     * Accept a friend request. Uses a batch write to atomically:
+     * - Update request status to "accepted"
+     * - Add both users to each other's friends subcollection
+     */
+    fun acceptFriendRequest(
+        request: FriendRequest,
+        myName: String,
+        myAvatar: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val batch = db.batch()
+
+        val requestRef = db.collection(PATH_FRIEND_REQUESTS).document(request.requestId)
+        batch.update(requestRef, "status", FriendRequest.STATUS_ACCEPTED)
+
+        val myFriendRef = db.collection(PATH_USER).document(request.toId)
+            .collection(PATH_FRIENDS).document(request.fromId)
+        batch.set(
+            myFriendRef, Friend(
+                name = request.fromName,
+                avatar = request.fromAvatar,
+                keyAuth = request.fromId,
+                since = System.currentTimeMillis()
+            )
+        )
+
+        val theirFriendRef = db.collection(PATH_USER).document(request.fromId)
+            .collection(PATH_FRIENDS).document(request.toId)
+        batch.set(
+            theirFriendRef, Friend(
+                name = myName,
+                avatar = myAvatar,
+                keyAuth = request.toId,
+                since = System.currentTimeMillis()
+            )
+        )
+
+        batch.commit()
+            .addOnSuccessListener { success.invoke() }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Reject a friend request by updating its status to "rejected".
+     */
+    fun rejectFriendRequest(
+        requestId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS).document(requestId)
+            .update("status", FriendRequest.STATUS_REJECTED)
+            .addOnSuccessListener { success.invoke() }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Real-time listener for the friends list of [userId].
+     */
+    fun getFriends(
+        userId: String,
+        success: (List<Friend>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_USER).document(userId)
+            .collection(PATH_FRIENDS)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    failure.invoke(error.message.toString())
+                    return@addSnapshotListener
+                }
+                val list = value?.documents
+                    ?.mapNotNull { it.toObject(Friend::class.java) }
+                    ?: emptyList()
+                success.invoke(list)
+            }
+    }
+
+    /**
+     * Check the friendship status between [myId] and [targetId].
+     * Returns one of: "friend", "pending_sent", "pending_received", "none"
+     */
+    fun getFriendshipStatus(
+        myId: String,
+        targetId: String,
+        result: (String) -> Unit
+    ) {
+        db.collection(PATH_USER).document(myId)
+            .collection(PATH_FRIENDS).document(targetId)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    result.invoke("friend")
+                    return@addOnSuccessListener
+                }
+                db.collection(PATH_FRIEND_REQUESTS)
+                    .whereEqualTo("fromId", myId)
+                    .whereEqualTo("toId", targetId)
+                    .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+                    .get()
+                    .addOnSuccessListener { sent ->
+                        if (!sent.isEmpty) {
+                            result.invoke("pending_sent")
+                            return@addOnSuccessListener
+                        }
+                        db.collection(PATH_FRIEND_REQUESTS)
+                            .whereEqualTo("fromId", targetId)
+                            .whereEqualTo("toId", myId)
+                            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+                            .get()
+                            .addOnSuccessListener { received ->
+                                if (!received.isEmpty) result.invoke("pending_received")
+                                else result.invoke("none")
+                            }
+                            .addOnFailureListener { result.invoke("none") }
+                    }
+                    .addOnFailureListener { result.invoke("none") }
+            }
+            .addOnFailureListener { result.invoke("none") }
     }
 
     fun getSticker(sticker: Sticker, onSuccess: (List<String>) -> Unit) {

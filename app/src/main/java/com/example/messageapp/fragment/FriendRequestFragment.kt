@@ -1,48 +1,42 @@
 package com.example.messageapp.fragment
 
-import android.annotation.SuppressLint
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.example.messageapp.R
 import com.example.messageapp.adapter.RequestFriendAdapter
-import com.example.messageapp.adapter.SuggestFriendRequestAdapter
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentFriendRequestBinding
-import com.example.messageapp.helper.avatars
-import com.example.messageapp.model.Friend
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.FragmentFriendRequestViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
-class FriendRequestFragment : BaseFragment<FragmentFriendRequestBinding, FragmentFriendRequestViewModel>() {
+@AndroidEntryPoint
+class FriendRequestFragment :
+    BaseFragment<FragmentFriendRequestBinding, FragmentFriendRequestViewModel>() {
     override val layoutResId: Int = R.layout.fragment_friend_request
-    private val requestFriendAdapter by lazy { RequestFriendAdapter() }
-    private var friends = mutableListOf<Friend>()
+
+    private val requestFriendAdapter by lazy {
+        RequestFriendAdapter().apply {
+            onAccept = { request -> viewModel?.acceptRequest(request) }
+            onReject = { requestId -> viewModel?.rejectRequest(requestId) }
+        }
+    }
 
     override fun initView() {
         super.initView()
-        // log event: screen_friend_request
         FirebaseAnalyticsInstance.logFriendRequestScreen()
-
-        val names = mutableListOf("An", "Bảo", "Brian", "Alex", "Aiden", "Finn", "Khánh", "Duy", "Emma", "Samuel")
-        names.forEachIndexed { index, s ->
-            friends.add(Friend(s, avatars[index]))
-        }
-        val list = friends.take(2).toMutableList()
-        requestFriendAdapter.items = list
         binding?.rcvRequestFriend?.adapter = requestFriendAdapter
-
-        val suggestFriendAdapter = SuggestFriendRequestAdapter()
-        suggestFriendAdapter.items = friends.drop(8).toMutableList()
-        binding?.rcvSuggestFriendRequest?.adapter = suggestFriendAdapter
+        binding?.viewSeeMore?.isVisible = false
+        viewModel?.getIncomingFriendRequests()
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    override fun onClickView() {
-        super.onClickView()
-
-        binding?.viewSeeMore?.setOnClickListener {
-            binding?.viewSeeMore?.isVisible = false
-            val list = friends.drop(2) as ArrayList<Friend>
-            requestFriendAdapter.addItems(list)
+    override fun bindData() {
+        super.bindData()
+        lifecycleScope.launch {
+            viewModel?.requests?.collect { requests ->
+                requestFriendAdapter.updateDiff(requests)
+            }
         }
     }
 }

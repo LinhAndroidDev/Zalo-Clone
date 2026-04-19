@@ -134,4 +134,6 @@
     <string name="note_select_date_diary">Bạn bè sẽ không thấy các bài đăng trước <b>hôm nay</b></string>
     <string name="typing">Đang nhập...</string>
     <string name="friend_profile_empty_activity">Chưa có hoạt động nào. Hãy trò chuyện để hiểu nhau hơn!</string>
+    <string name="add_friend">Kết bạn</string>
+    <string name="sent_request">Đã gửi</string>
 </resources>

@@ -34,7 +34,7 @@ enum class TypePhoneBook {
 class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, RecyclerView.ViewHolder>(), SectionIndexer {
     var phoneBooks = arrayListOf<PhoneBook>()
     private var sectionsTranslator = HashMap<Int, Int>()
-    var onClickPhoneBook: (() -> Unit)? = null
+    var onClickPhoneBook: ((PhoneBook) -> Unit)? = null
     var onClickFriendRequest: (() -> Unit)? = null
 
     inner class HeaderViewHolder(val v: HeaderPhoneBookBinding) : RecyclerView.ViewHolder(v.root)
@@ -144,7 +144,7 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
             else -> {
                 holder as ItemViewHolder
                 holder.itemView.setOnClickListener {
-                    onClickPhoneBook?.invoke()
+                    onClickPhoneBook?.invoke(phoneBook)
                 }
                 holder.v.nameFriend.text = phoneBook.nameFriend
                 Glide.with(holder.v.root)
@@ -172,12 +172,14 @@ class PhoneBookAdapter : StickyAdapter<PhoneBookAdapter.HeaderGroupViewHolder, R
         }
         headerGroups.forEach { element -> alphabetFull.add(element) }
         sectionsTranslator = sectionsHelper(sections, alphabetFull)
-        return alphabetFull.toTypedArray()
+        // Guard: fast-scroll library crashes with an empty array on onSizeChanged
+        return if (alphabetFull.isEmpty()) arrayOf("") else alphabetFull.toTypedArray()
     }
 
     override fun getPositionForSection(sectionIndex: Int): Int {
         val headerGroups =
             phoneBooks.filter { pBook -> pBook.type == TypePhoneBook.HEADER_GROUP_PHONE_BOOK }
+        if (headerGroups.isEmpty() || sectionIndex >= headerGroups.size) return 0
         return phoneBooks.indexOf(headerGroups[sectionIndex])
     }
 

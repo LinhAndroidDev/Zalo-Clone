@@ -4,14 +4,12 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.provider.Settings
 import android.view.View
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ListChatAdapter
-import com.example.messageapp.adapter.SuggestFriendAdapter
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionConversation
 import com.example.messageapp.databinding.FragmentHomeBinding
@@ -32,7 +30,6 @@ import kotlinx.coroutines.launch
 class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override val layoutResId: Int = R.layout.fragment_home
 
-    private val suggestFriendAdapter by lazy { SuggestFriendAdapter() }
     private var listChatAdapter: ListChatAdapter? = null
     private var updateJob: Job? = null
     private var menuOtherShowing = false
@@ -54,17 +51,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         }
         binding?.rcvListChat?.adapter = listChatAdapter
         AnimatorUtils.fadeInItemRecyclerView(requireActivity(), binding?.rcvListChat)
-
-        binding?.rcvSuggestFriend?.adapter = suggestFriendAdapter
-        AnimatorUtils.fadeInItemRecyclerView(requireActivity(), binding?.rcvSuggestFriend)
-        suggestFriendAdapter.onClickItem = { friend ->
-            goToChatFragment(Conversation(friend))
-        }
     }
 
     override fun initView() {
         super.initView()
-        // log event: screen_home
         FirebaseAnalyticsInstance.logHomeScreen()
     }
 
@@ -72,7 +62,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         super.onClickView()
 
         binding?.btnFindMoreFriend?.setOnClickListener {
-            if (Settings.canDrawOverlays(requireActivity())) {
+            if (android.provider.Settings.canDrawOverlays(requireActivity())) {
                 activity?.startService(Intent(requireActivity(), ChatHeadService::class.java))
             } else {
                 requestOverlayPermission()
@@ -87,7 +77,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
 
     private fun requestOverlayPermission() {
         val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
             Uri.parse("package:${activity?.packageName}")
         )
         startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
@@ -96,7 +86,9 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_OVERLAY_PERMISSION && Settings.canDrawOverlays(requireActivity())) {
+        if (requestCode == REQUEST_OVERLAY_PERMISSION &&
+            android.provider.Settings.canDrawOverlays(requireActivity())
+        ) {
             activity?.startService(Intent(requireActivity(), ChatHeadService::class.java))
         }
     }
@@ -122,21 +114,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
 
         viewModel?.generateToken()
         viewModel?.getListConversation()
-        viewModel?.getSuggestFriend()
 
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.conversation?.collect { conversations ->
                 conversations?.let {
                     listChatAdapter?.updateDiffConversation(conversations)
-                }
-            }
-        }
-
-        lifecycleScope.launch(Dispatchers.Main) {
-            viewModel?.friends?.collect { friends ->
-                friends?.let {
-                    suggestFriendAdapter.items = friends
-                    suggestFriendAdapter.notifyDataSetChanged()
                 }
             }
         }
@@ -149,7 +131,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         }
     }
 
-    // Update chat time every minute
     @SuppressLint("NotifyDataSetChanged")
     override fun onResume() {
         super.onResume()
