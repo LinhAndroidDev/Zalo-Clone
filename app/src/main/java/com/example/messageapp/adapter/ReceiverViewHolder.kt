@@ -8,6 +8,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter.ViewTypeMessage
+import com.example.messageapp.custom.AudioPlaybackState
 import com.example.messageapp.databinding.ItemChatReceiverBinding
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
@@ -18,11 +19,25 @@ import com.example.messageapp.utils.FireBaseInstance
 class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root),
     ViewTypeMessage {
 
+    companion object {
+        private val avatarUrlCache = hashMapOf<String, String>()
+    }
+
     // This function used to show avatar receiver
     fun showAvatarReceiver(context: Context, friendId: String) {
-        FireBaseInstance.getInfoUser(friendId) { user ->
+        avatarUrlCache[friendId]?.let { cachedUrl ->
             context.loadImg(
-                user.avatar.toString(),
+                cachedUrl,
+                v.avatarReceiver
+            )
+            return
+        }
+
+        FireBaseInstance.getInfoUser(friendId) { user ->
+            val avatarUrl = user.avatar.toString()
+            avatarUrlCache[friendId] = avatarUrl
+            context.loadImg(
+                avatarUrl,
                 v.avatarReceiver
             )
         }
@@ -77,9 +92,20 @@ class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHold
         showViewMessage(TypeMessage.SINGLE_PHOTO)
     }
 
-    override fun initViewAudio(context: Context, message: Message, longClick: (View) -> Unit) {
+    override fun initViewAudio(
+        context: Context,
+        message: Message,
+        state: AudioPlaybackState?,
+        onStateChanged: (AudioPlaybackState) -> Unit,
+        longClick: (View) -> Unit
+    ) {
         showViewMessage(TypeMessage.AUDIO)
-        v.viewRecordWave.loadDataWaveView(context, path = message.audio ?: "")
+        v.viewRecordWave.loadDataWaveView(
+            context = context,
+            path = message.audio ?: "",
+            state = state,
+            onStateChanged = onStateChanged
+        )
         v.viewRecordWave.setOnLongClickListener {
             longClick.invoke(it)
             true

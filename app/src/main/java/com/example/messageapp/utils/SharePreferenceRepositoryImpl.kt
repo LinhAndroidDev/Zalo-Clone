@@ -51,4 +51,12 @@ class SharePreferenceRepositoryImpl(private val ctx: Context) : SharePreferenceR
     override fun getStatusLoggedIn(): Boolean {
         return prefs[SharePreferenceRepository.STATUS_LOGGED_IN] ?: false
     }
+
+    override fun saveLastSeenFriendRequestAt(time: Long) {
+        prefs[SharePreferenceRepository.LAST_SEEN_FRIEND_REQUEST_AT] = time
+    }
+
+    override fun getLastSeenFriendRequestAt(): Long {
+        return prefs[SharePreferenceRepository.LAST_SEEN_FRIEND_REQUEST_AT] ?: 0L
+    }
 }

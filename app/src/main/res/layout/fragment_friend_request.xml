@@ -16,90 +16,40 @@
             app:item_view="header_title"
             app:title_header="Lời mời kết bạn" />
 
-        <androidx.core.widget.NestedScrollView
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="48dp"
+            android:background="@color/white"
+            app:tabGravity="fill"
+            app:tabMode="fixed"
+            app:tabIndicatorColor="@color/blue1"
+            app:tabSelectedTextColor="@color/blue1"
+            app:tabTextColor="@color/text_grey"
+            app:tabTextAppearance="@style/TabTextAppearance" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/text_hint" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:layout_marginTop="10dp"
-                    android:fontFamily="@font/font_noto_sans"
-                    android:text="@string/older"
-                    android:textColor="@color/text_common"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+        <!-- Received requests list -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rcvReceivedRequests"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"
+            android:visibility="visible"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rcvRequestFriend"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
-                <LinearLayout
-                    android:id="@+id/viewSeeMore"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_horizontal"
-                    android:paddingVertical="10dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/font_noto_sans"
-                        android:text="@string/see_more"
-                        android:textAllCaps="true"
-                        android:textColor="@color/text_common"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_width="13dp"
-                        android:layout_height="13dp"
-                        android:layout_marginStart="10dp"
-                        android:importantForAccessibility="no"
-                        android:rotation="-90"
-                        android:src="@drawable/ic_back" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="10dp"
-                    android:background="@color/grey_bg" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:layout_marginTop="10dp"
-                    android:fontFamily="@font/font_noto_sans"
-                    android:text="@string/you_may_be_familiar_with"
-                    android:textColor="@color/text_common"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rcvSuggestFriendRequest"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="15dp"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="100dp"/>
-            </LinearLayout>
-
-        </androidx.core.widget.NestedScrollView>
+        <!-- Sent requests list -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rcvSentRequests"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
     </LinearLayout>
 </layout>

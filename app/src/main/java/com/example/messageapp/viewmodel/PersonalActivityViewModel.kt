@@ -22,15 +22,26 @@ class PersonalActivityViewModel @Inject constructor() : BaseViewModel() {
 
     private val _user: MutableStateFlow<User?> = MutableStateFlow(null)
     val user = _user.asStateFlow()
+    private val _isInfoUser: MutableStateFlow<Boolean> = MutableStateFlow(true)
+    val isInfoUser = _isInfoUser.asStateFlow()
 
     /** This function is used to get information of user */
-    fun getInfoUser() = viewModelScope.launch {
-        FireBaseInstance.getInfoUser(
-            shared.getAuth(),
-            success = { user ->
+    fun getInfoUser(arg: String?) = viewModelScope.launch {
+        _isInfoUser.value = arg == null
+        if (isInfoUser.value) {
+            // Get information of user
+            FireBaseInstance.getInfoUser(
+                shared.getAuth(),
+                success = { user ->
+                    _user.value = user
+                }
+            )
+        } else {
+            // Get information of friend
+            FireBaseInstance.getInfoUser(arg.toString()) { user ->
                 _user.value = user
             }
-        )
+        }
     }
 
     /** This function is used to upload photo to firebase*/

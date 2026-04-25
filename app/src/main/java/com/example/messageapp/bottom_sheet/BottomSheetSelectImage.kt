@@ -41,18 +41,18 @@ class BottomSheetSelectImage : BottomSheetDialogFragment() {
         }
 
         binding.seeImage.setOnClickListener {
-            seeImage?.invoke()
             dismiss()
+            seeImage?.invoke()
         }
 
         binding.takeNewPhoto.setOnClickListener {
-            takeNewPhoto?.invoke()
             dismiss()
+            takeNewPhoto?.invoke()
         }
 
         binding.selectPhotoOnDevice.setOnClickListener {
-            selectPhotoOnDevice?.invoke()
             dismiss()
+            selectPhotoOnDevice?.invoke()
         }
     }
 }

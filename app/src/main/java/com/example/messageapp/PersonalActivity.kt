@@ -12,6 +12,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityOptionsCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.example.messageapp.bottom_sheet.BottomSheetSelectImage
 import com.example.messageapp.bottom_sheet.BottomSheetSettingViewDiary
@@ -29,9 +31,12 @@ class PersonalActivity : AppCompatActivity() {
     private val binding by lazy { ActivityPersonalBinding.inflate(layoutInflater) }
     private val viewModel by viewModels<PersonalActivityViewModel>()
     private var updateAvatar = true
+    private var currentAvatarUrl: String = ""
+    private var currentCoverUrl: String = ""
 
     companion object {
         private const val REQUEST_IMAGE_CAPTURE = 2
+        const val FRIEND_ID_KEY = "FRIEND_ID_KEY"
     }
 
     private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -64,11 +69,27 @@ class PersonalActivity : AppCompatActivity() {
     private fun onClickView() {
         binding.back.setOnClickListener { onBackPressed() }
         binding.avatarUser.setOnSingleClickListener {
-            showDialogSelectPhoto(true)
+            if (viewModel.isInfoUser.value) {
+                showDialogSelectPhoto(true, currentAvatarUrl)
+            } else {
+                startPreviewAvatarWithTransition(
+                    currentAvatarUrl,
+                    binding.avatarUser,
+                    PreviewAvatarActivity.TRANSITION_AVATAR
+                )
+            }
         }
 
         binding.imgCover.setOnSingleClickListener {
-            showDialogSelectPhoto(false)
+            if (viewModel.isInfoUser.value) {
+                showDialogSelectPhoto(false, currentCoverUrl)
+            } else {
+                startPreviewAvatarWithTransition(
+                    currentCoverUrl,
+                    binding.imgCover,
+                    PreviewAvatarActivity.TRANSITION_COVER
+                )
+            }
         }
 
         binding.btnViewDiary.setOnSingleClickListener {
@@ -77,7 +98,21 @@ class PersonalActivity : AppCompatActivity() {
         }
     }
 
-    private fun showDialogSelectPhoto(isAvatar: Boolean) {
+    private fun startPreviewAvatarWithTransition(imageUrl: String, sharedView: View, transitionName: String) {
+        if (imageUrl.isBlank()) return
+        sharedView.transitionName = transitionName
+        val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+            this,
+            sharedView,
+            transitionName
+        )
+        startActivity(
+            PreviewAvatarActivity.createIntent(this, imageUrl, transitionName),
+            options.toBundle()
+        )
+    }
+
+    private fun showDialogSelectPhoto(isAvatar: Boolean, image: String) {
         updateAvatar = isAvatar
         val bottomSheetSelectImage = BottomSheetSelectImage()
         val bundle = Bundle()
@@ -85,7 +120,21 @@ class PersonalActivity : AppCompatActivity() {
         bottomSheetSelectImage.arguments = bundle
         bottomSheetSelectImage.show(supportFragmentManager, "")
         bottomSheetSelectImage.seeImage = {
-
+            if (image.isNotBlank()) {
+                if (isAvatar) {
+                    startPreviewAvatarWithTransition(
+                        image,
+                        binding.avatarUser,
+                        PreviewAvatarActivity.TRANSITION_AVATAR
+                    )
+                } else {
+                    startPreviewAvatarWithTransition(
+                        image,
+                        binding.imgCover,
+                        PreviewAvatarActivity.TRANSITION_COVER
+                    )
+                }
+            }
         }
         bottomSheetSelectImage.takeNewPhoto = {
             dispatchTakePictureIntent()
@@ -98,6 +147,8 @@ class PersonalActivity : AppCompatActivity() {
     private fun handleDataUser(user: User) {
         binding.nameUser.text = user.name
         binding.txtWhatHappy.text = getString(R.string.what_happy_today, user.name)
+        currentAvatarUrl = user.avatar.toString()
+        currentCoverUrl = user.imageCover.toString()
         loadImg(user.avatar.toString(), binding.avatarUser)
         loadImg(user.imageCover.toString(), binding.imgCover, imgDefault = R.drawable.bg_grey_horizontal)
     }
@@ -105,12 +156,24 @@ class PersonalActivity : AppCompatActivity() {
     private fun initView() {
         setUpFullScreen()
 
-        viewModel.getInfoUser()
+        val arg = intent.getStringExtra(FRIEND_ID_KEY)
+        viewModel.getInfoUser(arg)
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel.user.collect { user ->
                 user?.let {
                     handleDataUser(user)
                 }
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel.isInfoUser.collect { isInfoUser ->
+                if (isInfoUser) {
+                    showViewUser()
+                } else {
+                    showViewFriend()
+                }
+
             }
         }
 
@@ -121,6 +184,20 @@ class PersonalActivity : AppCompatActivity() {
             }
 
         })
+    }
+
+    private fun showViewFriend() {
+        binding.btnViewDiary.isVisible = false
+        binding.viewUpdateProfile.isVisible = false
+        binding.layoutInfoUser.isVisible = false
+        binding.txtNoteFriend.isVisible = true
+    }
+
+    private fun showViewUser() {
+        binding.btnViewDiary.isVisible = true
+        binding.viewUpdateProfile.isVisible = true
+        binding.layoutInfoUser.isVisible = true
+        binding.txtNoteFriend.isVisible = false
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

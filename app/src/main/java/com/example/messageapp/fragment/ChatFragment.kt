@@ -29,6 +29,7 @@ import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.messageapp.PersonalActivity
 import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
@@ -37,6 +38,7 @@ import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.bottom_sheet.BottomSheetRecord
+import com.example.messageapp.bottom_sheet.BottomSheetSticker
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
@@ -147,6 +149,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             chatAdapter?.setOnActionClickItem(mCallBackClickItem)
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(conversation?.name ?: "")
+            binding?.header?.showInfoFriend = {
+                val intent = Intent(requireActivity(), PersonalActivity::class.java)
+                intent.putExtra(PersonalActivity.FRIEND_ID_KEY, conversation?.friendId)
+                startActivity(intent)
+                activity?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            }
         }
         binding?.edtMessage?.doOnTextChanged { text, _, _, _ ->
             if (text?.isNotEmpty() == true) {
@@ -464,6 +472,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 }
             }
             bottomSheetRecord.show(parentFragmentManager, "")
+        }
+
+        binding?.btnSticker?.setOnClickListener {
+            val bottomSheetSticker = BottomSheetSticker()
+            bottomSheetSticker.show(parentFragmentManager, "")
         }
     }
 

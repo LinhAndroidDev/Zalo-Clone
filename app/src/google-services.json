@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "805789340336",
+    "firebase_url": "https://zalo-clone-45246-default-rtdb.firebaseio.com",
+    "project_id": "zalo-clone-45246",
+    "storage_bucket": "zalo-clone-45246.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805789340336:android:3089c7f4f93875d556a175",
+        "android_client_info": {
+          "package_name": "com.example.messageapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADFs6W3jHj9jH5zb1TFGPyWcovrjXMvNs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

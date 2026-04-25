@@ -5,7 +5,10 @@ import android.net.Uri
 import android.util.Log
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
+import com.example.messageapp.model.Friend
+import com.example.messageapp.model.FriendRequest
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.Sticker
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.User
 import com.example.messageapp.remote.ApiClient
@@ -19,7 +22,6 @@ import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -28,6 +30,7 @@ import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
 import java.util.HashMap
 import java.util.UUID
 import kotlin.coroutines.resume
@@ -36,7 +39,6 @@ import kotlin.coroutines.suspendCoroutine
 
 object FireBaseInstance {
     private val db by lazy { Firebase.firestore }
-    private val storage by lazy { Firebase.storage.reference }
 
     private const val PATH_USER = "users"
     private const val PATH_EMAIL = "email"
@@ -51,6 +53,11 @@ object FireBaseInstance {
     private const val PATH_EMOTION = "emotion"
     private const val PATH_AUDIO = "audios"
     private const val PATH_TYPING = "typing"
+    private const val PATH_STICKER = "sticker"
+    private const val PATH_FRIEND_REQUESTS = "friendRequests"
+    private const val PATH_FRIENDS = "friends"
+    private const val PATH_SEARCH_HISTORY = "searchHistory"
+    private const val PATH_ITEMS = "items"
 
     /**
      * This function is used to check the login of the user
@@ -391,22 +398,57 @@ object FireBaseInstance {
     }
 
     /**
+     * One-time fetch to verify if a user with [userId] exists.
+     * Calls [success] with the User if found, [failure] if not found or on error.
+     */
+    fun getUserById(
+        userId: String,
+        success: (User) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        if (userId.isBlank()) {
+            failure.invoke("ID không hợp lệ")
+            return
+        }
+        db.collection(PATH_USER)
+            .document(userId)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val user = doc.toObject(User::class.java)
+                    if (user != null) {
+                        success.invoke(user.copy(keyAuth = doc.id))
+                    } else {
+                        failure.invoke("Không tìm thấy người dùng")
+                    }
+                } else {
+                    failure.invoke("Không tìm thấy người dùng")
+                }
+            }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
      * This function is used to upload image to the Storage Firebase
      * @param context context of activity
      * @param uriPhoto uri of photo
      * @param success callback when upload is successful
      */
     fun uploadImage(context: Context, uriPhoto: Uri, success: (String) -> Unit) {
-        storage.child(PATH_IMAGE)
-            .child(UUID.randomUUID().toString())
-            .putBytes(context.compressImage(uriPhoto))
-            .addOnSuccessListener { taskSnapshot->
-                taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
-                    success.invoke(uri.toString())
-                }
-            }.addOnFailureListener {
-                Log.e("Upload Photo", "Fail")
+        val bytes = context.compressImage(uriPhoto)
+        val fileName = "${UUID.randomUUID()}.jpg"
+        val folder = PATH_IMAGE // Firebase path: images/*
+
+        CloudinaryManager.uploadBytes(
+            fileBytes = bytes,
+            fileName = fileName,
+            mimeType = "image/jpeg",
+            folder = folder,
+            onSuccess = success,
+            onFailure = { e ->
+                Log.e("Check fail uploadImage Cloudinary", "uploadImage failed: ${e.message}", e)
             }
+        )
     }
 
     /**
@@ -526,21 +568,27 @@ object FireBaseInstance {
      */
     private suspend fun uploadPhoto(context: Context, uri: Uri, idRoom: List<String>): String? {
         return suspendCoroutine { continuation ->
-            val storageRef = storage.child(PATH_PHOTO)
-                .child(idRoom.toString())
-                .child(UUID.randomUUID().toString())
+            try {
+                val bytes = context.compressImage(uri)
+                val fileName = "${UUID.randomUUID()}.jpg"
+                // Firebase path: photo/<roomId.toString()>/*
+                val folder = "$PATH_PHOTO/$idRoom"
 
-            storageRef.putBytes(context.compressImage(uri))
-                .addOnSuccessListener { taskSnapshot ->
-                    taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
-                        continuation.resume(uri.toString())  // Trả về URL của ảnh
-                    }.addOnFailureListener {
-                        continuation.resumeWithException(it)  // Đảm bảo xử lý lỗi
+                CloudinaryManager.uploadBytes(
+                    fileBytes = bytes,
+                    fileName = fileName,
+                    mimeType = "image/jpeg",
+                    folder = folder,
+                    onSuccess = { url ->
+                        continuation.resume(url)
+                    },
+                    onFailure = { e ->
+                        continuation.resumeWithException(e)
                     }
-                }
-                .addOnFailureListener {
-                    continuation.resumeWithException(it)  // Đảm bảo xử lý lỗi
-                }
+                )
+            } catch (t: Throwable) {
+                continuation.resumeWithException(t)
+            }
         }
     }
 
@@ -551,17 +599,32 @@ object FireBaseInstance {
      * @param success callback when upload is successful
      */
     fun uploadAudio(roomId: List<String>, uriAudio: Uri, success: (String) -> Unit) {
-        storage.child(PATH_AUDIO)
-            .child(roomId.toString())
-            .child(UUID.randomUUID().toString())
-            .putFile(uriAudio)
-            .addOnSuccessListener { taskSnapshot ->
-                taskSnapshot.storage.downloadUrl.addOnSuccessListener { uri ->
-                    success.invoke(uri.toString())
-                }
-            }.addOnFailureListener {
-                Log.e("Upload Audio", "Fail")
+        val audioFilePath = uriAudio.path
+        val audioFile = audioFilePath?.let { File(it) }
+        val bytes = audioFile?.takeIf { it.exists() }?.readBytes()
+
+        if (bytes == null) {
+            Log.e(
+                "Check fail uploadAudio Cloudinary",
+                "uploadAudio failed: cannot read file from uri=$uriAudio path=$audioFilePath"
+            )
+            return
+        }
+
+        val fileName = "${UUID.randomUUID()}.mp3"
+        // Firebase path: audios/<roomId.toString()>/*
+        val folder = "$PATH_AUDIO/$roomId"
+
+        CloudinaryManager.uploadBytes(
+            fileBytes = bytes,
+            fileName = fileName,
+            mimeType = "audio/mpeg",
+            folder = folder,
+            onSuccess = success,
+            onFailure = { e ->
+                Log.e("Check fail uploadAudio Cloudinary", "uploadAudio failed: ${e.message}", e)
             }
+        )
     }
 
     /**
@@ -601,13 +664,22 @@ object FireBaseInstance {
         db.collection(PATH_USER)
             .get()
             .addOnSuccessListener { result ->
-                val friends = result.documents.mapNotNull { it.toObject(User::class.java) }
-                    .filter { friend ->
-                        val nameFriendAccent = removeAccent(friend.name?.lowercase().toString())
-                        nameFriendAccent.contains(queryLowerCase)
-                    }
+                // toObject() does not include the document ID, so set keyAuth manually
+                val friends = result.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    User(
+                        name = data["name"]?.toString() ?: "",
+                        email = data["email"]?.toString() ?: "",
+                        avatar = data["avatar"]?.toString() ?: "",
+                        imageCover = data["imageCover"]?.toString() ?: "",
+                        keyAuth = doc.id
+                    )
+                }.filter { friend ->
+                    val nameFriendAccent = removeAccent(friend.name?.lowercase().toString())
+                    nameFriendAccent.contains(queryLowerCase)
+                }
                 if (queryText.isNotEmpty()) {
-                    success.invoke(friends as ArrayList<User>)
+                    success.invoke(ArrayList(friends))
                 } else {
                     success.invoke(arrayListOf())
                 }
@@ -642,5 +714,320 @@ object FireBaseInstance {
         db.collection("Conversation${userId}")
             .document(friendId)
             .update(PATH_TYPING, typing)
+    }
+
+    /**
+     * Send a friend request from [fromId] to [toId].
+     * Checks for an existing pending request before creating a new one.
+     */
+    fun sendFriendRequest(
+        fromId: String,
+        fromName: String,
+        fromAvatar: String,
+        toId: String,
+        toName: String = "",
+        toAvatar: String = "",
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS)
+            .whereEqualTo("fromId", fromId)
+            .whereEqualTo("toId", toId)
+            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    failure.invoke("Đã gửi lời mời kết bạn rồi")
+                    return@addOnSuccessListener
+                }
+                val docRef = db.collection(PATH_FRIEND_REQUESTS).document()
+                val request = FriendRequest(
+                    requestId = docRef.id,
+                    fromId = fromId,
+                    toId = toId,
+                    fromName = fromName,
+                    fromAvatar = fromAvatar,
+                    toName = toName,
+                    toAvatar = toAvatar,
+                    status = FriendRequest.STATUS_PENDING,
+                    createdAt = System.currentTimeMillis()
+                )
+                docRef.set(request)
+                    .addOnSuccessListener { success.invoke() }
+                    .addOnFailureListener { failure.invoke(it.message.toString()) }
+            }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Real-time listener for incoming pending friend requests for [userId].
+     */
+    fun getIncomingFriendRequests(
+        userId: String,
+        success: (List<FriendRequest>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS)
+            .whereEqualTo("toId", userId)
+            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    failure.invoke(error.message.toString())
+                    return@addSnapshotListener
+                }
+                val list = value?.documents
+                    ?.mapNotNull { it.toObject(FriendRequest::class.java) }
+                    ?: emptyList()
+                success.invoke(list)
+            }
+    }
+
+    /**
+     * Real-time listener for outgoing pending friend requests sent by [userId].
+     */
+    fun getOutgoingFriendRequests(
+        userId: String,
+        success: (List<FriendRequest>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS)
+            .whereEqualTo("fromId", userId)
+            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    failure.invoke(error.message.toString())
+                    return@addSnapshotListener
+                }
+                val list = value?.documents
+                    ?.mapNotNull { it.toObject(FriendRequest::class.java) }
+                    ?: emptyList()
+                success.invoke(list)
+            }
+    }
+
+    /**
+     * Accept a friend request. Uses a batch write to atomically:
+     * - Update request status to "accepted"
+     * - Add both users to each other's friends subcollection
+     */
+    fun acceptFriendRequest(
+        request: FriendRequest,
+        myName: String,
+        myAvatar: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val batch = db.batch()
+
+        val requestRef = db.collection(PATH_FRIEND_REQUESTS).document(request.requestId)
+        batch.update(requestRef, "status", FriendRequest.STATUS_ACCEPTED)
+
+        val myFriendRef = db.collection(PATH_USER).document(request.toId)
+            .collection(PATH_FRIENDS).document(request.fromId)
+        batch.set(
+            myFriendRef, Friend(
+                name = request.fromName,
+                avatar = request.fromAvatar,
+                keyAuth = request.fromId,
+                since = System.currentTimeMillis()
+            )
+        )
+
+        val theirFriendRef = db.collection(PATH_USER).document(request.fromId)
+            .collection(PATH_FRIENDS).document(request.toId)
+        batch.set(
+            theirFriendRef, Friend(
+                name = myName,
+                avatar = myAvatar,
+                keyAuth = request.toId,
+                since = System.currentTimeMillis()
+            )
+        )
+
+        batch.commit()
+            .addOnSuccessListener { success.invoke() }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Reject a friend request by updating its status to "rejected".
+     */
+    fun rejectFriendRequest(
+        requestId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS).document(requestId)
+            .update("status", FriendRequest.STATUS_REJECTED)
+            .addOnSuccessListener { success.invoke() }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Cancel an outgoing friend request sent from [fromId] to [toId].
+     * Deletes the pending request document from Firestore.
+     */
+    fun cancelFriendRequest(
+        fromId: String,
+        toId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_FRIEND_REQUESTS)
+            .whereEqualTo("fromId", fromId)
+            .whereEqualTo("toId", toId)
+            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+            .get()
+            .addOnSuccessListener { result ->
+                if (result.isEmpty) {
+                    success.invoke()
+                    return@addOnSuccessListener
+                }
+                val batch = db.batch()
+                result.documents.forEach { batch.delete(it.reference) }
+                batch.commit()
+                    .addOnSuccessListener { success.invoke() }
+                    .addOnFailureListener { failure.invoke(it.message.toString()) }
+            }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Real-time listener for the friends list of [userId].
+     */
+    fun getFriends(
+        userId: String,
+        success: (List<Friend>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_USER).document(userId)
+            .collection(PATH_FRIENDS)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    failure.invoke(error.message.toString())
+                    return@addSnapshotListener
+                }
+                val list = value?.documents
+                    ?.mapNotNull { it.toObject(Friend::class.java) }
+                    ?: emptyList()
+                success.invoke(list)
+            }
+    }
+
+    /**
+     * Check the friendship status between [myId] and [targetId].
+     * Returns one of: "friend", "pending_sent", "pending_received", "none"
+     */
+    fun getFriendshipStatus(
+        myId: String,
+        targetId: String,
+        result: (String) -> Unit
+    ) {
+        db.collection(PATH_USER).document(myId)
+            .collection(PATH_FRIENDS).document(targetId)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    result.invoke("friend")
+                    return@addOnSuccessListener
+                }
+                db.collection(PATH_FRIEND_REQUESTS)
+                    .whereEqualTo("fromId", myId)
+                    .whereEqualTo("toId", targetId)
+                    .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+                    .get()
+                    .addOnSuccessListener { sent ->
+                        if (!sent.isEmpty) {
+                            result.invoke("pending_sent")
+                            return@addOnSuccessListener
+                        }
+                        db.collection(PATH_FRIEND_REQUESTS)
+                            .whereEqualTo("fromId", targetId)
+                            .whereEqualTo("toId", myId)
+                            .whereEqualTo("status", FriendRequest.STATUS_PENDING)
+                            .get()
+                            .addOnSuccessListener { received ->
+                                if (!received.isEmpty) result.invoke("pending_received")
+                                else result.invoke("none")
+                            }
+                            .addOnFailureListener { result.invoke("none") }
+                    }
+                    .addOnFailureListener { result.invoke("none") }
+            }
+            .addOnFailureListener { result.invoke("none") }
+    }
+
+    /**
+     * Save a user to the current user's search history.
+     * Uses the friend's keyAuth as the document ID so duplicate entries are overwritten.
+     */
+    fun saveSearchHistory(
+        myId: String,
+        user: User,
+        success: () -> Unit = {},
+        failure: (String) -> Unit = {}
+    ) {
+        val data = hashMapOf(
+            "name" to (user.name ?: ""),
+            "avatar" to (user.avatar ?: ""),
+            "keyAuth" to (user.keyAuth ?: ""),
+            "searchedAt" to System.currentTimeMillis()
+        )
+        db.collection(PATH_SEARCH_HISTORY)
+            .document(myId)
+            .collection(PATH_ITEMS)
+            .document(user.keyAuth ?: return)
+            .set(data)
+            .addOnSuccessListener { success.invoke() }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Fetch the current user's search history ordered by most recent first.
+     */
+    fun getSearchHistory(
+        myId: String,
+        success: (List<User>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(PATH_SEARCH_HISTORY)
+            .document(myId)
+            .collection(PATH_ITEMS)
+            .orderBy("searchedAt", Query.Direction.DESCENDING)
+            .get()
+            .addOnSuccessListener { result ->
+                val list = result.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    User(
+                        name = data["name"]?.toString() ?: "",
+                        avatar = data["avatar"]?.toString() ?: "",
+                        keyAuth = data["keyAuth"]?.toString() ?: doc.id
+                    )
+                }
+                success.invoke(list)
+            }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    fun getSticker(sticker: Sticker, onSuccess: (List<String>) -> Unit) {
+        if (sticker == Sticker.CONGRATULATION) {
+            Log.e("getSticker", "init")
+        }
+        val stickerPaths = arrayListOf<String>()
+        db.collection(PATH_STICKER)
+            .document(sticker.value)
+            .get()
+            .addOnSuccessListener {
+                it.data?.map { doc ->
+                    if (sticker == Sticker.CONGRATULATION) {
+                        Log.e("getSticker", "key: ${doc.key}, value: ${doc.value}")
+                    }
+                    stickerPaths.add(doc.key)
+                }
+                onSuccess.invoke(stickerPaths)
+            }
+            .addOnFailureListener {
+                Log.e("getSticker", it.message.toString())
+            }
     }
 }

@@ -14,10 +14,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 
 class AudioRecorderManager {
+    companion object {
+        private val lock = Any()
+        private var activeManager: AudioRecorderManager? = null
+    }
+
     private var mediaRecorder: MediaRecorder? = null
     private var outputFilePath: String? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -60,33 +66,73 @@ class AudioRecorderManager {
         audioWaveView: AudioWaveView?,
         scope: CoroutineScope,
         onFinish: () -> Unit,
-        timeCurrent: (String) -> Unit
+        timeCurrent: (String) -> Unit,
+        startPositionMs: Int = 0,
+        onProgress: (positionMs: Int, progress: Float) -> Unit = { _, _ -> }
     ) {
+        val isValidFilePath = filePath.isNotBlank() &&
+                (File(filePath).exists() || filePath.startsWith("http"))
+        if (!isValidFilePath) {
+            onFinish()
+            return
+        }
+
+        // Ensure only one audio plays at a time across all RecordWaveView instances.
+        synchronized(lock) {
+            if (activeManager != null && activeManager !== this) {
+                activeManager?.stopAudio()
+            }
+            activeManager = this
+        }
+
         if (isResumingAudio) {
             resumeAudio(audioWaveView, scope, timeCurrent)
             return
         }
         releasePlayer()
 
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(filePath)
-            prepare()
-            start()
+        try {
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(filePath)
+                prepare()
+                if (startPositionMs > 0 && startPositionMs < duration) {
+                    seekTo(startPositionMs)
+                    currentListen = startPositionMs
+                }
+                start()
 
-            isResumingAudio = true
-            job?.cancel()
-            job = scope.launch {
-                updateAudioProgress(audioWaveView, scope) { position ->
-                    timeCurrent(SimpleDateFormat(DateUtils.MINUTE_TIME).format(position.toLong()))
+                isResumingAudio = true
+                job?.cancel()
+                job = scope.launch {
+                    updateAudioProgress(audioWaveView, scope) { position, progress ->
+                        onProgress(position, progress)
+                        timeCurrent(SimpleDateFormat(DateUtils.MINUTE_TIME).format(position.toLong()))
+                    }
+                }
+
+                setOnCompletionListener {
+                    isResumingAudio = false
+                    audioWaveView?.progress = 100f
+                    job?.cancel()
+                    synchronized(lock) {
+                        if (activeManager === this@AudioRecorderManager) {
+                            activeManager = null
+                        }
+                    }
+                    onFinish()
                 }
             }
-
-            setOnCompletionListener {
-                isResumingAudio = false
-                audioWaveView?.progress = 100f
-                job?.cancel()
-                onFinish()
+        } catch (e: Exception) {
+            Log.e("AudioRecorderManager", "Cannot play audio: ${e.message}")
+            isResumingAudio = false
+            releasePlayer()
+            job?.cancel()
+            synchronized(lock) {
+                if (activeManager === this) {
+                    activeManager = null
+                }
             }
+            onFinish()
         }
 
         audioWaveView?.onProgressChanged = { progress, byUser ->
@@ -104,7 +150,7 @@ class AudioRecorderManager {
     private fun updateAudioProgress(
         audioWaveView: AudioWaveView?,
         scope: CoroutineScope,
-        position: (Int) -> Unit
+        position: (Int, Float) -> Unit
     ) {
         scope.launch(Dispatchers.Main) {
             while (isActive) {
@@ -117,7 +163,7 @@ class AudioRecorderManager {
                         audioWaveView?.progress = if (progress > 100) 100f else progress
                     }
 
-                    position(currentPosition)
+                    position(currentPosition, if (progress > 100) 100f else progress)
                 }
                 delay(100)
             }
@@ -127,11 +173,18 @@ class AudioRecorderManager {
     fun stopAudio() {
         mediaPlayer?.stop()
         releasePlayer()
+        job?.cancel()
+        synchronized(lock) {
+            if (activeManager === this) {
+                activeManager = null
+            }
+        }
     }
 
     private fun releasePlayer() {
         mediaPlayer?.release()
         mediaPlayer = null
+        isResumingAudio = false
     }
 
     @SuppressLint("SimpleDateFormat")
@@ -144,11 +197,13 @@ class AudioRecorderManager {
         mediaPlayer?.start()
         job?.cancel()
         job = scope.launch {
-            updateAudioProgress(audioWaveView, this) { position ->
+            updateAudioProgress(audioWaveView, this) { position, _ ->
                 timeCurrent(SimpleDateFormat(DateUtils.MINUTE_TIME).format(position.toLong()))
             }
         }
     }
+
+    fun currentPositionMs(): Int = mediaPlayer?.currentPosition ?: currentListen
 
     fun pauseAudio() {
         mediaPlayer?.apply {

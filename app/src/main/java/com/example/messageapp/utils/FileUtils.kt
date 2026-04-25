@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.util.LruCache
 import android.widget.ImageView
 import android.widget.Toast
 import com.bumptech.glide.Glide
@@ -23,8 +24,11 @@ import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 
 object FileUtils {
+    private val audioBytesMemoryCache = LruCache<String, ByteArray>(20)
+
     fun Context.compressImage(uri: Uri): ByteArray {
         val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
         val outputStream = ByteArrayOutputStream()
@@ -114,6 +118,47 @@ object FileUtils {
         }
     }
 
+    suspend fun getOrDownloadAudioBytes(context: Context, audioUrl: String): ByteArray? {
+        if (audioUrl.isBlank()) return null
+
+        audioBytesMemoryCache.get(audioUrl)?.let { return it }
+
+        val cacheFile = getOrDownloadAudioFile(context, audioUrl) ?: return null
+        if (cacheFile.exists()) {
+            val bytes = withContext(Dispatchers.IO) { cacheFile.readBytes() }
+            audioBytesMemoryCache.put(audioUrl, bytes)
+            return bytes
+        }
+
+        return null
+    }
+
+    suspend fun getOrDownloadAudioFile(context: Context, audioUrl: String): File? {
+        if (audioUrl.isBlank()) return null
+        val cacheFile = getAudioCacheFile(context, audioUrl)
+        if (cacheFile.exists() && cacheFile.length() > 0) {
+            return cacheFile
+        }
+
+        return withContext(Dispatchers.IO) {
+            try {
+                val client = OkHttpClient()
+                val request = Request.Builder().url(audioUrl).build()
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) return@withContext null
+
+                val bytes = response.body?.bytes() ?: return@withContext null
+                cacheFile.parentFile?.mkdirs()
+                cacheFile.writeBytes(bytes)
+                audioBytesMemoryCache.put(audioUrl, bytes)
+                cacheFile
+            } catch (e: IOException) {
+                Log.e("AudioCache", "Cannot cache audio: ${e.message}")
+                null
+            }
+        }
+    }
+
     suspend fun downloadAudioFile(context: Context, fileUrl: String): File? {
         return withContext(Dispatchers.IO) {
             try {
@@ -147,5 +192,20 @@ object FileUtils {
                 return@withContext null
             }
         }
+    }
+
+    private fun getAudioCacheFile(context: Context, audioUrl: String): File {
+        val cacheDir = File(context.cacheDir, "audio_cache")
+        if (!cacheDir.exists()) {
+            cacheDir.mkdirs()
+        }
+        val fileName = "${audioUrl.md5()}.mp3"
+        return File(cacheDir, fileName)
+    }
+
+    private fun String.md5(): String {
+        val digest = MessageDigest.getInstance("MD5")
+        val hash = digest.digest(toByteArray())
+        return hash.joinToString("") { "%02x".format(it) }
     }
 }

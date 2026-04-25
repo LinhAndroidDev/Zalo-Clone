@@ -3,7 +3,6 @@ package com.example.messageapp.viewmodel
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
-import androidx.core.view.isVisible
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation

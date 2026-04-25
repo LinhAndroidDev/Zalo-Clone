@@ -124,5 +124,10 @@
         <com.example.messageapp.custom.DividerCommon
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
+
+        <ImageView
+            android:id="@+id/imgGif"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"/>
     </LinearLayout>
 </layout>
