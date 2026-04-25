@@ -833,12 +833,18 @@ object FireBaseInstance {
             )
         )
 
+        // Accepter on sender's phone book: prefer name/avatar stored on the request when sent
+        // (avoids empty name if getInfoUser snapshot was incomplete — empty name is omitted from
+        // PhoneBook because grouping uses capitalLetters on friend.name).
+        val accepterName = request.toName.ifBlank { myName }
+        val accepterAvatar = request.toAvatar.ifBlank { myAvatar }
+
         val theirFriendRef = db.collection(PATH_USER).document(request.fromId)
             .collection(PATH_FRIENDS).document(request.toId)
         batch.set(
             theirFriendRef, Friend(
-                name = myName,
-                avatar = myAvatar,
+                name = accepterName,
+                avatar = accepterAvatar,
                 keyAuth = request.toId,
                 since = System.currentTimeMillis()
             )

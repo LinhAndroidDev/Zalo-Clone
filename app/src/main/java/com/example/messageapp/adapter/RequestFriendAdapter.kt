@@ -5,6 +5,8 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemRequestFriendBinding
 import com.example.messageapp.model.FriendRequest
+import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.FireBaseInstance
 
 class RequestFriendAdapter : BaseAdapter<FriendRequest, ItemRequestFriendBinding>() {
 
@@ -16,10 +18,12 @@ class RequestFriendAdapter : BaseAdapter<FriendRequest, ItemRequestFriendBinding
 
     override fun onBindViewHolder(holder: BaseViewHolder<ItemRequestFriendBinding>, position: Int) {
         val request = items[position]
-        Glide.with(holder.v.root)
-            .load(request.fromAvatar)
-            .placeholder(R.drawable.bg_grey_equal)
-            .into(holder.v.avatarFriend)
+        FireBaseInstance.getInfoUser(request.fromId) { u ->
+            Glide.with(holder.v.root)
+                .load(u.avatar)
+                .placeholder(R.drawable.bg_grey_equal)
+                .into(holder.v.avatarFriend)
+        }
         holder.v.nameFriend.text = request.fromName
         holder.v.root.setOnClickListener { onItemClick?.invoke(request) }
         holder.v.btnAgree.setOnClickListener { onAccept?.invoke(request) }

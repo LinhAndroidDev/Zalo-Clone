@@ -40,15 +40,21 @@ class FragmentFriendRequestViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun acceptRequest(request: FriendRequest) = viewModelScope.launch {
-        FireBaseInstance.getInfoUser(shared.getAuth()) { me ->
-            FireBaseInstance.acceptFriendRequest(
-                request = request,
-                myName = me.name.orEmpty(),
-                myAvatar = me.avatar.orEmpty(),
-                success = { showMessage("Đã chấp nhận lời mời kết bạn") },
-                failure = { showError(it) }
-            )
-        }
+        // One-shot fetch avoids getInfoUser snapshot firing multiple times and keeps
+        // myName/myAvatar reliable as fallback when request.toName/toAvatar are blank (old data).
+        FireBaseInstance.getUserById(
+            userId = shared.getAuth(),
+            success = { me ->
+                FireBaseInstance.acceptFriendRequest(
+                    request = request,
+                    myName = me.name.orEmpty(),
+                    myAvatar = me.avatar.orEmpty(),
+                    success = { showMessage("Đã chấp nhận lời mời kết bạn") },
+                    failure = { showError(it) }
+                )
+            },
+            failure = { showError(it) }
+        )
     }
 
     fun rejectRequest(requestId: String) = viewModelScope.launch {
