@@ -398,6 +398,37 @@ object FireBaseInstance {
     }
 
     /**
+     * One-time fetch to verify if a user with [userId] exists.
+     * Calls [success] with the User if found, [failure] if not found or on error.
+     */
+    fun getUserById(
+        userId: String,
+        success: (User) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        if (userId.isBlank()) {
+            failure.invoke("ID không hợp lệ")
+            return
+        }
+        db.collection(PATH_USER)
+            .document(userId)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val user = doc.toObject(User::class.java)
+                    if (user != null) {
+                        success.invoke(user.copy(keyAuth = doc.id))
+                    } else {
+                        failure.invoke("Không tìm thấy người dùng")
+                    }
+                } else {
+                    failure.invoke("Không tìm thấy người dùng")
+                }
+            }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
      * This function is used to upload image to the Storage Firebase
      * @param context context of activity
      * @param uriPhoto uri of photo

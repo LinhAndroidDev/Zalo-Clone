@@ -22,8 +22,14 @@
             app:frameSize="0.6"
             app:frameThickness="8dp"
             app:frameVerticalBias="0.5"
-            app:maskColor="#00000000"
-            />
+            app:maskColor="#00000000" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
 
     </FrameLayout>
 </layout>

@@ -25,6 +25,7 @@ class CustomHeaderView @JvmOverloads constructor(
     private var mTypeSearchListener: OnTypeSearchListener? = null
     var showMenuOther: (() -> Unit)? = null
     var showInfoFriend: (() -> Unit)? = null
+    var addFriend: (() -> Unit)? = null
 
     interface OnTypeSearchListener {
         fun callBackKeySearch(keySearch: String)
@@ -142,6 +143,10 @@ class CustomHeaderView @JvmOverloads constructor(
 
         binding?.viewChat?.viewInfo?.setOnClickListener {
             showInfoFriend?.invoke()
+        }
+
+        binding?.addFriend?.setOnClickListener {
+            addFriend?.invoke()
         }
     }
 

@@ -39,6 +39,9 @@
             android:name=".PersonalActivity"
             android:exported="false" />
         <activity
+            android:name=".QRCodeActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>

@@ -76,6 +76,16 @@ class PhoneBookFragment :
         viewModel?.getPendingRequestCounts()
     }
 
+    override fun onClickView() {
+        super.onClickView()
+
+        binding?.header?.addFriend = {
+            val intent = android.content.Intent(requireActivity(), com.example.messageapp.QRCodeActivity::class.java)
+            startActivity(intent)
+            requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+        }
+    }
+
     override fun bindData() {
         super.bindData()
         lifecycleScope.launch {

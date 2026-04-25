@@ -140,5 +140,7 @@
     <string name="waiting_for_accept">Đang chờ chấp nhận</string>
     <string name="tab_received">Đã nhận</string>
     <string name="tab_sent">Đã gửi</string>
+    <string name="my_qr_code">Mã QR của tôi</string>
+    <string name="qr_hint">Quét mã QR để thêm bạn bè</string>
     <string name="recently_searched">Đã tìm kiếm gần đây</string>
 </resources>
