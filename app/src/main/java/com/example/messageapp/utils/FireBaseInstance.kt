@@ -850,6 +850,44 @@ object FireBaseInstance {
             )
         )
 
+        // Mirror sendMessage paths: Conversation{me}/{friendDocId}
+        val time = DateUtils.getTimeCurrent()
+        val becomeFriendsMsg = "Hai bạn đã trở thành bạn bè"
+
+        val convSenderRef =
+            db.collection("Conversation${request.fromId}").document(request.toId)
+        batch.set(
+            convSenderRef,
+            Conversation(
+                friendId = request.toId,
+                friendImage = accepterAvatar,
+                message = becomeFriendsMsg,
+                name = accepterName,
+                person = "Bạn",
+                sender = request.fromId,
+                time = time,
+                numberUnSeen = 0,
+                typing = false
+            )
+        )
+
+        val convAccepterRef =
+            db.collection("Conversation${request.toId}").document(request.fromId)
+        batch.set(
+            convAccepterRef,
+            Conversation(
+                friendId = request.fromId,
+                friendImage = request.fromAvatar,
+                message = becomeFriendsMsg,
+                name = request.fromName,
+                person = request.fromName,
+                sender = request.fromId,
+                time = time,
+                numberUnSeen = 0,
+                typing = false
+            )
+        )
+
         batch.commit()
             .addOnSuccessListener { success.invoke() }
             .addOnFailureListener { failure.invoke(it.message.toString()) }
