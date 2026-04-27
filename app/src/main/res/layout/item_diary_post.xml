@@ -58,9 +58,14 @@
                 </LinearLayout>
 
                 <ImageView
-                    android:src="@drawable/ic_more"
+                    android:id="@+id/icMenu"
                     android:layout_width="25dp"
-                    android:layout_height="25dp"/>
+                    android:layout_height="25dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/diary_post_menu_cd"
+                    android:focusable="true"
+                    android:src="@drawable/ic_more" />
             </LinearLayout>
 
             <TextView

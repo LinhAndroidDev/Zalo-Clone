@@ -177,4 +177,17 @@
     <string name="error_toggle_like">Không cập nhật được thích</string>
     <string name="error_send_comment">Không gửi được bình luận</string>
     <string name="error_load_comments">Lỗi bình luận</string>
+    <string name="error_load_post">Không tải được bài đăng</string>
+    <string name="error_update_post">Không cập nhật được bài đăng</string>
+    <string name="error_delete_post">Không xoá được bài đăng</string>
+
+    <!-- Menu bài đăng nhật ký -->
+    <string name="diary_post_menu_cd">Tuỳ chọn bài đăng</string>
+    <string name="diary_post_menu_edit">Chỉnh sửa bài đăng</string>
+    <string name="diary_post_menu_delete">Xoá bài đăng</string>
+    <string name="diary_post_delete_title">Xoá bài đăng?</string>
+    <string name="diary_post_delete_message">Bài đăng sẽ bị xoá và không thể khôi phục.</string>
+    <string name="diary_post_delete_confirm">Xoá</string>
+    <string name="diary_post_delete_cancel">Huỷ</string>
+    <string name="status_post_updated">Đã cập nhật bài đăng</string>
 </resources>

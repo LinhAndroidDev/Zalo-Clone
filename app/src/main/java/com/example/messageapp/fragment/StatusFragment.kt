@@ -28,6 +28,9 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
     @Inject
     lateinit var shared: SharePreferenceRepository
 
+    /** Khác null khi đang sửa bài có sẵn (đi từ Nhật ký). */
+    private var editingPostId: String? = null
+
     private val selectedMedia = mutableListOf<StatusMediaItem>()
     private val maxSelectedMedia = 10
     private val pickImagesLauncher =
@@ -44,6 +47,41 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
         }
 
         updatePostState()
+        tryLoadPostForEdit()
+    }
+
+    private fun tryLoadPostForEdit() {
+        val id = arguments?.getString("postId").orEmpty().ifBlank { return }
+        FireBaseInstance.getDiaryPost(
+            postId = id,
+            success = { post ->
+                requireActivity().runOnUiThread {
+                    val myId = shared.getAuth()
+                    if (post.authorUserId != myId) {
+                        Toast.makeText(
+                            requireContext(),
+                            getString(R.string.error_update_post),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        findNavController().popBackStack()
+                        return@runOnUiThread
+                    }
+                    editingPostId = id
+                    binding?.edtStatusContent?.setText(post.content)
+                    selectedMedia.clear()
+                    post.imageUris.forEach { url ->
+                        selectedMedia.add(StatusMediaItem(Uri.parse(url)))
+                    }
+                    updatePostState()
+                }
+            },
+            failure = { msg ->
+                requireActivity().runOnUiThread {
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                    findNavController().popBackStack()
+                }
+            }
+        )
     }
 
     override fun onClickView() {
@@ -72,38 +110,70 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                 return@setOnClickListener
             }
             binding?.btnSend?.isEnabled = false
+            val editId = editingPostId
             FireBaseInstance.getUserById(
                 userId = shared.getAuth(),
                 success = { user ->
                     val localUris = selectedMedia.map { it.uri }
-                    FireBaseInstance.createDiaryPost(
-                        context = requireContext(),
-                        authorId = shared.getAuth(),
-                        authorName = user.name.orEmpty().ifBlank { shared.getNameUser() },
-                        authorAvatarUrl = user.avatar.orEmpty(),
-                        content = content,
-                        localImageUris = localUris,
-                        success = {
-                            requireActivity().runOnUiThread {
-                                binding?.btnSend?.isEnabled = true
-                                Toast.makeText(
-                                    requireContext(),
-                                    getString(R.string.status_post_success),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                binding?.edtStatusContent?.setText("")
-                                selectedMedia.clear()
-                                updatePostState()
-                                findNavController().popBackStack()
+                    if (editId != null) {
+                        FireBaseInstance.updateDiaryPost(
+                            context = requireContext(),
+                            postId = editId,
+                            editorUserId = shared.getAuth(),
+                            content = content,
+                            imageUris = localUris,
+                            success = {
+                                requireActivity().runOnUiThread {
+                                    binding?.btnSend?.isEnabled = true
+                                    editingPostId = null
+                                    Toast.makeText(
+                                        requireContext(),
+                                        getString(R.string.status_post_updated),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    binding?.edtStatusContent?.setText("")
+                                    selectedMedia.clear()
+                                    updatePostState()
+                                    findNavController().popBackStack()
+                                }
+                            },
+                            failure = { msg ->
+                                requireActivity().runOnUiThread {
+                                    binding?.btnSend?.isEnabled = true
+                                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                                }
                             }
-                        },
-                        failure = { msg ->
-                            requireActivity().runOnUiThread {
-                                binding?.btnSend?.isEnabled = true
-                                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                        )
+                    } else {
+                        FireBaseInstance.createDiaryPost(
+                            context = requireContext(),
+                            authorId = shared.getAuth(),
+                            authorName = user.name.orEmpty().ifBlank { shared.getNameUser() },
+                            authorAvatarUrl = user.avatar.orEmpty(),
+                            content = content,
+                            localImageUris = localUris,
+                            success = {
+                                requireActivity().runOnUiThread {
+                                    binding?.btnSend?.isEnabled = true
+                                    Toast.makeText(
+                                        requireContext(),
+                                        getString(R.string.status_post_success),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    binding?.edtStatusContent?.setText("")
+                                    selectedMedia.clear()
+                                    updatePostState()
+                                    findNavController().popBackStack()
+                                }
+                            },
+                            failure = { msg ->
+                                requireActivity().runOnUiThread {
+                                    binding?.btnSend?.isEnabled = true
+                                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 },
                 failure = { msg ->
                     requireActivity().runOnUiThread {

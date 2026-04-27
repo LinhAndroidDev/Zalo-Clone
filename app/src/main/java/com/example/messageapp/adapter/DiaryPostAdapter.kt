@@ -2,9 +2,10 @@ package com.example.messageapp.adapter
 
 import android.content.Context
 import android.net.Uri
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.isVisible
 import com.example.messageapp.R
-import androidx.appcompat.content.res.AppCompatResources
 import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemDiaryPostBinding
 import com.example.messageapp.helper.StatusMediaGridLayout
@@ -19,6 +20,17 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
 
     var onToggleLike: ((DiaryPost) -> Unit)? = null
     var onOpenComments: ((DiaryPost) -> Unit)? = null
+
+    /** Chỉ chủ bài thấy menu (chỉnh sửa / xoá). */
+    var currentUserId: String = ""
+
+    var onEditPost: ((DiaryPost) -> Unit)? = null
+    var onDeletePost: ((DiaryPost) -> Unit)? = null
+
+    private companion object {
+        private const val MENU_EDIT = 1
+        private const val MENU_DELETE = 2
+    }
 
     override fun getLayout(): Int = R.layout.item_diary_post
 
@@ -68,6 +80,29 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
         holder.v.tvCommentCount.text = post.commentCount.toString()
         holder.v.layoutLike.setOnClickListener { onToggleLike?.invoke(post) }
         holder.v.layoutComment.setOnClickListener { onOpenComments?.invoke(post) }
+
+        val isOwner = post.authorUserId == currentUserId && currentUserId.isNotBlank()
+        holder.v.icMenu.isVisible = isOwner
+        holder.v.icMenu.setOnClickListener { anchor ->
+            if (!isOwner) return@setOnClickListener
+            val popup = PopupMenu(ctx, anchor)
+            popup.menu.add(0, MENU_EDIT, 0, ctx.getString(R.string.diary_post_menu_edit))
+            popup.menu.add(0, MENU_DELETE, 0, ctx.getString(R.string.diary_post_menu_delete))
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    MENU_EDIT -> {
+                        onEditPost?.invoke(post)
+                        true
+                    }
+                    MENU_DELETE -> {
+                        onDeletePost?.invoke(post)
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
+        }
     }
 
     private fun formatRelativeTime(context: Context, createdAtMillis: Long): String {

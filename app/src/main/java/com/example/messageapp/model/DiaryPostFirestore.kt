@@ -17,6 +17,7 @@ object DiaryPostFirestore {
     const val FIELD_CONTENT = "content"
     const val FIELD_IMAGE_URLS = "imageUrls"
     const val FIELD_CREATED_AT = "createdAt"
+    const val FIELD_UPDATED_AT = "updatedAt"
     const val FIELD_LIKE_COUNT = "likeCount"
     const val FIELD_COMMENT_COUNT = "commentCount"
 

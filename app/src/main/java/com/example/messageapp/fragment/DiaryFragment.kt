@@ -1,6 +1,8 @@
 package com.example.messageapp.fragment
 
 import android.content.Intent
+import androidx.appcompat.app.AlertDialog
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -8,17 +10,21 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryPostAdapter
+import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.bottom_sheet.BottomSheetDiaryComments
 import com.example.messageapp.dialog.StatusImagePreviewDialog
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiaryBinding
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
+import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.viewmodel.DiaryFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 enum class TypeNews {
     Camera, Video, Edit
@@ -27,6 +33,9 @@ enum class TypeNews {
 @AndroidEntryPoint
 class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_diary
+
+    @Inject
+    lateinit var shared: SharePreferenceRepository
 
     private val diaryPostAdapter by lazy { DiaryPostAdapter() }
 
@@ -45,6 +54,14 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
             BottomSheetDiaryComments.newInstance(post.id)
                 .show(childFragmentManager, "BottomSheetDiaryComments")
         }
+        diaryPostAdapter.currentUserId = shared.getAuth()
+        diaryPostAdapter.onEditPost = { post ->
+            findNavController().navigate(
+                R.id.action_diaryFragment_to_statusFragment,
+                bundleOf("postId" to post.id)
+            )
+        }
+        diaryPostAdapter.onDeletePost = { post -> confirmDeletePost(post) }
 
         viewModel?.getInfoUser()
         viewModel?.startDiaryFeed()
@@ -80,7 +97,27 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
         }
 
         binding?.addStatus?.setOnClickListener {
-            findNavController().navigate(R.id.action_diaryFragment_to_statusFragment)
+            findNavController().navigate(
+                R.id.action_diaryFragment_to_statusFragment,
+                bundleOf("postId" to "")
+            )
         }
+    }
+
+    private fun confirmDeletePost(post: DiaryPost) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.diary_post_delete_title)
+            .setMessage(R.string.diary_post_delete_message)
+            .setNegativeButton(R.string.diary_post_delete_cancel, null)
+            .setPositiveButton(R.string.diary_post_delete_confirm) { _, _ ->
+                val uid = shared.getAuth()
+                FireBaseInstance.deleteDiaryPost(
+                    postId = post.id,
+                    editorUserId = uid,
+                    success = {},
+                    failure = { msg -> viewModel?.showError(msg) }
+                )
+            }
+            .show()
     }
 }

@@ -1102,6 +1102,45 @@ object FireBaseInstance {
     private const val DIARY_FEED_MAX_DISPLAY = 50
 
     /**
+     * Local file URIs → Cloudinary URLs; [http/https] giữ nguyên (ảnh đã upload khi sửa bài).
+     */
+    private fun resolveDiaryImageUrls(
+        context: Context,
+        uris: List<Uri>,
+        onDone: (List<String>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        if (uris.isEmpty()) {
+            onDone(emptyList())
+            return
+        }
+        val urls = mutableListOf<String>()
+        fun next(index: Int) {
+            if (index >= uris.size) {
+                onDone(urls)
+                return
+            }
+            val uri = uris[index]
+            val scheme = uri.scheme?.lowercase()
+            if (scheme == "http" || scheme == "https") {
+                urls.add(uri.toString())
+                next(index + 1)
+            } else {
+                uploadImage(
+                    context,
+                    uri,
+                    success = { url ->
+                        urls.add(url)
+                        next(index + 1)
+                    },
+                    failure = failure
+                )
+            }
+        }
+        next(0)
+    }
+
+    /**
      * Uploads local images then creates [DiaryPostFirestore.COLLECTION] document.
      */
     fun createDiaryPost(
@@ -1133,27 +1172,104 @@ object FireBaseInstance {
                     failure(it.message ?: context.getString(R.string.error_save_post))
                 }
         }
-        if (localImageUris.isEmpty()) {
-            writePost(emptyList())
+        resolveDiaryImageUrls(context, localImageUris, onDone = { writePost(it) }, failure = failure)
+    }
+
+    fun getDiaryPost(
+        postId: String,
+        success: (DiaryPost) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        if (postId.isBlank()) {
+            failure(MyApplication.appContext.getString(R.string.error_load_post))
             return
         }
-        val urls = mutableListOf<String>()
-        fun uploadNext(index: Int) {
-            if (index >= localImageUris.size) {
-                writePost(urls)
-                return
+        db.collection(DiaryPostFirestore.COLLECTION).document(postId).get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
+                    failure(MyApplication.appContext.getString(R.string.error_load_post))
+                    return@addOnSuccessListener
+                }
+                val post = DiaryPostFirestore.fromDocument(doc)
+                if (post != null) success(post)
+                else failure(MyApplication.appContext.getString(R.string.error_load_post))
             }
-            uploadImage(
-                context,
-                localImageUris[index],
-                success = { url ->
-                    urls.add(url)
-                    uploadNext(index + 1)
-                },
-                failure = { msg -> failure(msg) }
-            )
-        }
-        uploadNext(0)
+            .addOnFailureListener {
+                failure(it.message ?: MyApplication.appContext.getString(R.string.error_load_post))
+            }
+    }
+
+    fun updateDiaryPost(
+        context: Context,
+        postId: String,
+        editorUserId: String,
+        content: String,
+        imageUris: List<Uri>,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val ref = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        ref.get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    failure(context.getString(R.string.error_load_post))
+                    return@addOnSuccessListener
+                }
+                val authorId = snap.getString(DiaryPostFirestore.FIELD_AUTHOR_ID).orEmpty()
+                if (authorId != editorUserId) {
+                    failure(context.getString(R.string.error_update_post))
+                    return@addOnSuccessListener
+                }
+                resolveDiaryImageUrls(
+                    context,
+                    imageUris,
+                    onDone = { urls ->
+                        val updates = hashMapOf<String, Any>(
+                            DiaryPostFirestore.FIELD_CONTENT to content,
+                            DiaryPostFirestore.FIELD_IMAGE_URLS to urls,
+                            DiaryPostFirestore.FIELD_UPDATED_AT to FieldValue.serverTimestamp()
+                        )
+                        ref.update(updates)
+                            .addOnSuccessListener { success() }
+                            .addOnFailureListener {
+                                failure(it.message ?: context.getString(R.string.error_update_post))
+                            }
+                    },
+                    failure = failure
+                )
+            }
+            .addOnFailureListener {
+                failure(it.message ?: context.getString(R.string.error_load_post))
+            }
+    }
+
+    fun deleteDiaryPost(
+        postId: String,
+        editorUserId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val ref = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        ref.get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    success()
+                    return@addOnSuccessListener
+                }
+                val authorId = snap.getString(DiaryPostFirestore.FIELD_AUTHOR_ID).orEmpty()
+                if (authorId != editorUserId) {
+                    failure(MyApplication.appContext.getString(R.string.error_delete_post))
+                    return@addOnSuccessListener
+                }
+                ref.delete()
+                    .addOnSuccessListener { success() }
+                    .addOnFailureListener {
+                        failure(it.message ?: MyApplication.appContext.getString(R.string.error_delete_post))
+                    }
+            }
+            .addOnFailureListener {
+                failure(it.message ?: MyApplication.appContext.getString(R.string.error_delete_post))
+            }
     }
 
     /**
