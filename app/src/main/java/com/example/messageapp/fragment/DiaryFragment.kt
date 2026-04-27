@@ -1,10 +1,14 @@
 package com.example.messageapp.fragment
 
 import android.content.Intent
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
+import com.example.messageapp.adapter.DiaryPostAdapter
+import com.example.messageapp.dialog.StatusImagePreviewDialog
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiaryBinding
 import com.example.messageapp.utils.AnimatorUtils
@@ -23,10 +27,18 @@ enum class TypeNews {
 class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_diary
 
+    private val diaryPostAdapter by lazy { DiaryPostAdapter() }
+
     override fun initView() {
         super.initView()
-        // log event: screen_diary
         FirebaseAnalyticsInstance.logDiaryScreen()
+
+        binding?.rcvDiaryFeed?.layoutManager = LinearLayoutManager(requireContext())
+        binding?.rcvDiaryFeed?.adapter = diaryPostAdapter
+        diaryPostAdapter.onOpenImagePreview = { uris, index ->
+            StatusImagePreviewDialog.newInstance(uris, index)
+                .show(childFragmentManager, "StatusImagePreviewDialog")
+        }
 
         viewModel?.getInfoUser()
         lifecycleScope.launch(Dispatchers.Main) {
@@ -39,6 +51,16 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
         }
 
         AnimatorUtils.scaleNews(binding?.iconNews, TypeNews.Camera)
+    }
+
+    override fun bindData() {
+        super.bindData()
+        lifecycleScope.launch {
+            viewModel?.diaryPosts?.collect { posts ->
+                diaryPostAdapter.submitList(posts)
+                binding?.tvFeedEmpty?.isVisible = posts.isEmpty()
+            }
+        }
     }
 
     override fun onClickView() {

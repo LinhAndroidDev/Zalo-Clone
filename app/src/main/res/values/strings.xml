@@ -120,6 +120,7 @@
     <string name="album">Album</string>
     <string name="memory">Kỉ niệm</string>
     <string name="moment">Khoảnh khắc</string>
+    <string name="diary_feed_empty">Chưa có bài đăng. Tạo bài mới từ ô trạng thái phía trên.</string>
     <string name="create_new">Tạo mới</string>
     <string name="setting_style">Cài zStyle</string>
     <string name="my_photo">Ảnh của tôi</string>

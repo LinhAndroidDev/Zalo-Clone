@@ -2,6 +2,7 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.data.DiaryFeedLocalRepository
 import com.example.messageapp.model.User
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
@@ -12,11 +13,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class DiaryFragmentViewModel @Inject constructor() : BaseViewModel() {
+class DiaryFragmentViewModel @Inject constructor(
+    private val diaryFeedLocalRepository: DiaryFeedLocalRepository
+) : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
     private val _user: MutableStateFlow<User?> = MutableStateFlow(null)
     val user = _user.asStateFlow()
+
+    val diaryPosts = diaryFeedLocalRepository.posts
 
     fun getInfoUser() = viewModelScope.launch {
         FireBaseInstance.getInfoUser(shared.getAuth()) {
