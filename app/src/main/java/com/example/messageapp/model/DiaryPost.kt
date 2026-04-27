@@ -1,7 +1,8 @@
 package com.example.messageapp.model
 
 /**
- * Local-only diary / status post (UI preview; not persisted to Firebase yet).
+ * Diary / status post for UI and Firestore feed.
+ * [imageUris] holds remote URLs (https) after sync or local content:// while composing.
  */
 data class DiaryPost(
     val id: String,
@@ -10,5 +11,8 @@ data class DiaryPost(
     val authorAvatarUrl: String,
     val content: String,
     val imageUris: List<String> = emptyList(),
-    val createdAtMillis: Long = System.currentTimeMillis()
+    val createdAtMillis: Long = System.currentTimeMillis(),
+    val likeCount: Int = 0,
+    val commentCount: Int = 0,
+    val likedByMe: Boolean = false
 )

@@ -9,27 +9,21 @@ import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetSelectImage
-import com.example.messageapp.data.DiaryFeedLocalRepository
 import com.example.messageapp.databinding.FragmentStatusBinding
 import com.example.messageapp.dialog.StatusImagePreviewDialog
 import com.example.messageapp.helper.StatusMediaGridLayout
-import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.model.StatusMediaItem
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.utils.showViewAboveKeyBoard
 import com.example.messageapp.viewmodel.StatusFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.UUID
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewModel>() {
     override val layoutResId: Int
         get() = R.layout.fragment_status
-
-    @Inject
-    lateinit var diaryFeedLocalRepository: DiaryFeedLocalRepository
 
     @Inject
     lateinit var shared: SharePreferenceRepository
@@ -70,33 +64,51 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
         binding?.btnSend?.setOnClickListener {
             val content = binding?.edtStatusContent?.text?.toString().orEmpty().trim()
             if (content.isEmpty() && selectedMedia.isEmpty()) {
-                Toast.makeText(requireActivity(), "Vui lòng nhập nội dung hoặc chọn ảnh", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.status_need_content_or_image),
+                    Toast.LENGTH_SHORT
+                ).show()
                 return@setOnClickListener
             }
+            binding?.btnSend?.isEnabled = false
             FireBaseInstance.getUserById(
                 userId = shared.getAuth(),
                 success = { user ->
-                    val post = DiaryPost(
-                        id = UUID.randomUUID().toString(),
-                        authorUserId = shared.getAuth(),
+                    val localUris = selectedMedia.map { it.uri }
+                    FireBaseInstance.createDiaryPost(
+                        context = requireContext(),
+                        authorId = shared.getAuth(),
                         authorName = user.name.orEmpty().ifBlank { shared.getNameUser() },
                         authorAvatarUrl = user.avatar.orEmpty(),
                         content = content,
-                        imageUris = selectedMedia.map { it.uri.toString() },
-                        createdAtMillis = System.currentTimeMillis()
+                        localImageUris = localUris,
+                        success = {
+                            requireActivity().runOnUiThread {
+                                binding?.btnSend?.isEnabled = true
+                                Toast.makeText(
+                                    requireContext(),
+                                    getString(R.string.status_post_success),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                binding?.edtStatusContent?.setText("")
+                                selectedMedia.clear()
+                                updatePostState()
+                                findNavController().popBackStack()
+                            }
+                        },
+                        failure = { msg ->
+                            requireActivity().runOnUiThread {
+                                binding?.btnSend?.isEnabled = true
+                                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
-                    diaryFeedLocalRepository.addPost(post)
-                    requireActivity().runOnUiThread {
-                        Toast.makeText(requireActivity(), "Đã đăng bài", Toast.LENGTH_SHORT).show()
-                        binding?.edtStatusContent?.setText("")
-                        selectedMedia.clear()
-                        updatePostState()
-                        findNavController().popBackStack()
-                    }
                 },
                 failure = { msg ->
                     requireActivity().runOnUiThread {
-                        Toast.makeText(requireActivity(), msg, Toast.LENGTH_SHORT).show()
+                        binding?.btnSend?.isEnabled = true
+                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
                     }
                 }
             )
@@ -113,10 +125,18 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
             pickImagesLauncher.launch("image/*")
         }
         bottomSheet.takeNewPhoto = {
-            Toast.makeText(requireActivity(), "Tính năng đang phát triển", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.status_feature_developing),
+                Toast.LENGTH_SHORT
+            ).show()
         }
         bottomSheet.seeImage = {
-            Toast.makeText(requireActivity(), "Tính năng đang phát triển", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.status_feature_developing),
+                Toast.LENGTH_SHORT
+            ).show()
         }
         bottomSheet.show(parentFragmentManager, "BottomSheetSelectImage")
     }
@@ -124,7 +144,11 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
     private fun addSelectedImages(uris: List<Uri>) {
         val remain = maxSelectedMedia - selectedMedia.size
         if (remain <= 0) {
-            Toast.makeText(requireActivity(), "Bạn chỉ có thể chọn tối đa $maxSelectedMedia ảnh", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.status_max_photos_limit, maxSelectedMedia),
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 
@@ -132,7 +156,11 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
         selectedMedia.addAll(toAdd)
 
         if (uris.size > remain) {
-            Toast.makeText(requireActivity(), "Đã giới hạn tối đa $maxSelectedMedia ảnh", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.status_max_photos_capped, maxSelectedMedia),
+                Toast.LENGTH_SHORT
+            ).show()
         }
         updatePostState()
     }
@@ -162,7 +190,11 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                 if (index in selectedMedia.indices) {
                     selectedMedia.removeAt(index)
                     updatePostState()
-                    Toast.makeText(requireActivity(), "Đã xoá ảnh", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.status_photo_removed),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             },
             onOpenPreview = { index -> openFullPreview(index) }

@@ -3,6 +3,8 @@ package com.example.messageapp.utils
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.example.messageapp.MyApplication
+import com.example.messageapp.R
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Friend
@@ -10,6 +12,9 @@ import com.example.messageapp.model.FriendRequest
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.Sticker
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.model.DiaryPost
+import com.example.messageapp.model.DiaryPostComment
+import com.example.messageapp.model.DiaryPostFirestore
 import com.example.messageapp.model.User
 import com.example.messageapp.remote.ApiClient
 import com.example.messageapp.remote.Token
@@ -17,6 +22,8 @@ import com.example.messageapp.remote.request.Data
 import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
 import com.example.messageapp.utils.FileUtils.compressImage
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -434,7 +441,12 @@ object FireBaseInstance {
      * @param uriPhoto uri of photo
      * @param success callback when upload is successful
      */
-    fun uploadImage(context: Context, uriPhoto: Uri, success: (String) -> Unit) {
+    fun uploadImage(
+        context: Context,
+        uriPhoto: Uri,
+        success: (String) -> Unit,
+        failure: ((String) -> Unit)? = null
+    ) {
         val bytes = context.compressImage(uriPhoto)
         val fileName = "${UUID.randomUUID()}.jpg"
         val folder = PATH_IMAGE // Firebase path: images/*
@@ -447,6 +459,9 @@ object FireBaseInstance {
             onSuccess = success,
             onFailure = { e ->
                 Log.e("Check fail uploadImage Cloudinary", "uploadImage failed: ${e.message}", e)
+                failure?.invoke(
+                    e.message ?: MyApplication.appContext.getString(R.string.error_upload_image)
+                )
             }
         )
     }
@@ -1074,4 +1089,269 @@ object FireBaseInstance {
                 Log.e("getSticker", it.message.toString())
             }
     }
+
+    // region Diary posts (Firestore)
+
+    /**
+     * Số bài tối đa lấy mỗi chunk (whereIn). Không dùng orderBy trên server để tránh bắt buộc composite index;
+     * sắp xếp theo [DiaryPost.createdAtMillis] khi merge.
+     */
+    private const val DIARY_FEED_LIMIT_PER_CHUNK = 80
+
+    /** Số bài tối đa sau khi merge + sort (client). */
+    private const val DIARY_FEED_MAX_DISPLAY = 50
+
+    /**
+     * Uploads local images then creates [DiaryPostFirestore.COLLECTION] document.
+     */
+    fun createDiaryPost(
+        context: Context,
+        authorId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        content: String,
+        localImageUris: List<Uri>,
+        success: (postId: String) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val col = db.collection(DiaryPostFirestore.COLLECTION)
+        fun writePost(imageUrls: List<String>) {
+            val doc = col.document()
+            val data = hashMapOf<String, Any>(
+                DiaryPostFirestore.FIELD_AUTHOR_ID to authorId,
+                DiaryPostFirestore.FIELD_AUTHOR_NAME to authorName,
+                DiaryPostFirestore.FIELD_AUTHOR_AVATAR to authorAvatarUrl,
+                DiaryPostFirestore.FIELD_CONTENT to content,
+                DiaryPostFirestore.FIELD_IMAGE_URLS to imageUrls,
+                DiaryPostFirestore.FIELD_CREATED_AT to FieldValue.serverTimestamp(),
+                DiaryPostFirestore.FIELD_LIKE_COUNT to 0,
+                DiaryPostFirestore.FIELD_COMMENT_COUNT to 0
+            )
+            doc.set(data)
+                .addOnSuccessListener { success(doc.id) }
+                .addOnFailureListener {
+                    failure(it.message ?: context.getString(R.string.error_save_post))
+                }
+        }
+        if (localImageUris.isEmpty()) {
+            writePost(emptyList())
+            return
+        }
+        val urls = mutableListOf<String>()
+        fun uploadNext(index: Int) {
+            if (index >= localImageUris.size) {
+                writePost(urls)
+                return
+            }
+            uploadImage(
+                context,
+                localImageUris[index],
+                success = { url ->
+                    urls.add(url)
+                    uploadNext(index + 1)
+                },
+                failure = { msg -> failure(msg) }
+            )
+        }
+        uploadNext(0)
+    }
+
+    /**
+     * Real-time diary feed: posts where [authorId] is in `me + friends`.
+     * Firestore [Query.whereIn] allows at most 10 values — friends are chunked.
+     */
+    fun observeDiaryFeed(
+        userId: String,
+        onPosts: (List<DiaryPost>) -> Unit,
+        onError: (String) -> Unit
+    ): () -> Unit {
+        val postsCol = db.collection(DiaryPostFirestore.COLLECTION)
+        val chunkPosts = mutableMapOf<Int, Map<String, DiaryPost>>()
+        val likedByMe = mutableMapOf<String, Boolean>()
+        val likeRegs = mutableMapOf<String, ListenerRegistration>()
+        val postChunkRegs = mutableListOf<ListenerRegistration>()
+        var friendsReg: ListenerRegistration? = null
+
+        fun mergeAndEmit() {
+            val merged = linkedMapOf<String, DiaryPost>()
+            chunkPosts.values.forEach { map ->
+                map.forEach { (id, post) -> merged[id] = post }
+            }
+            val list = merged.values
+                .map { p -> p.copy(likedByMe = likedByMe[p.id] ?: false) }
+                .sortedByDescending { it.createdAtMillis }
+                .take(DIARY_FEED_MAX_DISPLAY)
+            onPosts(list)
+        }
+
+        fun syncMyLikeListeners(visiblePostIds: Set<String>) {
+            val toRemove = likeRegs.keys - visiblePostIds
+            toRemove.forEach { pid ->
+                likeRegs.remove(pid)?.remove()
+            }
+            val toAdd = visiblePostIds - likeRegs.keys
+            toAdd.forEach { postId ->
+                val reg = postsCol.document(postId)
+                    .collection(DiaryPostFirestore.SUB_LIKES)
+                    .document(userId)
+                    .addSnapshotListener { snap, _ ->
+                        likedByMe[postId] = snap?.exists() == true
+                        mergeAndEmit()
+                    }
+                likeRegs[postId] = reg
+            }
+        }
+
+        fun mergeKeys(): Set<String> {
+            val keys = mutableSetOf<String>()
+            chunkPosts.values.forEach { m -> keys.addAll(m.keys) }
+            return keys
+        }
+
+        fun attachPostListeners(authorIds: List<String>) {
+            postChunkRegs.forEach { it.remove() }
+            postChunkRegs.clear()
+            chunkPosts.clear()
+            if (authorIds.isEmpty()) {
+                mergeAndEmit()
+                syncMyLikeListeners(emptySet())
+                return
+            }
+            // whereIn tối đa 10 giá trị — chunk theo authorId.
+            // Không orderBy trên Firestore: tránh lỗi index + listener gọi onError lặp khi chưa deploy composite index.
+            val chunks = authorIds.distinct().chunked(10)
+            chunks.forEachIndexed { chunkIndex, chunk ->
+                val reg = postsCol
+                    .whereIn(DiaryPostFirestore.FIELD_AUTHOR_ID, chunk)
+                    .limit(DIARY_FEED_LIMIT_PER_CHUNK.toLong())
+                    .addSnapshotListener { snap, err ->
+                        if (err != null) {
+                            onError(
+                                err.message ?: MyApplication.appContext.getString(R.string.error_load_posts)
+                            )
+                            return@addSnapshotListener
+                        }
+                        val map = snap?.documents?.mapNotNull { doc ->
+                            DiaryPostFirestore.fromDocument(doc, likedByMe = false)
+                                ?.let { d -> d.id to d }
+                        }?.toMap().orEmpty()
+                        chunkPosts[chunkIndex] = map
+                        mergeAndEmit()
+                        syncMyLikeListeners(mergeKeys())
+                    }
+                    postChunkRegs.add(reg)
+            }
+            mergeAndEmit()
+            syncMyLikeListeners(mergeKeys())
+        }
+
+        friendsReg = db.collection(PATH_USER).document(userId)
+            .collection(PATH_FRIENDS)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    onError(
+                        error.message ?: MyApplication.appContext.getString(R.string.error_friends_list)
+                    )
+                    return@addSnapshotListener
+                }
+                val friendIds = value?.documents?.map { it.id }.orEmpty()
+                val authorIds = (listOf(userId) + friendIds).distinct().filter { it.isNotBlank() }
+                likeRegs.values.forEach { it.remove() }
+                likeRegs.clear()
+                likedByMe.clear()
+                attachPostListeners(authorIds)
+            }
+
+        return {
+            friendsReg?.remove()
+            friendsReg = null
+            postChunkRegs.forEach { it.remove() }
+            postChunkRegs.clear()
+            likeRegs.values.forEach { it.remove() }
+            likeRegs.clear()
+            chunkPosts.clear()
+            likedByMe.clear()
+        }
+    }
+
+    fun toggleDiaryPostLike(
+        postId: String,
+        userId: String,
+        currentlyLiked: Boolean,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        val likeRef = postRef.collection(DiaryPostFirestore.SUB_LIKES).document(userId)
+        val batch = db.batch()
+        if (currentlyLiked) {
+            batch.delete(likeRef)
+            batch.update(postRef, DiaryPostFirestore.FIELD_LIKE_COUNT, FieldValue.increment(-1))
+        } else {
+            batch.set(likeRef, mapOf("createdAt" to FieldValue.serverTimestamp()))
+            batch.update(postRef, DiaryPostFirestore.FIELD_LIKE_COUNT, FieldValue.increment(1))
+        }
+        batch.commit()
+            .addOnSuccessListener { success() }
+            .addOnFailureListener {
+                failure(
+                    it.message ?: MyApplication.appContext.getString(R.string.error_toggle_like)
+                )
+            }
+    }
+
+    fun addDiaryComment(
+        postId: String,
+        authorId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        text: String,
+        success: (commentId: String) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        val newRef = postRef.collection(DiaryPostFirestore.SUB_COMMENTS).document()
+        val data = hashMapOf<String, Any>(
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_ID to authorId,
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_NAME to authorName,
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_AVATAR to authorAvatarUrl,
+            DiaryPostFirestore.COMMENT_FIELD_TEXT to text.trim(),
+            DiaryPostFirestore.COMMENT_FIELD_CREATED_AT to FieldValue.serverTimestamp()
+        )
+        val batch = db.batch()
+        batch.set(newRef, data)
+        batch.update(postRef, DiaryPostFirestore.FIELD_COMMENT_COUNT, FieldValue.increment(1))
+        batch.commit()
+            .addOnSuccessListener { success(newRef.id) }
+            .addOnFailureListener {
+                failure(
+                    it.message ?: MyApplication.appContext.getString(R.string.error_send_comment)
+                )
+            }
+    }
+
+    fun observeDiaryComments(
+        postId: String,
+        onUpdate: (List<DiaryPostComment>) -> Unit,
+        onError: (String) -> Unit
+    ): ListenerRegistration {
+        return db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+            .collection(DiaryPostFirestore.SUB_COMMENTS)
+            .orderBy(DiaryPostFirestore.COMMENT_FIELD_CREATED_AT, Query.Direction.ASCENDING)
+            .limit(100)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    onError(
+                        err.message ?: MyApplication.appContext.getString(R.string.error_load_comments)
+                    )
+                    return@addSnapshotListener
+                }
+                val list = snap?.documents?.mapNotNull { doc ->
+                    DiaryPostFirestore.commentFromDocument(postId, doc)
+                }.orEmpty()
+                onUpdate(list)
+            }
+    }
+
+    // endregion Diary posts
 }

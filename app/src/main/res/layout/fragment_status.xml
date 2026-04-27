@@ -41,7 +41,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/font_noto_sans"
-                    android:text="Tạo bài viết"
+                    android:text="@string/status_title_create_post"
                     android:textColor="@color/text_common"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -71,7 +71,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:fontFamily="@font/font_noto_sans"
-                        android:text="Bạn bè"
+                        android:text="@string/status_audience_friends"
                         android:textColor="@color/text_common"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -133,7 +133,7 @@
                 android:layout_marginTop="16dp"
                 android:background="@android:color/transparent"
                 android:gravity="start|top"
-                android:hint="Bạn đang nghĩ gì?"
+                android:hint="@string/status_hint_what_thinking"
                 android:maxLines="8"
                 android:minLines="4"
                 android:textColor="@color/text_common"

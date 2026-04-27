@@ -144,4 +144,37 @@
     <string name="my_qr_code">Mã QR của tôi</string>
     <string name="qr_hint">Quét mã QR để thêm bạn bè</string>
     <string name="recently_searched">Đã tìm kiếm gần đây</string>
+
+    <!-- Status / đăng bài -->
+    <string name="status_title_create_post">Tạo bài viết</string>
+    <string name="status_audience_friends">Bạn bè</string>
+    <string name="status_hint_what_thinking">Bạn đang nghĩ gì?</string>
+    <string name="status_need_content_or_image">Vui lòng nhập nội dung hoặc chọn ảnh</string>
+    <string name="status_post_success">Đã đăng bài</string>
+    <string name="status_feature_developing">Tính năng đang phát triển</string>
+    <string name="status_max_photos_limit">Bạn chỉ có thể chọn tối đa %d ảnh</string>
+    <string name="status_max_photos_capped">Đã giới hạn tối đa %d ảnh</string>
+    <string name="status_photo_removed">Đã xoá ảnh</string>
+
+    <!-- Nhật ký: thích / bình luận / thời gian tương đối -->
+    <string name="diary_like_label">Thích</string>
+    <string name="diary_comments_title">Bình luận</string>
+    <string name="diary_comment_hint">Viết bình luận…</string>
+    <string name="diary_send_comment_cd">Gửi bình luận</string>
+    <string name="diary_enter_comment_body">Nhập nội dung bình luận</string>
+    <string name="diary_not_logged_in">Chưa đăng nhập</string>
+    <string name="diary_default_user_name">Người dùng</string>
+    <string name="time_just_now">Vừa xong</string>
+    <string name="time_minutes_ago">%d phút trước</string>
+    <string name="time_hours_ago">%d giờ trước</string>
+    <string name="time_days_ago">%d ngày trước</string>
+
+    <!-- Lỗi Firestore / diary (fallback khi không có message từ server) -->
+    <string name="error_upload_image">Upload ảnh thất bại</string>
+    <string name="error_save_post">Không lưu được bài đăng</string>
+    <string name="error_load_posts">Lỗi tải bài đăng</string>
+    <string name="error_friends_list">Lỗi danh sách bạn bè</string>
+    <string name="error_toggle_like">Không cập nhật được thích</string>
+    <string name="error_send_comment">Không gửi được bình luận</string>
+    <string name="error_load_comments">Lỗi bình luận</string>
 </resources>

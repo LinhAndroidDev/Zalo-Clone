@@ -23,4 +23,8 @@ open class BaseViewModel : ViewModel() {
     fun showError(error: String) {
         _errorState.value = error
     }
+
+    fun clearError() {
+        _errorState.value = ""
+    }
 }

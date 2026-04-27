@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryPostAdapter
+import com.example.messageapp.bottom_sheet.BottomSheetDiaryComments
 import com.example.messageapp.dialog.StatusImagePreviewDialog
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiaryBinding
@@ -39,8 +40,14 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
             StatusImagePreviewDialog.newInstance(uris, index)
                 .show(childFragmentManager, "StatusImagePreviewDialog")
         }
+        diaryPostAdapter.onToggleLike = { post -> viewModel?.toggleDiaryPostLike(post) }
+        diaryPostAdapter.onOpenComments = { post ->
+            BottomSheetDiaryComments.newInstance(post.id)
+                .show(childFragmentManager, "BottomSheetDiaryComments")
+        }
 
         viewModel?.getInfoUser()
+        viewModel?.startDiaryFeed()
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.user?.collect { user ->
                 binding?.let { binding ->
@@ -61,6 +68,7 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
                 binding?.tvFeedEmpty?.isVisible = posts.isEmpty()
             }
         }
+        // Lỗi: BaseFragment.initView() đã collect errorState + Toast — không collect lại ở đây (tránh toast trùng/spam).
     }
 
     override fun onClickView() {
