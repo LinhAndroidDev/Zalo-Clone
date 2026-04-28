@@ -147,6 +147,10 @@
 
     <!-- Status / đăng bài -->
     <string name="status_title_create_post">Tạo bài viết</string>
+    <string name="status_title_edit_post">Chỉnh sửa bài viết</string>
+    <string name="status_pick_media_preview">Xem ảnh đã chọn</string>
+    <string name="status_camera_permission_denied">Cần quyền camera để chụp ảnh</string>
+    <string name="status_camera_failed">Không mở được camera</string>
     <string name="status_audience_friends">Bạn bè</string>
     <string name="status_hint_what_thinking">Bạn đang nghĩ gì?</string>
     <string name="status_need_content_or_image">Vui lòng nhập nội dung hoặc chọn ảnh</string>
@@ -154,7 +158,6 @@
     <string name="status_feature_developing">Tính năng đang phát triển</string>
     <string name="status_max_photos_limit">Bạn chỉ có thể chọn tối đa %d ảnh</string>
     <string name="status_max_photos_capped">Đã giới hạn tối đa %d ảnh</string>
-    <string name="status_photo_removed">Đã xoá ảnh</string>
 
     <!-- Nhật ký: thích / bình luận / thời gian tương đối -->
     <string name="diary_like_label">Thích</string>

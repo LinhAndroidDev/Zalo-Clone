@@ -1,14 +1,18 @@
 package com.example.messageapp.fragment
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
-import com.example.messageapp.bottom_sheet.BottomSheetSelectImage
+import com.example.messageapp.bottom_sheet.BottomSheetStatusMedia
 import com.example.messageapp.databinding.FragmentStatusBinding
 import com.example.messageapp.dialog.StatusImagePreviewDialog
 import com.example.messageapp.helper.StatusMediaGridLayout
@@ -18,7 +22,9 @@ import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.utils.showViewAboveKeyBoard
 import com.example.messageapp.viewmodel.StatusFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewModel>() {
@@ -33,10 +39,34 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
 
     private val selectedMedia = mutableListOf<StatusMediaItem>()
     private val maxSelectedMedia = 10
+    private var pendingCameraUri: Uri? = null
+
     private val pickImagesLauncher =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-            if (uris.isNullOrEmpty()) return@registerForActivityResult
+            if (uris.isEmpty()) return@registerForActivityResult
             addSelectedImages(uris)
+        }
+
+    private val takePictureLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            val uri = pendingCameraUri
+            if (success && uri != null) {
+                addSelectedImages(listOf(uri))
+            }
+            pendingCameraUri = null
+        }
+
+    private val requestCameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                startCameraCaptureInternal()
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.status_camera_permission_denied),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
     override fun initView() {
@@ -46,8 +76,18 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
             binding?.footerViewStatus?.showViewAboveKeyBoard(this)
         }
 
+        applyHeaderTitleFromArgs()
         updatePostState()
         tryLoadPostForEdit()
+    }
+
+    private fun applyHeaderTitleFromArgs() {
+        val argPostId = arguments?.getString("postId").orEmpty()
+        binding?.tvStatusTitle?.text = if (argPostId.isNotBlank()) {
+            getString(R.string.status_title_edit_post)
+        } else {
+            getString(R.string.status_title_create_post)
+        }
     }
 
     private fun tryLoadPostForEdit() {
@@ -67,10 +107,11 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                         return@runOnUiThread
                     }
                     editingPostId = id
+                    binding?.tvStatusTitle?.text = getString(R.string.status_title_edit_post)
                     binding?.edtStatusContent?.setText(post.content)
                     selectedMedia.clear()
                     post.imageUris.forEach { url ->
-                        selectedMedia.add(StatusMediaItem(Uri.parse(url)))
+                        selectedMedia.add(StatusMediaItem(url.toUri()))
                     }
                     updatePostState()
                 }
@@ -92,11 +133,11 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
         }
 
         binding?.btnPickImage?.setOnClickListener {
-            openSelectImageBottomSheet()
+            openStatusMediaBottomSheet()
         }
 
         binding?.btnPickVideo?.setOnClickListener {
-            openSelectImageBottomSheet()
+            openStatusMediaBottomSheet()
         }
 
         binding?.btnSend?.setOnClickListener {
@@ -189,26 +230,50 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
         }
     }
 
-    private fun openSelectImageBottomSheet() {
-        val bottomSheet = BottomSheetSelectImage()
-        bottomSheet.selectPhotoOnDevice = {
+    private fun openStatusMediaBottomSheet() {
+        val sheet = BottomSheetStatusMedia.newInstance(hasSelectedImages = selectedMedia.isNotEmpty())
+        sheet.onPreviewSelected = {
+            if (selectedMedia.isNotEmpty()) {
+                openFullPreview(0)
+            }
+        }
+        sheet.onTakePhoto = { launchCamera() }
+        sheet.onPickFromGallery = {
             pickImagesLauncher.launch("image/*")
         }
-        bottomSheet.takeNewPhoto = {
+        sheet.show(parentFragmentManager, BottomSheetStatusMedia.TAG)
+    }
+
+    private fun launchCamera() {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        } else {
+            startCameraCaptureInternal()
+        }
+    }
+
+    private fun startCameraCaptureInternal() {
+        val ctx = requireContext()
+        val file = File(ctx.cacheDir, "status_cam_${System.currentTimeMillis()}.jpg")
+        try {
+            val uri = FileProvider.getUriForFile(
+                ctx,
+                "${ctx.packageName}.fileprovider",
+                file
+            )
+            pendingCameraUri = uri
+            takePictureLauncher.launch(uri)
+        } catch (_: Exception) {
             Toast.makeText(
                 requireContext(),
-                getString(R.string.status_feature_developing),
+                getString(R.string.status_camera_failed),
                 Toast.LENGTH_SHORT
             ).show()
         }
-        bottomSheet.seeImage = {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.status_feature_developing),
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-        bottomSheet.show(parentFragmentManager, "BottomSheetSelectImage")
     }
 
     private fun addSelectedImages(uris: List<Uri>) {
@@ -260,11 +325,6 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                 if (index in selectedMedia.indices) {
                     selectedMedia.removeAt(index)
                     updatePostState()
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.status_photo_removed),
-                        Toast.LENGTH_SHORT
-                    ).show()
                 }
             },
             onOpenPreview = { index -> openFullPreview(index) }

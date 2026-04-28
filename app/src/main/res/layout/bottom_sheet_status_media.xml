@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_corner_top_15"
+    android:orientation="vertical">
+
+    <View
+        android:layout_width="50dp"
+        android:layout_height="6dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_corner_25_blue_light"
+        android:backgroundTint="@color/text_hint" />
+
+    <LinearLayout
+        android:id="@+id/layoutPreviewSelected"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        tools:visibility="visible"
+        tools:ignore="UseCompoundDrawables">
+
+        <ImageView
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_marginHorizontal="15dp"
+            android:importantForAccessibility="no"
+            android:padding="2dp"
+            android:src="@drawable/ic_image"
+            app:tint="@color/grey" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="15dp"
+            android:layout_weight="1"
+            android:text="@string/status_pick_media_preview"
+            android:textColor="@color/text_common"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/dividerAfterPreview"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_marginStart="15dp"
+        android:background="@color/grey_bg"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/takeNewPhoto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        tools:ignore="UseCompoundDrawables">
+
+        <ImageView
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_marginHorizontal="15dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_camera"
+            app:tint="@color/grey" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="15dp"
+            android:layout_weight="1"
+            android:text="@string/take_a_new_photo"
+            android:textColor="@color/text_common"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_marginStart="15dp"
+        android:background="@color/grey_bg" />
+
+    <LinearLayout
+        android:id="@+id/selectPhotoOnDevice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:gravity="center_vertical"
+        tools:ignore="UseCompoundDrawables">
+
+        <ImageView
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_marginHorizontal="15dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_add_photo"
+            app:tint="@color/grey" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="15dp"
+            android:layout_weight="1"
+            android:text="@string/select_photo_on_device"
+            android:textColor="@color/text_common"
+            android:textSize="16sp" />
+    </LinearLayout>
+</LinearLayout>

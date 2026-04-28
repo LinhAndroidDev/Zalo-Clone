@@ -38,6 +38,7 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/tvStatusTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/font_noto_sans"
