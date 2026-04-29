@@ -224,6 +224,34 @@ class ChatAdapter(
         return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
     }
 
+    /**
+     * Nền bong bóng text phía gửi: nhóm nối theo cạnh phải — góc trên/dưới phải 3dp.
+     */
+    private fun senderGroupedTextBubbleDrawable(position: Int): Int {
+        val prev = isGroupedWithPrevious(position)
+        val next = isGroupedWithNext(position)
+        return when {
+            prev && next -> R.drawable.bg_chat_sender_bubble_group_middle
+            prev && !next -> R.drawable.bg_chat_sender_bubble_group_last
+            !prev && next -> R.drawable.bg_chat_sender_bubble_group_first
+            else -> R.drawable.bg_chat_sender_bubble_single
+        }
+    }
+
+    /**
+     * Nền bong bóng text phía nhận: nhóm nối theo cạnh trái — góc trên/dưới trái 3dp.
+     */
+    private fun receiverGroupedTextBubbleDrawable(position: Int): Int {
+        val prev = isGroupedWithPrevious(position)
+        val next = isGroupedWithNext(position)
+        return when {
+            prev && next -> R.drawable.bg_chat_receiver_bubble_group_middle
+            prev && !next -> R.drawable.bg_chat_receiver_bubble_group_last
+            !prev && next -> R.drawable.bg_chat_receiver_bubble_group_first
+            else -> R.drawable.bg_chat_receiver_bubble_single
+        }
+    }
+
     private fun applyItemTopMargin(holder: RecyclerView.ViewHolder, position: Int) {
         val p = holder.itemView.layoutParams as? RecyclerView.LayoutParams ?: return
         val topDp = if (isGroupedWithPrevious(position)) 2f else 5f
@@ -251,12 +279,14 @@ class ChatAdapter(
             is SenderViewHolder -> {
                 if (TypeMessage.of(message.type) == TypeMessage.MESSAGE) {
                     holder.v.tvTime.isVisible = !isGroupedWithNext(position)
+                    holder.v.viewMessage.setBackgroundResource(senderGroupedTextBubbleDrawable(position))
                 }
             }
             is ReceiverViewHolder -> {
                 applyReceiverBubbleCluster(holder, position)
                 if (TypeMessage.of(message.type) == TypeMessage.MESSAGE) {
                     holder.v.tvTime.isVisible = !isGroupedWithNext(position)
+                    holder.v.viewMessage.setBackgroundResource(receiverGroupedTextBubbleDrawable(position))
                 }
             }
         }

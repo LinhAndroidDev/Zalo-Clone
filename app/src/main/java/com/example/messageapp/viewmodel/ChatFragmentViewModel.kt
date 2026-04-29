@@ -68,10 +68,10 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             success = { result ->
                 val messageData = arrayListOf<Message>()
                 result?.forEach { document ->
-                    val message = document.toObject(Message::class.java)
-                    if (isOfThisConversation(message, friendId)) {
-                        messageData.add(message)
-                    }
+                    val raw = document.toObject(Message::class.java) ?: return@forEach
+                    if (!isOfThisConversation(raw, friendId)) return@forEach
+                    val timeResolved = raw.time.ifBlank { document.id }
+                    messageData.add(raw.copy(time = timeResolved))
                 }
                 _messages.value = messageData
             },

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sender giữa nhóm: góc trên phải + dưới phải 3dp -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/color_sender" />
+    <corners
+        android:bottomLeftRadius="8dp"
+        android:bottomRightRadius="3dp"
+        android:topLeftRadius="8dp"
+        android:topRightRadius="3dp" />
+    <stroke
+        android:width="0.8dp"
+        android:color="@color/stroke_sender" />
+</shape>
