@@ -20,6 +20,7 @@ import com.example.messageapp.helper.screenWidth
 import com.example.messageapp.custom.AudioPlaybackState
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 import kotlin.math.ceil
@@ -43,6 +44,11 @@ class ChatAdapter(
     private val audioPlaybackStateMap = hashMapOf<String, AudioPlaybackState>()
     var seen: Boolean = false
     private var mCallBack: CallBackClickItem? = null
+
+    companion object {
+        /** Khoảng tối đa giữa hai tin cùng người gửi để gộp nhóm (kiểu Zalo / iMessage). */
+        private const val MESSAGE_GROUP_GAP_MS = 3 * 60 * 1000L
+    }
 
     init {
         setHasStableIds(true)
@@ -146,12 +152,15 @@ class ChatAdapter(
                     mCallBack?.onOptionMenuClick(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
+                applyMessageClusterUi(holder, position, message)
             }
 
             else -> {
                 holder as ReceiverViewHolder
                 holder.checkShowEmotion(message)
-                holder.showAvatarReceiver(context, friendId)
+                if (!isGroupedWithPrevious(position)) {
+                    holder.showAvatarReceiver(context, friendId)
+                }
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
                         holder.initViewMessage(context, message) {
@@ -183,6 +192,72 @@ class ChatAdapter(
                     mCallBack?.onOptionMenuClick(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
+                applyMessageClusterUi(holder, position, message)
+            }
+        }
+    }
+
+    private fun messageTimeMillis(msg: Message): Long? =
+        DateUtils.parseChatMessageTimeMillis(msg.time)
+
+    /** Tin liền trước cùng người gửi và trong [MESSAGE_GROUP_GAP_MS]. */
+    private fun isGroupedWithPrevious(position: Int): Boolean {
+        if (position <= 0) return false
+        val prev = messages[position - 1]
+        val curr = messages[position]
+        if (prev.sender != curr.sender) return false
+        val tPrev = messageTimeMillis(prev) ?: return false
+        val tCurr = messageTimeMillis(curr) ?: return false
+        val delta = tCurr - tPrev
+        return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
+    }
+
+    /** Tin liền sau cùng người gửi và trong [MESSAGE_GROUP_GAP_MS]. */
+    private fun isGroupedWithNext(position: Int): Boolean {
+        if (position >= messages.lastIndex) return false
+        val curr = messages[position]
+        val next = messages[position + 1]
+        if (curr.sender != next.sender) return false
+        val tCurr = messageTimeMillis(curr) ?: return false
+        val tNext = messageTimeMillis(next) ?: return false
+        val delta = tNext - tCurr
+        return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
+    }
+
+    private fun applyItemTopMargin(holder: RecyclerView.ViewHolder, position: Int) {
+        val p = holder.itemView.layoutParams as? RecyclerView.LayoutParams ?: return
+        val topDp = if (isGroupedWithPrevious(position)) 2f else 5f
+        p.topMargin = (topDp * context.resources.displayMetrics.density).toInt()
+        holder.itemView.layoutParams = p
+    }
+
+    private fun applyReceiverBubbleCluster(holder: ReceiverViewHolder, position: Int) {
+        val clusterPrev = isGroupedWithPrevious(position)
+        val lp = holder.v.layoutReceiverBubbleColumn.layoutParams as LinearLayout.LayoutParams
+        val res = context.resources
+        if (clusterPrev) {
+            holder.v.avatarReceiver.visibility = View.GONE
+            lp.marginStart = res.getDimensionPixelSize(R.dimen.chat_receiver_bubble_margin_start_cluster)
+        } else {
+            holder.v.avatarReceiver.visibility = View.VISIBLE
+            lp.marginStart = res.getDimensionPixelSize(R.dimen.chat_receiver_bubble_margin_start_normal)
+        }
+        holder.v.layoutReceiverBubbleColumn.layoutParams = lp
+    }
+
+    private fun applyMessageClusterUi(holder: RecyclerView.ViewHolder, position: Int, message: Message) {
+        applyItemTopMargin(holder, position)
+        when (holder) {
+            is SenderViewHolder -> {
+                if (TypeMessage.of(message.type) == TypeMessage.MESSAGE) {
+                    holder.v.tvTime.isVisible = !isGroupedWithNext(position)
+                }
+            }
+            is ReceiverViewHolder -> {
+                applyReceiverBubbleCluster(holder, position)
+                if (TypeMessage.of(message.type) == TypeMessage.MESSAGE) {
+                    holder.v.tvTime.isVisible = !isGroupedWithNext(position)
+                }
             }
         }
     }

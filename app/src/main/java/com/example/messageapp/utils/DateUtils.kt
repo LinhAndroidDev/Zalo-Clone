@@ -25,6 +25,17 @@ object DateUtils {
         return output.format(date ?: "")
     }
 
+    /** Parse [Message.time] (`yyyy_MM_dd_HH_mm_ss`) → epoch millis, or null if invalid. */
+    fun parseChatMessageTimeMillis(time: String): Long? {
+        if (time.isBlank()) return null
+        return try {
+            val input = SimpleDateFormat(DATE_TIME, Locale.getDefault())
+            input.parse(time)?.time
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     fun formatDateTimeApp(input: String): String {
         val inputFormat = SimpleDateFormat(DATE_TIME, Locale.getDefault())
         val outputFormat = SimpleDateFormat(DATE_TIME_APP, Locale.getDefault())

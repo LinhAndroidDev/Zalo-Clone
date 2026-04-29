@@ -9,4 +9,6 @@
     <dimen name="WheelItemSpace">12dp</dimen>
     <dimen name="WheelIndicatorSize">2dp</dimen>
     <dimen name="WheelMargins">8dp</dimen>
+    <dimen name="chat_receiver_bubble_margin_start_normal">5dp</dimen>
+    <dimen name="chat_receiver_bubble_margin_start_cluster">45dp</dimen>
 </resources>
