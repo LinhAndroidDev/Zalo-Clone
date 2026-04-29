@@ -11,6 +11,7 @@ data class DiaryPost(
     val authorAvatarUrl: String,
     val content: String,
     val imageUris: List<String> = emptyList(),
+    val linkPreview: DiaryLinkPreview? = null,
     val createdAtMillis: Long = System.currentTimeMillis(),
     val likeCount: Int = 0,
     val commentCount: Int = 0,

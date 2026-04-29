@@ -1,6 +1,7 @@
 package com.example.messageapp.adapter
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.PopupMenu
@@ -46,6 +47,36 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
             holder.v.tvContent.text = post.content
         } else {
             holder.v.tvContent.isVisible = false
+        }
+
+        val link = post.linkPreview
+        val linkWrap = holder.v.wrapperDiaryLinkPreview
+        if (link != null) {
+            linkWrap.isVisible = true
+            with(holder.v.diaryLinkPreviewCard) {
+                tvLinkTitle.text = link.title
+                val hasDesc = link.description.isNotBlank()
+                tvLinkDescription.isVisible = hasDesc
+                tvLinkDescription.text = link.description
+                tvLinkHost.text = link.url.toUri().host ?: link.url
+                if (!link.imageUrl.isNullOrBlank()) {
+                    imgLinkPreview.isVisible = true
+                    ctx.loadImg(link.imageUrl, imgLinkPreview, R.drawable.bg_grey_equal)
+                } else {
+                    imgLinkPreview.isVisible = true
+                    imgLinkPreview.setImageResource(R.drawable.bg_grey_equal)
+                }
+            }
+            linkWrap.setOnClickListener {
+                try {
+                    ctx.startActivity(Intent(Intent.ACTION_VIEW,
+                        link.url.toUri()))
+                } catch (_: Exception) {
+                }
+            }
+        } else {
+            linkWrap.isVisible = false
+            linkWrap.setOnClickListener(null)
         }
 
         ctx.loadImg(post.authorAvatarUrl, holder.v.imgAuthor, R.drawable.bg_grey_equal)

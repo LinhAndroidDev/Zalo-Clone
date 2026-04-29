@@ -153,7 +153,15 @@
     <string name="status_camera_failed">Không mở được camera</string>
     <string name="status_audience_friends">Bạn bè</string>
     <string name="status_hint_what_thinking">Bạn đang nghĩ gì?</string>
-    <string name="status_need_content_or_image">Vui lòng nhập nội dung hoặc chọn ảnh</string>
+    <string name="status_need_content_or_image">Vui lòng nhập nội dung, chọn ảnh hoặc đính kèm liên kết</string>
+    <string name="status_link_dialog_title">Đính kèm liên kết</string>
+    <string name="status_link_hint">https://…</string>
+    <string name="status_link_ok">Đồng ý</string>
+    <string name="status_link_cancel">Hủy</string>
+    <string name="status_link_enter_url">Vui lòng nhập liên kết</string>
+    <string name="status_link_invalid">Liên kết không tồn tại hoặc không truy cập được. Vui lòng nhập lại.</string>
+    <string name="status_link_remove_cd">Xóa liên kết</string>
+    <string name="status_link_attach_cd">Đính kèm liên kết</string>
     <string name="status_post_success">Đã đăng bài</string>
     <string name="status_feature_developing">Tính năng đang phát triển</string>
     <string name="status_max_photos_limit">Bạn chỉ có thể chọn tối đa %d ảnh</string>

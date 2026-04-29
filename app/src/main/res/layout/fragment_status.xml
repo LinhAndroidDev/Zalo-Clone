@@ -141,6 +141,25 @@
                 android:textColorHint="@color/text_grey"
                 android:textSize="17sp" />
 
+            <LinearLayout
+                android:id="@+id/layoutStatusLinkPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <include
+                    android:id="@+id/statusLinkPreviewCard"
+                    layout="@layout/view_link_preview"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
             <FrameLayout
                 android:id="@+id/layoutMediaPreviewContainer"
                 android:layout_width="match_parent"
@@ -202,10 +221,15 @@
                     app:tint="@color/grey" />
 
                 <ImageView
+                    android:id="@+id/btnAttachLink"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_marginEnd="20dp"
-                    android:importantForAccessibility="no"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/status_link_attach_cd"
+                    android:focusable="true"
+                    android:importantForAccessibility="yes"
                     android:src="@drawable/ic_attach"
                     app:tint="@color/grey" />
 

@@ -81,6 +81,21 @@
                 tools:visibility="visible" />
 
             <FrameLayout
+                android:id="@+id/wrapperDiaryLinkPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <include
+                    android:id="@+id/diaryLinkPreviewCard"
+                    layout="@layout/view_link_preview_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </FrameLayout>
+
+            <FrameLayout
                 android:id="@+id/frameMediaGrid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

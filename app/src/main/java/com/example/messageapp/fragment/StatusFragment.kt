@@ -3,12 +3,16 @@ package com.example.messageapp.fragment
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
@@ -16,15 +20,20 @@ import com.example.messageapp.bottom_sheet.BottomSheetStatusMedia
 import com.example.messageapp.databinding.FragmentStatusBinding
 import com.example.messageapp.dialog.StatusImagePreviewDialog
 import com.example.messageapp.helper.StatusMediaGridLayout
+import com.example.messageapp.model.DiaryLinkPreview
 import com.example.messageapp.model.StatusMediaItem
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.LinkPreviewFetcher
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.utils.showViewAboveKeyBoard
 import com.example.messageapp.viewmodel.StatusFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
-import androidx.core.net.toUri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewModel>() {
@@ -40,6 +49,9 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
     private val selectedMedia = mutableListOf<StatusMediaItem>()
     private val maxSelectedMedia = 10
     private var pendingCameraUri: Uri? = null
+
+    /** Liên kết đính kèm (preview OG) — một bài tối đa một link. */
+    private var attachedLink: DiaryLinkPreview? = null
 
     private val pickImagesLauncher =
         registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
@@ -113,6 +125,8 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                     post.imageUris.forEach { url ->
                         selectedMedia.add(StatusMediaItem(url.toUri()))
                     }
+                    attachedLink = post.linkPreview
+                    bindLinkPreviewUi()
                     updatePostState()
                 }
             },
@@ -140,9 +154,19 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
             openStatusMediaBottomSheet()
         }
 
+        binding?.btnAttachLink?.setOnClickListener {
+            showLinkInputDialog()
+        }
+
+        binding?.statusLinkPreviewCard?.btnRemoveLinkPreview?.setOnClickListener {
+            attachedLink = null
+            bindLinkPreviewUi()
+            updatePostState()
+        }
+
         binding?.btnSend?.setOnClickListener {
             val content = binding?.edtStatusContent?.text?.toString().orEmpty().trim()
-            if (content.isEmpty() && selectedMedia.isEmpty()) {
+            if (content.isEmpty() && selectedMedia.isEmpty() && attachedLink == null) {
                 Toast.makeText(
                     requireContext(),
                     getString(R.string.status_need_content_or_image),
@@ -163,6 +187,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                             editorUserId = shared.getAuth(),
                             content = content,
                             imageUris = localUris,
+                            linkPreview = attachedLink,
                             success = {
                                 requireActivity().runOnUiThread {
                                     binding?.btnSend?.isEnabled = true
@@ -174,6 +199,8 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                                     ).show()
                                     binding?.edtStatusContent?.setText("")
                                     selectedMedia.clear()
+                                    attachedLink = null
+                                    bindLinkPreviewUi()
                                     updatePostState()
                                     findNavController().popBackStack()
                                 }
@@ -193,6 +220,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                             authorAvatarUrl = user.avatar.orEmpty(),
                             content = content,
                             localImageUris = localUris,
+                            linkPreview = attachedLink,
                             success = {
                                 requireActivity().runOnUiThread {
                                     binding?.btnSend?.isEnabled = true
@@ -203,6 +231,8 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                                     ).show()
                                     binding?.edtStatusContent?.setText("")
                                     selectedMedia.clear()
+                                    attachedLink = null
+                                    bindLinkPreviewUi()
                                     updatePostState()
                                     findNavController().popBackStack()
                                 }
@@ -300,9 +330,88 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
         updatePostState()
     }
 
+    private fun bindLinkPreviewUi() {
+        val b = binding ?: return
+        val link = attachedLink
+        if (link == null) {
+            b.layoutStatusLinkPreview.isVisible = false
+            return
+        }
+        b.layoutStatusLinkPreview.isVisible = true
+        b.statusLinkPreviewCard.tvLinkTitle.text = link.title
+        b.statusLinkPreviewCard.tvLinkHost.text = link.url.toUri().host ?: link.url
+        val img = b.statusLinkPreviewCard.imgLinkPreview
+        if (!link.imageUrl.isNullOrBlank()) {
+            requireContext().loadImg(link.imageUrl, img, R.drawable.bg_grey_equal)
+        } else {
+            img.setImageResource(R.drawable.bg_grey_equal)
+        }
+    }
+
+    private fun showLinkInputDialog() {
+        val ctx = requireContext()
+        val d = resources.displayMetrics.density
+        val padH = (20 * d).toInt()
+        val padV = (12 * d).toInt()
+        val input = EditText(ctx).apply {
+            hint = getString(R.string.status_link_hint)
+            setPadding(padH, padV, padH, padV)
+            setText(attachedLink?.url.orEmpty())
+        }
+        val dialog = AlertDialog.Builder(ctx)
+            .setTitle(R.string.status_link_dialog_title)
+            .setView(input)
+            .setPositiveButton(R.string.status_link_ok, null)
+            .setNegativeButton(R.string.status_link_cancel) { dlg, _ -> dlg.dismiss() }
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val raw = input.text?.toString().orEmpty()
+                if (raw.isBlank()) {
+                    Toast.makeText(ctx, R.string.status_link_enter_url, Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (LinkPreviewFetcher.normalizeUrl(raw) == null) {
+                    Toast.makeText(ctx, R.string.status_link_invalid, Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = false
+                input.isEnabled = false
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val result = withContext(Dispatchers.IO) {
+                        LinkPreviewFetcher.fetch(raw)
+                    }
+                    if (!isAdded) return@launch
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                    input.isEnabled = true
+                    result.fold(
+                        onSuccess = { preview ->
+                            if (!isAdded) return@fold
+                            attachedLink = preview
+                            dialog.dismiss()
+                            bindLinkPreviewUi()
+                            updatePostState()
+                        },
+                        onFailure = {
+                            Toast.makeText(
+                                ctx,
+                                getString(R.string.status_link_invalid),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    )
+                }
+            }
+        }
+        dialog.show()
+    }
+
     private fun updatePostState() {
         val text = binding?.edtStatusContent?.text?.toString().orEmpty().trim()
-        val enablePost = text.isNotEmpty() || selectedMedia.isNotEmpty()
+        val enablePost = text.isNotEmpty() || selectedMedia.isNotEmpty() || attachedLink != null
 
         binding?.btnSend?.alpha = if (enablePost) 1f else 0.45f
         binding?.btnSend?.isEnabled = enablePost

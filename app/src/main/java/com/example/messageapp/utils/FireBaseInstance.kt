@@ -12,6 +12,7 @@ import com.example.messageapp.model.FriendRequest
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.Sticker
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.model.DiaryLinkPreview
 import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.model.DiaryPostComment
 import com.example.messageapp.model.DiaryPostFirestore
@@ -1150,6 +1151,7 @@ object FireBaseInstance {
         authorAvatarUrl: String,
         content: String,
         localImageUris: List<Uri>,
+        linkPreview: DiaryLinkPreview? = null,
         success: (postId: String) -> Unit,
         failure: (String) -> Unit
     ) {
@@ -1166,6 +1168,14 @@ object FireBaseInstance {
                 DiaryPostFirestore.FIELD_LIKE_COUNT to 0,
                 DiaryPostFirestore.FIELD_COMMENT_COUNT to 0
             )
+            if (linkPreview != null) {
+                data[DiaryPostFirestore.FIELD_LINK_PREVIEW] = hashMapOf(
+                    DiaryPostFirestore.LINK_FIELD_URL to linkPreview.url,
+                    DiaryPostFirestore.LINK_FIELD_TITLE to linkPreview.title,
+                    DiaryPostFirestore.LINK_FIELD_DESCRIPTION to linkPreview.description,
+                    DiaryPostFirestore.LINK_FIELD_IMAGE_URL to linkPreview.imageUrl.orEmpty()
+                )
+            }
             doc.set(data)
                 .addOnSuccessListener { success(doc.id) }
                 .addOnFailureListener {
@@ -1205,6 +1215,7 @@ object FireBaseInstance {
         editorUserId: String,
         content: String,
         imageUris: List<Uri>,
+        linkPreview: DiaryLinkPreview?,
         success: () -> Unit,
         failure: (String) -> Unit
     ) {
@@ -1229,6 +1240,16 @@ object FireBaseInstance {
                             DiaryPostFirestore.FIELD_IMAGE_URLS to urls,
                             DiaryPostFirestore.FIELD_UPDATED_AT to FieldValue.serverTimestamp()
                         )
+                        if (linkPreview != null) {
+                            updates[DiaryPostFirestore.FIELD_LINK_PREVIEW] = hashMapOf(
+                                DiaryPostFirestore.LINK_FIELD_URL to linkPreview.url,
+                                DiaryPostFirestore.LINK_FIELD_TITLE to linkPreview.title,
+                                DiaryPostFirestore.LINK_FIELD_DESCRIPTION to linkPreview.description,
+                                DiaryPostFirestore.LINK_FIELD_IMAGE_URL to linkPreview.imageUrl.orEmpty()
+                            )
+                        } else {
+                            updates[DiaryPostFirestore.FIELD_LINK_PREVIEW] = FieldValue.delete()
+                        }
                         ref.update(updates)
                             .addOnSuccessListener { success() }
                             .addOnFailureListener {

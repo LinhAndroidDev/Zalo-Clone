@@ -20,6 +20,12 @@ object DiaryPostFirestore {
     const val FIELD_UPDATED_AT = "updatedAt"
     const val FIELD_LIKE_COUNT = "likeCount"
     const val FIELD_COMMENT_COUNT = "commentCount"
+    const val FIELD_LINK_PREVIEW = "linkPreview"
+
+    const val LINK_FIELD_URL = "url"
+    const val LINK_FIELD_TITLE = "title"
+    const val LINK_FIELD_DESCRIPTION = "description"
+    const val LINK_FIELD_IMAGE_URL = "imageUrl"
 
     const val COMMENT_FIELD_AUTHOR_ID = "authorId"
     const val COMMENT_FIELD_AUTHOR_NAME = "authorName"
@@ -39,6 +45,21 @@ object DiaryPostFirestore {
         val content = data[FIELD_CONTENT]?.toString().orEmpty()
         @Suppress("UNCHECKED_CAST")
         val imageUrls = (data[FIELD_IMAGE_URLS] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val linkMap = data[FIELD_LINK_PREVIEW] as? Map<*, *>
+        val linkPreview = linkMap?.let { m ->
+            val u = m[LINK_FIELD_URL]?.toString()?.trim().orEmpty()
+            if (u.isEmpty()) null
+            else {
+                val img = m[LINK_FIELD_IMAGE_URL]?.toString()?.trim().orEmpty()
+                DiaryLinkPreview(
+                    url = u,
+                    title = m[LINK_FIELD_TITLE]?.toString().orEmpty(),
+                    description = m[LINK_FIELD_DESCRIPTION]?.toString().orEmpty(),
+                    imageUrl = img.ifBlank { null }
+                )
+            }
+        }
         val createdAtMillis = when (val t = data[FIELD_CREATED_AT]) {
             is Timestamp -> t.toDate().time
             is Number -> t.toLong()
@@ -53,6 +74,7 @@ object DiaryPostFirestore {
             authorAvatarUrl = authorAvatarUrl,
             content = content,
             imageUris = imageUrls,
+            linkPreview = linkPreview,
             createdAtMillis = createdAtMillis,
             likeCount = likeCount,
             commentCount = commentCount,
