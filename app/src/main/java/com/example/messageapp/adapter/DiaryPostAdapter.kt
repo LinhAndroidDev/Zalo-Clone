@@ -28,6 +28,9 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
     var onEditPost: ((DiaryPost) -> Unit)? = null
     var onDeletePost: ((DiaryPost) -> Unit)? = null
 
+    /** Mở trang cá nhân theo [DiaryPost.authorUserId]. */
+    var onOpenAuthorProfile: ((authorUserId: String) -> Unit)? = null
+
     private companion object {
         private const val MENU_EDIT = 1
         private const val MENU_DELETE = 2
@@ -41,6 +44,13 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
 
         holder.v.tvAuthorName.text = post.authorName
         holder.v.tvTime.text = formatRelativeTime(ctx, post.createdAtMillis)
+
+        val openAuthorProfile = {
+            val id = post.authorUserId
+            if (id.isNotBlank()) onOpenAuthorProfile?.invoke(id)
+        }
+        holder.v.imgAuthor.setOnClickListener { openAuthorProfile() }
+        holder.v.layoutAuthorTap.setOnClickListener { openAuthorProfile() }
 
         if (post.content.isNotBlank()) {
             holder.v.tvContent.isVisible = true

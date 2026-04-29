@@ -62,6 +62,15 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
             )
         }
         diaryPostAdapter.onDeletePost = { post -> confirmDeletePost(post) }
+        diaryPostAdapter.onOpenAuthorProfile = { authorId ->
+            if (authorId.isNotBlank()) {
+                val intent = Intent(requireActivity(), PersonalActivity::class.java)
+                if (authorId != shared.getAuth()) {
+                    intent.putExtra(PersonalActivity.FRIEND_ID_KEY, authorId)
+                }
+                startActivity(intent)
+            }
+        }
 
         viewModel?.getInfoUser()
         viewModel?.startDiaryFeed()

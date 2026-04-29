@@ -190,10 +190,15 @@
                 android:paddingVertical="8dp">
 
                 <ImageView
+                    android:id="@+id/btnSticker"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_marginStart="12dp"
-                    android:importantForAccessibility="no"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/status_sticker_cd"
+                    android:focusable="true"
+                    android:importantForAccessibility="yes"
                     android:src="@drawable/ic_sticker_smile"
                     app:tint="@color/grey" />
 
@@ -207,7 +212,11 @@
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_marginEnd="20dp"
-                    android:importantForAccessibility="no"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/status_pick_image_cd"
+                    android:focusable="true"
+                    android:importantForAccessibility="yes"
                     android:src="@drawable/ic_image"
                     app:tint="@color/grey" />
 
@@ -216,7 +225,11 @@
                     android:layout_width="40dp"
                     android:layout_height="33dp"
                     android:layout_marginEnd="20dp"
-                    android:importantForAccessibility="no"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/status_pick_video_cd"
+                    android:focusable="true"
+                    android:importantForAccessibility="yes"
                     android:src="@drawable/ic_video"
                     app:tint="@color/grey" />
 
@@ -234,10 +247,15 @@
                     app:tint="@color/grey" />
 
                 <ImageView
+                    android:id="@+id/btnPickLocation"
                     android:layout_width="25dp"
                     android:layout_height="25dp"
                     android:layout_marginEnd="15dp"
-                    android:importantForAccessibility="no"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/status_pick_location_cd"
+                    android:focusable="true"
+                    android:importantForAccessibility="yes"
                     android:src="@drawable/ic_map"
                     app:tint="@color/grey" />
             </LinearLayout>

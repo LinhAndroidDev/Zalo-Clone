@@ -154,6 +154,24 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
             openStatusMediaBottomSheet()
         }
 
+        binding?.btnSticker?.setOnClickListener {
+            if (attachedLink != null) return@setOnClickListener
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.status_feature_developing),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        binding?.btnPickLocation?.setOnClickListener {
+            if (attachedLink != null) return@setOnClickListener
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.status_feature_developing),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
         binding?.btnAttachLink?.setOnClickListener {
             showLinkInputDialog()
         }
@@ -261,6 +279,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
     }
 
     private fun openStatusMediaBottomSheet() {
+        if (attachedLink != null) return
         val sheet = BottomSheetStatusMedia.newInstance(hasSelectedImages = selectedMedia.isNotEmpty())
         sheet.onPreviewSelected = {
             if (selectedMedia.isNotEmpty()) {
@@ -275,6 +294,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
     }
 
     private fun launchCamera() {
+        if (attachedLink != null) return
         if (ContextCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.CAMERA
@@ -307,6 +327,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
     }
 
     private fun addSelectedImages(uris: List<Uri>) {
+        if (attachedLink != null) return
         val remain = maxSelectedMedia - selectedMedia.size
         if (remain <= 0) {
             Toast.makeText(
@@ -391,6 +412,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                         onSuccess = { preview ->
                             if (!isAdded) return@fold
                             attachedLink = preview
+                            selectedMedia.clear()
                             dialog.dismiss()
                             bindLinkPreviewUi()
                             updatePostState()
@@ -419,6 +441,26 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
         val hasMedia = selectedMedia.isNotEmpty()
         binding?.layoutMediaPreviewContainer?.isVisible = hasMedia
         renderMediaPreview()
+        updateAttachmentToolbarLockedState()
+    }
+
+    /** Khi đã có link: chỉ cho phép sửa mô tả; ảnh/video/sticker/địa điểm/ghi thêm link bị khoá. */
+    private fun updateAttachmentToolbarLockedState() {
+        val b = binding ?: return
+        val locked = attachedLink != null
+        val on = 1f
+        val off = 0.35f
+        fun android.view.View.applyLock() {
+            alpha = if (locked) off else on
+            isClickable = !locked
+            isFocusable = !locked
+            isEnabled = !locked
+        }
+        b.btnPickImage.applyLock()
+        b.btnPickVideo.applyLock()
+        b.btnSticker.applyLock()
+        b.btnPickLocation.applyLock()
+        b.btnAttachLink.applyLock()
     }
 
     private fun renderMediaPreview() {

@@ -162,6 +162,10 @@
     <string name="status_link_invalid">Liên kết không tồn tại hoặc không truy cập được. Vui lòng nhập lại.</string>
     <string name="status_link_remove_cd">Xóa liên kết</string>
     <string name="status_link_attach_cd">Đính kèm liên kết</string>
+    <string name="status_pick_image_cd">Chọn ảnh</string>
+    <string name="status_pick_video_cd">Chọn video</string>
+    <string name="status_sticker_cd">Sticker</string>
+    <string name="status_pick_location_cd">Địa điểm</string>
     <string name="status_post_success">Đã đăng bài</string>
     <string name="status_feature_developing">Tính năng đang phát triển</string>
     <string name="status_max_photos_limit">Bạn chỉ có thể chọn tối đa %d ảnh</string>
