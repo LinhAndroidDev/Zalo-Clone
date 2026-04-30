@@ -10,9 +10,11 @@ import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.FileUtils
+import com.example.messageapp.utils.FileUtils.isVideoUri
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.utils.getImageDimensions
+import com.example.messageapp.utils.getVideoDimensions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -127,38 +129,74 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         sendFirst: Boolean
     ) {
         val idRoom = listOf(conversation.friendId, shared.getAuth()).sorted()
+        val intrinsicByIndex = ArrayList<Pair<Int, Int>?>(uris.size)
+        for (uri in uris) {
+            val dim = if (context.isVideoUri(uri)) {
+                getVideoDimensions(context, uri)
+            } else {
+                getImageDimensions(context, uri)
+            }
+            intrinsicByIndex.add(dim)
+        }
         FireBaseInstance.uploadListPhoto(
             context = context,
             uris = uris,
             roomId = idRoom,
             process = {},
-            success = { photos ->
-                val isSinglePhoto = photos.size == 1
-                val type = if (isSinglePhoto) TypeMessage.SINGLE_PHOTO else TypeMessage.PHOTOS
+            success = { uploadedUrls ->
+                if (uploadedUrls.size == 1) {
+                    val (w, h) = intrinsicByIndex.getOrNull(0) ?: (0 to 0)
+                    val message = Message(
+                        receiver = conversation.friendId,
+                        sender = shared.getAuth(),
+                        time = time,
+                        photos = arrayListOf(),
+                        photoSizes = null,
+                        singlePhoto = arrayListOf(
+                            uploadedUrls[0],
+                            w.toString(),
+                            h.toString()
+                        ),
+                        type = TypeMessage.SINGLE_PHOTO.ordinal
+                    )
+                    FireBaseInstance.sendMessage(
+                        message = message,
+                        userId = shared.getAuth(),
+                        time = time,
+                        conversation = conversation,
+                        nameSender = shared.getNameUser(),
+                        type = TypeMessage.SINGLE_PHOTO,
+                        sendFirst = sendFirst
+                    ) {}
+                } else {
+                    val sizeTokens = ArrayList<String>(uploadedUrls.size)
+                    for (i in uploadedUrls.indices) {
+                        val dim = intrinsicByIndex.getOrNull(i)
+                        sizeTokens.add(
+                            if (dim != null) "${dim.first}x${dim.second}" else "0x0"
+                        )
+                    }
 
-                val singlePhoto = if (isSinglePhoto) {
-                    val (width, height) = getImageDimensions(context, uris[0]) ?: (0 to 0)
-                    arrayListOf(photos[0], width.toString(), height.toString())
-                } else arrayListOf()
+                    val message = Message(
+                        receiver = conversation.friendId,
+                        sender = shared.getAuth(),
+                        time = time,
+                        photos = uploadedUrls,
+                        photoSizes = sizeTokens,
+                        singlePhoto = arrayListOf(),
+                        type = TypeMessage.PHOTOS.ordinal
+                    )
 
-                val message = Message(
-                    receiver = conversation.friendId,
-                    sender = shared.getAuth(),
-                    time = time,
-                    photos = if (isSinglePhoto) arrayListOf() else photos,
-                    singlePhoto = singlePhoto,
-                    type = type.ordinal
-                )
-
-                FireBaseInstance.sendMessage(
-                    message = message,
-                    userId = shared.getAuth(),
-                    time = time,
-                    conversation = conversation,
-                    nameSender = shared.getNameUser(),
-                    type = TypeMessage.PHOTOS,
-                    sendFirst = sendFirst
-                ) {}
+                    FireBaseInstance.sendMessage(
+                        message = message,
+                        userId = shared.getAuth(),
+                        time = time,
+                        conversation = conversation,
+                        nameSender = shared.getNameUser(),
+                        type = TypeMessage.PHOTOS,
+                        sendFirst = sendFirst
+                    ) {}
+                }
             }
         )
     }

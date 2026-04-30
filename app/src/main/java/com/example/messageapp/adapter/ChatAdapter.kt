@@ -3,9 +3,11 @@ package com.example.messageapp.adapter
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
@@ -21,9 +23,12 @@ import com.example.messageapp.custom.AudioPlaybackState
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 import kotlin.math.ceil
+import kotlin.math.max
+import kotlin.math.min
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
@@ -317,6 +322,37 @@ class ChatAdapter(
     }
 
     /**
+     * Kích thước ô bubble cho một ảnh/video đơn (đồng bộ với logic scale cũ).
+     */
+    private fun bubbleDisplaySizeForPositive(intrinsicW: Int, intrinsicH: Int): Pair<Int, Int> {
+        val scale = if (intrinsicW > intrinsicH) {
+            (screenWidth * 3 / 4 - 120) / intrinsicW.toFloat()
+        } else {
+            screenHeight / (2 * intrinsicH.toFloat())
+        }
+        return (intrinsicW * scale).toInt() to (intrinsicH * scale).toInt()
+    }
+
+    /** Parse token "WxH" trong [Message.photoSizes]. */
+    private fun parsePhotoSizeToken(sizes: ArrayList<String>?, index: Int): Pair<Int, Int> {
+        val token = sizes?.getOrNull(index) ?: return 0 to 0
+        val ix = token.indexOf('x')
+        if (ix <= 0 || ix == token.lastIndex) return 0 to 0
+        val w = token.substring(0, ix).toIntOrNull() ?: return 0 to 0
+        val h = token.substring(ix + 1).toIntOrNull() ?: return 0 to 0
+        return w to h
+    }
+
+    /**
+     * Thu nhỏ media vào ô vuông tối đa [maxSide] nhưng giữ tỉ lệ (dùng trong lưới nhiều ảnh/video).
+     */
+    private fun gridCellDisplaySize(intrinsicW: Int, intrinsicH: Int, maxSide: Int): Pair<Int, Int> {
+        if (intrinsicW <= 0 || intrinsicH <= 0) return maxSide to maxSide
+        val scale = min(maxSide / intrinsicW.toFloat(), maxSide / intrinsicH.toFloat())
+        return max(1, (intrinsicW * scale).toInt()) to max(1, (intrinsicH * scale).toInt())
+    }
+
+    /**
      * This function is used to calculate the size of a single photo based on the size returned from the server
      * + Then scale it according to the width and height of the device.
      * + If the width is greater than the height, the width is 3/4 of the screen width - 120
@@ -332,18 +368,17 @@ class ChatAdapter(
         fromSender: Boolean = true
     ) {
         val photo = message.singlePhoto[0]
-        val width = message.singlePhoto[1].toInt()
-        val height = message.singlePhoto[2].toInt()
+        var width = message.singlePhoto[1].toInt()
+        var height = message.singlePhoto[2].toInt()
+        if (width <= 0 || height <= 0) {
+            width = screenWidth / 2
+            height = screenWidth / 2
+        }
 
         viewPhoto.removeAllViews()
         val imageView = ImageView(context)
-        val scale = if (width > height) {
-            (screenWidth * 3 / 4 - 120) / width.toFloat()
-        } else {
-            screenHeight / (2 * height).toFloat()
-        }
-        imageView.layoutParams =
-            ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
+        val (w, h) = bubbleDisplaySizeForPositive(width, height)
+        imageView.layoutParams = ViewGroup.LayoutParams(w, h)
         imageView.transitionName = message.time
         imageView.setOnClickListener {
             mCallBack?.onPhotoClick(
@@ -356,7 +391,26 @@ class ChatAdapter(
                 )
             )
         }
-        viewPhoto.addView(imageView)
+        if (isLikelyVideoUrl(photo)) {
+            val frame = FrameLayout(context)
+            frame.layoutParams = ViewGroup.LayoutParams(w, h)
+            imageView.layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            frame.addView(imageView)
+            val playSize = (32 * context.resources.displayMetrics.density).toInt()
+            val play = ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(playSize, playSize, Gravity.CENTER)
+                setImageResource(R.drawable.ic_play)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                isClickable = false
+            }
+            frame.addView(play)
+            viewPhoto.addView(frame)
+        } else {
+            viewPhoto.addView(imageView)
+        }
         context.loadImg(
             photo,
             imageView,
@@ -376,20 +430,31 @@ class ChatAdapter(
     private fun drawViewMultiPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
         val photos = message.photos
         viewPhotos.removeAllViews()
+        if (photos.isEmpty()) return
+
         val row = ceil(photos.size / 3f).toInt()
+        val cellMax = screenWidth / 4 - 40
         for (i in 0 until row) {
             val layoutRow = LinearLayout(context)
             layoutRow.layoutParams =
                 ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
             layoutRow.orientation = LinearLayout.HORIZONTAL
+            layoutRow.gravity = Gravity.BOTTOM
             for (j in 3 * i until 3 * i + 3) {
                 if (j >= photos.size) break
-                val imgPhoto = ImageView(context)
-                imgPhoto.layoutParams =
-                    MarginLayoutParams(screenWidth / 4 - 40, screenWidth / 4 - 40).apply {
+                val (iw, ih) = parsePhotoSizeToken(message.photoSizes, j)
+                val (fw, fh) = gridCellDisplaySize(iw, ih, cellMax)
+                val frame = FrameLayout(context)
+                frame.layoutParams =
+                    MarginLayoutParams(fw, fh).apply {
                         bottomMargin = if (i == row - 1) 0 else 8
                         rightMargin = if (j == 3 * i + 2) 0 else 8
                     }
+                val imgPhoto = ImageView(context)
+                imgPhoto.layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
                 imgPhoto.transitionName = message.time
                 imgPhoto.setOnClickListener {
                     mCallBack?.onPhotoClick(
@@ -404,11 +469,21 @@ class ChatAdapter(
                 }
                 imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
                 context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
-                layoutRow.addView(imgPhoto)
+                frame.addView(imgPhoto)
+                if (isLikelyVideoUrl(photos[j])) {
+                    val playSize = (28 * context.resources.displayMetrics.density).toInt()
+                    val play = ImageView(context).apply {
+                        layoutParams = FrameLayout.LayoutParams(playSize, playSize, Gravity.CENTER)
+                        setImageResource(R.drawable.ic_play)
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                        isClickable = false
+                    }
+                    frame.addView(play)
+                }
+                layoutRow.addView(frame)
             }
             viewPhotos.addView(layoutRow)
         }
-
     }
 
     /**

@@ -23,6 +23,8 @@ import com.example.messageapp.remote.request.Data
 import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
 import com.example.messageapp.utils.FileUtils.compressImage
+import com.example.messageapp.utils.FileUtils.isVideoUri
+import com.example.messageapp.utils.FileUtils.readUriBytes
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -565,29 +567,26 @@ object FireBaseInstance {
         process: (Pair<Int, Double>) -> Unit,
         success: (ArrayList<String>) -> Unit
     ) = CoroutineScope(Dispatchers.IO).launch {
-            val photos = arrayListOf<String>()
-            val deferredList = uris.map { uri ->
-                async {
-                    val photoUrl = uploadPhoto(context, uri, roomId)
-                    photoUrl?.let { photos.add(it) }
-                }
-            }
-            deferredList.awaitAll()
-            success.invoke(photos)
+            val indexed = uris.mapIndexed { index, uri ->
+                async { index to uploadSingleChatMedia(context, uri, roomId) }
+            }.awaitAll()
+            val ordered = indexed.sortedBy { it.first }.mapNotNull { it.second }
+            success.invoke(ArrayList(ordered))
         }
 
-    /**
-     * This function is used to upload photo to the Storage Firebase
-     * @param context context of activity
-     * @param uri uri of photo
-     * @param idRoom id room of chat room
-     */
-    private suspend fun uploadPhoto(context: Context, uri: Uri, idRoom: List<String>): String? {
+    private suspend fun uploadSingleChatMedia(context: Context, uri: Uri, idRoom: List<String>): String? {
+        return if (context.isVideoUri(uri)) {
+            uploadVideoToCloud(context, uri, idRoom)
+        } else {
+            uploadImageToCloud(context, uri, idRoom)
+        }
+    }
+
+    private suspend fun uploadImageToCloud(context: Context, uri: Uri, idRoom: List<String>): String? {
         return suspendCoroutine { continuation ->
             try {
                 val bytes = context.compressImage(uri)
                 val fileName = "${UUID.randomUUID()}.jpg"
-                // Firebase path: photo/<roomId.toString()>/*
                 val folder = "$PATH_PHOTO/$idRoom"
 
                 CloudinaryManager.uploadBytes(
@@ -601,6 +600,34 @@ object FireBaseInstance {
                     onFailure = { e ->
                         continuation.resumeWithException(e)
                     }
+                )
+            } catch (t: Throwable) {
+                continuation.resumeWithException(t)
+            }
+        }
+    }
+
+    private suspend fun uploadVideoToCloud(context: Context, uri: Uri, idRoom: List<String>): String? {
+        return suspendCoroutine { continuation ->
+            try {
+                val bytes = context.readUriBytes(uri)
+                val mime = context.contentResolver.getType(uri) ?: "video/mp4"
+                val ext = when {
+                    mime.contains("webm", ignoreCase = true) -> "webm"
+                    mime.contains("quicktime", ignoreCase = true) || mime.contains("mov", ignoreCase = true) -> "mov"
+                    mime.contains("3gp", ignoreCase = true) -> "3gp"
+                    else -> "mp4"
+                }
+                val fileName = "${UUID.randomUUID()}.$ext"
+                val folder = "$PATH_PHOTO/$idRoom"
+
+                CloudinaryManager.uploadBytes(
+                    fileBytes = bytes,
+                    fileName = fileName,
+                    mimeType = mime,
+                    folder = folder,
+                    onSuccess = { url -> continuation.resume(url) },
+                    onFailure = { e -> continuation.resumeWithException(e) }
                 )
             } catch (t: Throwable) {
                 continuation.resumeWithException(t)

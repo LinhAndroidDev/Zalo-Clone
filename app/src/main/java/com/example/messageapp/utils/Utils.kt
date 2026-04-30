@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.BitmapFactory
 import android.graphics.Rect
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
@@ -95,6 +96,31 @@ fun getImageDimensions(context: Context, imageUri: Uri): Pair<Int, Int>? {
 
         // Trả về chiều rộng và chiều cao của ảnh
         Pair(options.outWidth, options.outHeight)
+    }
+}
+
+/**
+ * Kích thước hiển thị của video (đã xoay theo METADATA_KEY_VIDEO_ROTATION nếu cần).
+ */
+fun getVideoDimensions(context: Context, videoUri: Uri): Pair<Int, Int>? {
+    val retriever = MediaMetadataRetriever()
+    return try {
+        retriever.setDataSource(context, videoUri)
+        val w = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull()
+            ?: return null
+        val h = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull()
+            ?: return null
+        val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+            ?.toIntOrNull() ?: 0
+        val (fw, fh) = if (rotation == 90 || rotation == 270) Pair(h, w) else Pair(w, h)
+        if (fw <= 0 || fh <= 0) null else Pair(fw, fh)
+    } catch (_: Throwable) {
+        null
+    } finally {
+        try {
+            retriever.release()
+        } catch (_: Throwable) {
+        }
     }
 }
 
