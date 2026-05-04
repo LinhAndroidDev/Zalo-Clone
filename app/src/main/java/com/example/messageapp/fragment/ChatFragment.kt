@@ -57,6 +57,7 @@ import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import java.io.File
 
 @AndroidEntryPoint
@@ -371,6 +372,21 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         lifecycleScope.launch {
             viewModel?.typing?.collect { typing ->
                 binding?.typingView?.isVisible = typing
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel?.cloudUploadProgress?.collect { pct ->
+                    val b = binding ?: return@collect
+                    b.uploadProgressContainer.isVisible = pct != null
+                    if (pct != null) {
+                        val p = pct.roundToInt().coerceIn(0, 100)
+                        b.uploadProgressBar.progress = p
+                        b.uploadProgressPercent.text =
+                            getString(R.string.chat_upload_progress, p)
+                    }
+                }
             }
         }
     }

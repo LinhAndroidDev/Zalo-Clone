@@ -37,6 +37,45 @@
             android:layout_alignParentBottom="true"
             android:orientation="vertical">
 
+            <LinearLayout
+                android:id="@+id/uploadProgressContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:background="@color/white"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/uploadProgressLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/chat_upload_sending"
+                    android:textColor="@color/text_common"
+                    android:textSize="12sp" />
+
+                <ProgressBar
+                    android:id="@+id/uploadProgressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:max="100"
+                    android:progress="0" />
+
+                <TextView
+                    android:id="@+id/uploadProgressPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textColor="@color/text_common"
+                    android:textSize="12sp"
+                    tools:text="42%" />
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/typingView"
                 android:text="@string/typing"

@@ -34,8 +34,6 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -565,29 +563,61 @@ object FireBaseInstance {
         uris: ArrayList<Uri>,
         roomId: List<String>,
         process: (Pair<Int, Double>) -> Unit,
-        success: (ArrayList<String>) -> Unit
+        success: (ArrayList<String>) -> Unit,
+        failure: ((Throwable) -> Unit)? = null,
     ) = CoroutineScope(Dispatchers.IO).launch {
-            val indexed = uris.mapIndexed { index, uri ->
-                async { index to uploadSingleChatMedia(context, uri, roomId) }
-            }.awaitAll()
-            val ordered = indexed.sortedBy { it.first }.mapNotNull { it.second }
-            success.invoke(ArrayList(ordered))
-        }
-
-    private suspend fun uploadSingleChatMedia(context: Context, uri: Uri, idRoom: List<String>): String? {
-        return if (context.isVideoUri(uri)) {
-            uploadVideoToCloud(context, uri, idRoom)
-        } else {
-            uploadImageToCloud(context, uri, idRoom)
+        try {
+            val n = uris.size
+            if (n == 0) {
+                success.invoke(arrayListOf())
+                return@launch
+            }
+            val urls = ArrayList<String>(n)
+            uris.forEachIndexed { index, uri ->
+                process(Pair(index, index * 100.0 / n))
+                val url = uploadSingleChatMedia(
+                    context = context,
+                    uri = uri,
+                    roomId = roomId,
+                    onFileUploadProgress = { filePct ->
+                        val overall = (index / n.toDouble() + filePct / 100.0 / n) * 100.0
+                        process(Pair(index, overall))
+                    }
+                ) ?: throw IllegalStateException("Upload failed for item $index")
+                urls.add(url)
+            }
+            success.invoke(urls)
+        } catch (t: Throwable) {
+            Log.e("FireBaseInstance", "uploadListPhoto", t)
+            failure?.invoke(t)
         }
     }
 
-    private suspend fun uploadImageToCloud(context: Context, uri: Uri, idRoom: List<String>): String? {
+    private suspend fun uploadSingleChatMedia(
+        context: Context,
+        uri: Uri,
+        roomId: List<String>,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? {
+        return if (context.isVideoUri(uri)) {
+            uploadVideoToCloud(context, uri, roomId, onFileUploadProgress)
+        } else {
+            uploadImageToCloud(context, uri, roomId, onFileUploadProgress)
+        }
+    }
+
+    private suspend fun uploadImageToCloud(
+        context: Context,
+        uri: Uri,
+        roomId: List<String>,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? {
         return suspendCoroutine { continuation ->
             try {
                 val bytes = context.compressImage(uri)
+                onFileUploadProgress(0f)
                 val fileName = "${UUID.randomUUID()}.jpg"
-                val folder = "$PATH_PHOTO/$idRoom"
+                val folder = "$PATH_PHOTO/$roomId"
 
                 CloudinaryManager.uploadBytes(
                     fileBytes = bytes,
@@ -599,7 +629,8 @@ object FireBaseInstance {
                     },
                     onFailure = { e ->
                         continuation.resumeWithException(e)
-                    }
+                    },
+                    onUploadProgress = { p -> onFileUploadProgress(p) },
                 )
             } catch (t: Throwable) {
                 continuation.resumeWithException(t)
@@ -607,10 +638,16 @@ object FireBaseInstance {
         }
     }
 
-    private suspend fun uploadVideoToCloud(context: Context, uri: Uri, idRoom: List<String>): String? {
+    private suspend fun uploadVideoToCloud(
+        context: Context,
+        uri: Uri,
+        roomId: List<String>,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? {
         return suspendCoroutine { continuation ->
             try {
                 val bytes = context.readUriBytes(uri)
+                onFileUploadProgress(0f)
                 val mime = context.contentResolver.getType(uri) ?: "video/mp4"
                 val ext = when {
                     mime.contains("webm", ignoreCase = true) -> "webm"
@@ -619,7 +656,7 @@ object FireBaseInstance {
                     else -> "mp4"
                 }
                 val fileName = "${UUID.randomUUID()}.$ext"
-                val folder = "$PATH_PHOTO/$idRoom"
+                val folder = "$PATH_PHOTO/$roomId"
 
                 CloudinaryManager.uploadBytes(
                     fileBytes = bytes,
@@ -627,7 +664,8 @@ object FireBaseInstance {
                     mimeType = mime,
                     folder = folder,
                     onSuccess = { url -> continuation.resume(url) },
-                    onFailure = { e -> continuation.resumeWithException(e) }
+                    onFailure = { e -> continuation.resumeWithException(e) },
+                    onUploadProgress = { p -> onFileUploadProgress(p) },
                 )
             } catch (t: Throwable) {
                 continuation.resumeWithException(t)
@@ -639,9 +677,18 @@ object FireBaseInstance {
      * This function is used to upload audio to the Storage Firebase
      * @param roomId id room of audio
      * @param uriAudio uri of audio
+     * @param process callback (0..100) khi upload lên Cloudinary
      * @param success callback when upload is successful
+     * @param failure callback when upload fails
      */
-    fun uploadAudio(roomId: List<String>, uriAudio: Uri, success: (String) -> Unit) {
+    fun uploadAudio(
+        roomId: List<String>,
+        uriAudio: Uri,
+        success: (String) -> Unit,
+        process: (Double) -> Unit = {},
+        failure: ((Throwable) -> Unit)? = null,
+    ) {
+        process(0.0)
         val audioFilePath = uriAudio.path
         val audioFile = audioFilePath?.let { File(it) }
         val bytes = audioFile?.takeIf { it.exists() }?.readBytes()
@@ -651,9 +698,13 @@ object FireBaseInstance {
                 "Check fail uploadAudio Cloudinary",
                 "uploadAudio failed: cannot read file from uri=$uriAudio path=$audioFilePath"
             )
+            failure?.invoke(
+                IllegalStateException("Không đọc được file ghi âm")
+            )
             return
         }
 
+        process(2.0)
         val fileName = "${UUID.randomUUID()}.mp3"
         // Firebase path: audios/<roomId.toString()>/*
         val folder = "$PATH_AUDIO/$roomId"
@@ -663,10 +714,17 @@ object FireBaseInstance {
             fileName = fileName,
             mimeType = "audio/mpeg",
             folder = folder,
-            onSuccess = success,
+            onSuccess = { url ->
+                process(100.0)
+                success.invoke(url)
+            },
             onFailure = { e ->
                 Log.e("Check fail uploadAudio Cloudinary", "uploadAudio failed: ${e.message}", e)
-            }
+                failure?.invoke(e)
+            },
+            onUploadProgress = { p ->
+                process(2.0 + (p / 100.0) * 98.0)
+            },
         )
     }
 

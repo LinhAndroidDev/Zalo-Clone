@@ -39,6 +39,10 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     private val _typing: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val typing = _typing.asStateFlow()
 
+    /** null = ẩn; 0f..100f = tiến độ upload Cloudinary (ảnh/video/ghi âm). */
+    private val _cloudUploadProgress = MutableStateFlow<Float?>(null)
+    val cloudUploadProgress = _cloudUploadProgress.asStateFlow()
+
     /**
      * This function used to send message to FireStore
      * @param message data message
@@ -138,12 +142,20 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             }
             intrinsicByIndex.add(dim)
         }
+        setCloudUploadProgress(0f)
         FireBaseInstance.uploadListPhoto(
             context = context,
             uris = uris,
             roomId = idRoom,
-            process = {},
+            process = { (_, overall) ->
+                setCloudUploadProgress(overall.toFloat().coerceIn(0f, 100f))
+            },
+            failure = { t ->
+                setCloudUploadProgress(null)
+                showError(t.message ?: "Gửi file thất bại")
+            },
             success = { uploadedUrls ->
+                try {
                 if (uploadedUrls.size == 1) {
                     val (w, h) = intrinsicByIndex.getOrNull(0) ?: (0 to 0)
                     val message = Message(
@@ -197,8 +209,15 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                         sendFirst = sendFirst
                     ) {}
                 }
+                } finally {
+                    setCloudUploadProgress(null)
+                }
             }
         )
+    }
+
+    private fun setCloudUploadProgress(value: Float?) {
+        _cloudUploadProgress.value = value
     }
 
     fun uploadAudio(
@@ -209,27 +228,40 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         sendFirst: Boolean
     ) {
         val idRoom = listOf(friendId, shared.getAuth()).sorted()
+        setCloudUploadProgress(0f)
         FireBaseInstance.uploadAudio(
             roomId = idRoom,
-            uriAudio = uriAudio
-        ) { audioUrl ->
-            val message = Message(
-                receiver = friendId,
-                sender = shared.getAuth(),
-                time = time,
-                audio = audioUrl,
-                type = TypeMessage.AUDIO.ordinal
-            )
-            FireBaseInstance.sendMessage(
-                message = message,
-                userId = shared.getAuth(),
-                time = time,
-                conversation = conversation,
-                nameSender = shared.getNameUser(),
-                type = TypeMessage.AUDIO,
-                sendFirst = sendFirst
-            ) {}
-        }
+            uriAudio = uriAudio,
+            success = { audioUrl ->
+                try {
+                    val message = Message(
+                        receiver = friendId,
+                        sender = shared.getAuth(),
+                        time = time,
+                        audio = audioUrl,
+                        type = TypeMessage.AUDIO.ordinal
+                    )
+                    FireBaseInstance.sendMessage(
+                        message = message,
+                        userId = shared.getAuth(),
+                        time = time,
+                        conversation = conversation,
+                        nameSender = shared.getNameUser(),
+                        type = TypeMessage.AUDIO,
+                        sendFirst = sendFirst
+                    ) {}
+                } finally {
+                    setCloudUploadProgress(null)
+                }
+            },
+            process = { p ->
+                setCloudUploadProgress(p.toFloat().coerceIn(0f, 100f))
+            },
+            failure = { t ->
+                setCloudUploadProgress(null)
+                showError(t.message ?: "Gửi ghi âm thất bại")
+            }
+        )
     }
 
     /**

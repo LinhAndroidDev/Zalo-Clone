@@ -205,4 +205,6 @@
     <string name="diary_post_delete_confirm">Xoá</string>
     <string name="diary_post_delete_cancel">Huỷ</string>
     <string name="status_post_updated">Đã cập nhật bài đăng</string>
+    <string name="chat_upload_sending">Đang gửi</string>
+    <string name="chat_upload_progress">Đang tải lên %d%%</string>
 </resources>
