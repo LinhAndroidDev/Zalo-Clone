@@ -361,27 +361,40 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to get token of receiver from the FireStore database
+     * One-time read of the receiver's FCM token from Firestore.
+     * Uses [com.google.firebase.firestore.DocumentReference.get] instead of a snapshot listener so
+     * each send triggers at most one notification attempt (listeners would fire on every token
+     * change and could duplicate API calls). Empty or blank tokens are treated as failure.
+     *
      * @param friendId key auth of friend
-     * @param success callback when query is successful
-     * @param failure callback when query is failed
+     * @param success callback with non-blank token
+     * @param failure callback when query fails, doc missing, or token empty
      */
     private fun getTokenMessage(
         friendId: String,
         success: (String) -> Unit,
         failure: (String) -> Unit
     ) {
+        if (friendId.isBlank()) {
+            failure.invoke("ID người nhận không hợp lệ")
+            return
+        }
         db.collection(PATH_TOKEN).document(friendId)
-            .addSnapshotListener { value, error ->
-                if (error != null) {
-                    failure.invoke(error.message.toString())
-                }
-                if (value != null && value.exists()) {
-                    val tokenObject = value.toObject(Token::class.java)
-                    success.invoke(tokenObject?.token ?: "")
-                } else {
+            .get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
                     failure.invoke("Token not found")
+                    return@addOnSuccessListener
                 }
+                val token = doc.toObject(Token::class.java)?.token?.trim().orEmpty()
+                if (token.isEmpty()) {
+                    failure.invoke("Token rỗng")
+                    return@addOnSuccessListener
+                }
+                success.invoke(token)
+            }
+            .addOnFailureListener { e ->
+                failure.invoke(e.message.toString())
             }
     }
 
