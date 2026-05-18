@@ -3,9 +3,11 @@ package com.example.messageapp.adapter
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
@@ -20,9 +22,13 @@ import com.example.messageapp.helper.screenWidth
 import com.example.messageapp.custom.AudioPlaybackState
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 import kotlin.math.ceil
+import kotlin.math.max
+import kotlin.math.min
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
@@ -43,6 +49,11 @@ class ChatAdapter(
     private val audioPlaybackStateMap = hashMapOf<String, AudioPlaybackState>()
     var seen: Boolean = false
     private var mCallBack: CallBackClickItem? = null
+
+    companion object {
+        /** Khoảng tối đa giữa hai tin cùng người gửi để gộp nhóm (kiểu Zalo / iMessage). */
+        private const val MESSAGE_GROUP_GAP_MS = 3 * 60 * 1000L
+    }
 
     init {
         setHasStableIds(true)
@@ -146,12 +157,15 @@ class ChatAdapter(
                     mCallBack?.onOptionMenuClick(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
+                applyMessageClusterUi(holder, position, message)
             }
 
             else -> {
                 holder as ReceiverViewHolder
                 holder.checkShowEmotion(message)
-                holder.showAvatarReceiver(context, friendId)
+                if (!isGroupedWithPrevious(position)) {
+                    holder.showAvatarReceiver(context, friendId)
+                }
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
                         holder.initViewMessage(context, message) {
@@ -183,6 +197,102 @@ class ChatAdapter(
                     mCallBack?.onOptionMenuClick(message)
                 }
                 holder.v.viewBottom.isVisible = position == messages.size - 1
+                applyMessageClusterUi(holder, position, message)
+            }
+        }
+    }
+
+    private fun messageTimeMillis(msg: Message): Long? =
+        DateUtils.parseChatMessageTimeMillis(msg.time)
+
+    /** Tin liền trước cùng người gửi và trong [MESSAGE_GROUP_GAP_MS]. */
+    private fun isGroupedWithPrevious(position: Int): Boolean {
+        if (position <= 0) return false
+        val prev = messages[position - 1]
+        val curr = messages[position]
+        if (prev.sender != curr.sender) return false
+        val tPrev = messageTimeMillis(prev) ?: return false
+        val tCurr = messageTimeMillis(curr) ?: return false
+        val delta = tCurr - tPrev
+        return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
+    }
+
+    /** Tin liền sau cùng người gửi và trong [MESSAGE_GROUP_GAP_MS]. */
+    private fun isGroupedWithNext(position: Int): Boolean {
+        if (position >= messages.lastIndex) return false
+        val curr = messages[position]
+        val next = messages[position + 1]
+        if (curr.sender != next.sender) return false
+        val tCurr = messageTimeMillis(curr) ?: return false
+        val tNext = messageTimeMillis(next) ?: return false
+        val delta = tNext - tCurr
+        return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
+    }
+
+    /**
+     * Nền bong bóng text phía gửi: nhóm nối theo cạnh phải — góc trên/dưới phải 3dp.
+     */
+    private fun senderGroupedTextBubbleDrawable(position: Int): Int {
+        val prev = isGroupedWithPrevious(position)
+        val next = isGroupedWithNext(position)
+        return when {
+            prev && next -> R.drawable.bg_chat_sender_bubble_group_middle
+            prev && !next -> R.drawable.bg_chat_sender_bubble_group_last
+            !prev && next -> R.drawable.bg_chat_sender_bubble_group_first
+            else -> R.drawable.bg_chat_sender_bubble_single
+        }
+    }
+
+    /**
+     * Nền bong bóng text phía nhận: nhóm nối theo cạnh trái — góc trên/dưới trái 3dp.
+     */
+    private fun receiverGroupedTextBubbleDrawable(position: Int): Int {
+        val prev = isGroupedWithPrevious(position)
+        val next = isGroupedWithNext(position)
+        return when {
+            prev && next -> R.drawable.bg_chat_receiver_bubble_group_middle
+            prev && !next -> R.drawable.bg_chat_receiver_bubble_group_last
+            !prev && next -> R.drawable.bg_chat_receiver_bubble_group_first
+            else -> R.drawable.bg_chat_receiver_bubble_single
+        }
+    }
+
+    private fun applyItemTopMargin(holder: RecyclerView.ViewHolder, position: Int) {
+        val p = holder.itemView.layoutParams as? RecyclerView.LayoutParams ?: return
+        val topDp = if (isGroupedWithPrevious(position)) 2f else 5f
+        p.topMargin = (topDp * context.resources.displayMetrics.density).toInt()
+        holder.itemView.layoutParams = p
+    }
+
+    private fun applyReceiverBubbleCluster(holder: ReceiverViewHolder, position: Int) {
+        val clusterPrev = isGroupedWithPrevious(position)
+        val lp = holder.v.layoutReceiverBubbleColumn.layoutParams as LinearLayout.LayoutParams
+        val res = context.resources
+        if (clusterPrev) {
+            holder.v.avatarReceiver.visibility = View.GONE
+            lp.marginStart = res.getDimensionPixelSize(R.dimen.chat_receiver_bubble_margin_start_cluster)
+        } else {
+            holder.v.avatarReceiver.visibility = View.VISIBLE
+            lp.marginStart = res.getDimensionPixelSize(R.dimen.chat_receiver_bubble_margin_start_normal)
+        }
+        holder.v.layoutReceiverBubbleColumn.layoutParams = lp
+    }
+
+    private fun applyMessageClusterUi(holder: RecyclerView.ViewHolder, position: Int, message: Message) {
+        applyItemTopMargin(holder, position)
+        when (holder) {
+            is SenderViewHolder -> {
+                if (TypeMessage.of(message.type) == TypeMessage.MESSAGE) {
+                    holder.v.tvTime.isVisible = !isGroupedWithNext(position)
+                    holder.v.viewMessage.setBackgroundResource(senderGroupedTextBubbleDrawable(position))
+                }
+            }
+            is ReceiverViewHolder -> {
+                applyReceiverBubbleCluster(holder, position)
+                if (TypeMessage.of(message.type) == TypeMessage.MESSAGE) {
+                    holder.v.tvTime.isVisible = !isGroupedWithNext(position)
+                    holder.v.viewMessage.setBackgroundResource(receiverGroupedTextBubbleDrawable(position))
+                }
             }
         }
     }
@@ -212,6 +322,37 @@ class ChatAdapter(
     }
 
     /**
+     * Kích thước ô bubble cho một ảnh/video đơn (đồng bộ với logic scale cũ).
+     */
+    private fun bubbleDisplaySizeForPositive(intrinsicW: Int, intrinsicH: Int): Pair<Int, Int> {
+        val scale = if (intrinsicW > intrinsicH) {
+            (screenWidth * 3 / 4 - 120) / intrinsicW.toFloat()
+        } else {
+            screenHeight / (2 * intrinsicH.toFloat())
+        }
+        return (intrinsicW * scale).toInt() to (intrinsicH * scale).toInt()
+    }
+
+    /** Parse token "WxH" trong [Message.photoSizes]. */
+    private fun parsePhotoSizeToken(sizes: ArrayList<String>?, index: Int): Pair<Int, Int> {
+        val token = sizes?.getOrNull(index) ?: return 0 to 0
+        val ix = token.indexOf('x')
+        if (ix <= 0 || ix == token.lastIndex) return 0 to 0
+        val w = token.substring(0, ix).toIntOrNull() ?: return 0 to 0
+        val h = token.substring(ix + 1).toIntOrNull() ?: return 0 to 0
+        return w to h
+    }
+
+    /**
+     * Thu nhỏ media vào ô vuông tối đa [maxSide] nhưng giữ tỉ lệ (dùng trong lưới nhiều ảnh/video).
+     */
+    private fun gridCellDisplaySize(intrinsicW: Int, intrinsicH: Int, maxSide: Int): Pair<Int, Int> {
+        if (intrinsicW <= 0 || intrinsicH <= 0) return maxSide to maxSide
+        val scale = min(maxSide / intrinsicW.toFloat(), maxSide / intrinsicH.toFloat())
+        return max(1, (intrinsicW * scale).toInt()) to max(1, (intrinsicH * scale).toInt())
+    }
+
+    /**
      * This function is used to calculate the size of a single photo based on the size returned from the server
      * + Then scale it according to the width and height of the device.
      * + If the width is greater than the height, the width is 3/4 of the screen width - 120
@@ -227,18 +368,17 @@ class ChatAdapter(
         fromSender: Boolean = true
     ) {
         val photo = message.singlePhoto[0]
-        val width = message.singlePhoto[1].toInt()
-        val height = message.singlePhoto[2].toInt()
+        var width = message.singlePhoto[1].toInt()
+        var height = message.singlePhoto[2].toInt()
+        if (width <= 0 || height <= 0) {
+            width = screenWidth / 2
+            height = screenWidth / 2
+        }
 
         viewPhoto.removeAllViews()
         val imageView = ImageView(context)
-        val scale = if (width > height) {
-            (screenWidth * 3 / 4 - 120) / width.toFloat()
-        } else {
-            screenHeight / (2 * height).toFloat()
-        }
-        imageView.layoutParams =
-            ViewGroup.LayoutParams((width * scale).toInt(), (height * scale).toInt())
+        val (w, h) = bubbleDisplaySizeForPositive(width, height)
+        imageView.layoutParams = ViewGroup.LayoutParams(w, h)
         imageView.transitionName = message.time
         imageView.setOnClickListener {
             mCallBack?.onPhotoClick(
@@ -251,7 +391,26 @@ class ChatAdapter(
                 )
             )
         }
-        viewPhoto.addView(imageView)
+        if (isLikelyVideoUrl(photo)) {
+            val frame = FrameLayout(context)
+            frame.layoutParams = ViewGroup.LayoutParams(w, h)
+            imageView.layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            frame.addView(imageView)
+            val playSize = (32 * context.resources.displayMetrics.density).toInt()
+            val play = ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(playSize, playSize, Gravity.CENTER)
+                setImageResource(R.drawable.ic_play)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                isClickable = false
+            }
+            frame.addView(play)
+            viewPhoto.addView(frame)
+        } else {
+            viewPhoto.addView(imageView)
+        }
         context.loadImg(
             photo,
             imageView,
@@ -271,20 +430,31 @@ class ChatAdapter(
     private fun drawViewMultiPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
         val photos = message.photos
         viewPhotos.removeAllViews()
+        if (photos.isEmpty()) return
+
         val row = ceil(photos.size / 3f).toInt()
+        val cellMax = screenWidth / 4 - 40
         for (i in 0 until row) {
             val layoutRow = LinearLayout(context)
             layoutRow.layoutParams =
                 ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
             layoutRow.orientation = LinearLayout.HORIZONTAL
+            layoutRow.gravity = Gravity.BOTTOM
             for (j in 3 * i until 3 * i + 3) {
                 if (j >= photos.size) break
-                val imgPhoto = ImageView(context)
-                imgPhoto.layoutParams =
-                    MarginLayoutParams(screenWidth / 4 - 40, screenWidth / 4 - 40).apply {
+                val (iw, ih) = parsePhotoSizeToken(message.photoSizes, j)
+                val (fw, fh) = gridCellDisplaySize(iw, ih, cellMax)
+                val frame = FrameLayout(context)
+                frame.layoutParams =
+                    MarginLayoutParams(fw, fh).apply {
                         bottomMargin = if (i == row - 1) 0 else 8
                         rightMargin = if (j == 3 * i + 2) 0 else 8
                     }
+                val imgPhoto = ImageView(context)
+                imgPhoto.layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
                 imgPhoto.transitionName = message.time
                 imgPhoto.setOnClickListener {
                     mCallBack?.onPhotoClick(
@@ -299,11 +469,21 @@ class ChatAdapter(
                 }
                 imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
                 context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
-                layoutRow.addView(imgPhoto)
+                frame.addView(imgPhoto)
+                if (isLikelyVideoUrl(photos[j])) {
+                    val playSize = (28 * context.resources.displayMetrics.density).toInt()
+                    val play = ImageView(context).apply {
+                        layoutParams = FrameLayout.LayoutParams(playSize, playSize, Gravity.CENTER)
+                        setImageResource(R.drawable.ic_play)
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                        isClickable = false
+                    }
+                    frame.addView(play)
+                }
+                layoutRow.addView(frame)
             }
             viewPhotos.addView(layoutRow)
         }
-
     }
 
     /**

@@ -89,6 +89,7 @@ abstract class BaseFragment<VB : ViewDataBinding, VM: BaseViewModel> : Fragment(
             viewModel?.errorState?.collect { error ->
                 if (error.isNotEmpty()) {
                     Toast.makeText(requireActivity(), error, Toast.LENGTH_SHORT).show()
+                    viewModel?.clearError()
                 }
             }
         }

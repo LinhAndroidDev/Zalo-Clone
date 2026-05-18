@@ -11,6 +11,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.media.MediaPlayer
 import android.net.Uri
@@ -48,6 +49,7 @@ import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils
+import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.utils.hideKeyboard
@@ -55,6 +57,7 @@ import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import java.io.File
 
 @AndroidEntryPoint
@@ -82,6 +85,18 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         override fun onPhotoClick(data: ClickPhotoModel) {
+            val url = data.photoData.getOrNull(data.indexOfPhoto) ?: return
+            if (isLikelyVideoUrl(url)) {
+                val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(Uri.parse(url), "video/*")
+                }
+                try {
+                    startActivity(Intent.createChooser(viewIntent, null))
+                } catch (_: ActivityNotFoundException) {
+                    Toast.makeText(requireContext(), "Không thể mở video", Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
             val keyId = if (data.fromSender) viewModel?.shared?.getAuth()
                 .toString() else conversation?.friendId.toString()
             val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
@@ -300,13 +315,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         if (resultCode == RESULT_OK && data != null) {
             when (requestCode) {
                 REQUEST_CODE_MULTI_PICTURE -> {
+                    val uris = arrayListOf<Uri>()
                     if (data.clipData != null) {
-                        val uris = arrayListOf<Uri>()
                         val count: Int = data.clipData!!.itemCount
                         for (i in 0 until count) {
                             uris.add(data.clipData!!.getItemAt(i).uri)
                         }
-
+                    } else {
+                        data.data?.let { uris.add(it) }
+                    }
+                    if (uris.isNotEmpty()) {
                         conversation?.let {
                             viewModel?.uploadListPhoto(
                                 context = requireActivity(),
@@ -318,33 +336,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                         }
                         stateScrollable = true
                     }
-//                    val clipData = data.clipData
-//                    if (clipData != null) {
-//                        val uris = arrayListOf<Pair<Uri, Int>>()
-//                        // Người dùng chọn nhiều file
-//                        for (i in 0 until clipData.itemCount) {
-//                            val mediaUri = clipData.getItemAt(i).uri
-//                            val mimeType = activity?.contentResolver?.getType(mediaUri)
-//                            when {
-//                                mimeType?.startsWith("image/") == true -> {
-//                                    uris.add(Pair(clipData.getItemAt(i).uri, 0))
-//                                }
-//                                mimeType?.startsWith("video/") == true -> {
-//                                    uris.add(Pair(clipData.getItemAt(i).uri, 1))
-//                                }
-//                            }
-//                        }
-//                        conversation?.let {
-//                            viewModel?.uploadListPhoto(
-//                                context = requireActivity(),
-//                                uris = uris,
-//                                conversation = it,
-//                                time = DateUtils.getTimeCurrent()
-//                            )
-//                        }
-//                        stateScrollable = true
-                    }
-
+                }
             }
         }
     }
@@ -380,6 +372,21 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         lifecycleScope.launch {
             viewModel?.typing?.collect { typing ->
                 binding?.typingView?.isVisible = typing
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel?.cloudUploadProgress?.collect { pct ->
+                    val b = binding ?: return@collect
+                    b.uploadProgressContainer.isVisible = pct != null
+                    if (pct != null) {
+                        val p = pct.roundToInt().coerceIn(0, 100)
+                        b.uploadProgressBar.progress = p
+                        b.uploadProgressPercent.text =
+                            getString(R.string.chat_upload_progress, p)
+                    }
+                }
             }
         }
     }
@@ -435,26 +442,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         binding?.btnSelectImage?.setOnClickListener {
-            val intent = Intent().apply {
-                type = "image/*"
+            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "*/*"
+                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
+                addCategory(Intent.CATEGORY_OPENABLE)
                 putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                action = Intent.ACTION_GET_CONTENT
             }
             startActivityForResult(
                 Intent.createChooser(intent, SELECT_MULTI_PICTURE),
                 REQUEST_CODE_MULTI_PICTURE
             )
-
-//            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-//                type = "*/*"
-//                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
-//                addCategory(Intent.CATEGORY_OPENABLE)
-//                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) // Cho phép chọn nhiều file
-//            }
-//            startActivityForResult(
-//                Intent.createChooser(intent, "select multi"),
-//                REQUEST_CODE_MULTI_PICTURE
-//            )
         }
 
         binding?.btnMicro?.setOnClickListener {

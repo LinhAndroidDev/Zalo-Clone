@@ -13,7 +13,6 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.example.messageapp.R
 import com.example.messageapp.databinding.RecordWaveViewBinding
-import com.example.messageapp.library.audiowave.Sampler
 import com.example.messageapp.utils.AudioRecorderManager
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils
@@ -258,10 +257,10 @@ class RecordWaveView @JvmOverloads constructor(
                     waveView?.progress = 0f
                     waveView?.setRawData(it, callback = {
                         if (requestKey != currentAudioKey) return@setRawData
-                        waveView?.scaledData?.let { scaled ->
+                        waveView.scaledData.let { scaled ->
                             waveformCache.put(waveformKey, scaled)
                         }
-                        waveView?.progress = playbackState.progress.coerceIn(0f, 100f)
+                        waveView.progress = playbackState.progress.coerceIn(0f, 100f)
                         updateDurationText(playbackState.positionMs)
                         isAudioReady = true
                         showLoading(false)
@@ -282,19 +281,6 @@ class RecordWaveView @JvmOverloads constructor(
         binding?.icPlay?.setImageResource(R.drawable.ic_play)
         isPlaying = false
         stopAnimationLoop()
-    }
-
-    fun destroy() {
-        audioLoadJob?.cancel()
-        audioRecorder?.stopAudio()
-        audioRecorder = null
-        recordedFilePath = null
-        currentAudioKey = null
-        isAudioReady = false
-        isAudioLoading = false
-        binding = null
-        handlerAnimation.removeCallbacks(runnable)
-        isPlaying = false
     }
 
     private fun showLoading(loading: Boolean) {

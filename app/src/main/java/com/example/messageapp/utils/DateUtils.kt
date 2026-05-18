@@ -20,9 +20,23 @@ object DateUtils {
 
     fun convertTimeToHour(time: String): String {
         val input = SimpleDateFormat(DATE_TIME, Locale.getDefault())
+        input.timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
         val output = SimpleDateFormat(HOUR_TIME, Locale.getDefault())
+        output.timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
         val date = input.parse(time)
         return output.format(date ?: "")
+    }
+
+    /** Parse [Message.time] (`yyyy_MM_dd_HH_mm_ss`) → epoch millis, or null if invalid. */
+    fun parseChatMessageTimeMillis(time: String): Long? {
+        if (time.isBlank()) return null
+        return try {
+            val input = SimpleDateFormat(DATE_TIME, Locale.getDefault())
+            input.timeZone = TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
+            input.parse(time)?.time
+        } catch (_: Exception) {
+            null
+        }
     }
 
     fun formatDateTimeApp(input: String): String {

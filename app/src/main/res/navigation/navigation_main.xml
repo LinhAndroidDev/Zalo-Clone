@@ -191,5 +191,10 @@
         android:id="@+id/statusFragment"
         android:name="com.example.messageapp.fragment.StatusFragment"
         android:label="StatusFragment"
-        tools:layout="@layout/fragment_status"/>
+        tools:layout="@layout/fragment_status">
+        <argument
+            android:name="postId"
+            android:defaultValue=""
+            app:argType="string" />
+    </fragment>
 </navigation>

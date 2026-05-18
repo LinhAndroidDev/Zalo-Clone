@@ -46,12 +46,16 @@ class PersonalActivityViewModel @Inject constructor() : BaseViewModel() {
 
     /** This function is used to upload photo to firebase*/
     fun uploadPhoto(context: Context, uri: Uri, isAvatar: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        FireBaseInstance.uploadImage(context ,uriPhoto = uri) {
-            if (isAvatar) {
-                FireBaseInstance.updateAvatarUser(avatar = it, userId = shared.getAuth())
-            } else {
-                FireBaseInstance.updateImageCover(imageCover = it, userId = shared.getAuth())
+        FireBaseInstance.uploadImage(
+            context,
+            uriPhoto = uri,
+            success = {
+                if (isAvatar) {
+                    FireBaseInstance.updateAvatarUser(avatar = it, userId = shared.getAuth())
+                } else {
+                    FireBaseInstance.updateImageCover(imageCover = it, userId = shared.getAuth())
+                }
             }
-        }
+        )
     }
 }

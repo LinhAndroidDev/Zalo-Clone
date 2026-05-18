@@ -3,6 +3,8 @@ package com.example.messageapp.utils
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.example.messageapp.MyApplication
+import com.example.messageapp.R
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Friend
@@ -10,6 +12,10 @@ import com.example.messageapp.model.FriendRequest
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.Sticker
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.model.DiaryLinkPreview
+import com.example.messageapp.model.DiaryPost
+import com.example.messageapp.model.DiaryPostComment
+import com.example.messageapp.model.DiaryPostFirestore
 import com.example.messageapp.model.User
 import com.example.messageapp.remote.ApiClient
 import com.example.messageapp.remote.Token
@@ -17,6 +23,10 @@ import com.example.messageapp.remote.request.Data
 import com.example.messageapp.remote.request.MessageRequest
 import com.example.messageapp.remote.request.NotificationData
 import com.example.messageapp.utils.FileUtils.compressImage
+import com.example.messageapp.utils.FileUtils.isVideoUri
+import com.example.messageapp.utils.FileUtils.readUriBytes
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
@@ -24,8 +34,6 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -353,27 +361,40 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to get token of receiver from the FireStore database
+     * One-time read of the receiver's FCM token from Firestore.
+     * Uses [com.google.firebase.firestore.DocumentReference.get] instead of a snapshot listener so
+     * each send triggers at most one notification attempt (listeners would fire on every token
+     * change and could duplicate API calls). Empty or blank tokens are treated as failure.
+     *
      * @param friendId key auth of friend
-     * @param success callback when query is successful
-     * @param failure callback when query is failed
+     * @param success callback with non-blank token
+     * @param failure callback when query fails, doc missing, or token empty
      */
     private fun getTokenMessage(
         friendId: String,
         success: (String) -> Unit,
         failure: (String) -> Unit
     ) {
+        if (friendId.isBlank()) {
+            failure.invoke("ID người nhận không hợp lệ")
+            return
+        }
         db.collection(PATH_TOKEN).document(friendId)
-            .addSnapshotListener { value, error ->
-                if (error != null) {
-                    failure.invoke(error.message.toString())
-                }
-                if (value != null && value.exists()) {
-                    val tokenObject = value.toObject(Token::class.java)
-                    success.invoke(tokenObject?.token ?: "")
-                } else {
+            .get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
                     failure.invoke("Token not found")
+                    return@addOnSuccessListener
                 }
+                val token = doc.toObject(Token::class.java)?.token?.trim().orEmpty()
+                if (token.isEmpty()) {
+                    failure.invoke("Token rỗng")
+                    return@addOnSuccessListener
+                }
+                success.invoke(token)
+            }
+            .addOnFailureListener { e ->
+                failure.invoke(e.message.toString())
             }
     }
 
@@ -434,7 +455,12 @@ object FireBaseInstance {
      * @param uriPhoto uri of photo
      * @param success callback when upload is successful
      */
-    fun uploadImage(context: Context, uriPhoto: Uri, success: (String) -> Unit) {
+    fun uploadImage(
+        context: Context,
+        uriPhoto: Uri,
+        success: (String) -> Unit,
+        failure: ((String) -> Unit)? = null
+    ) {
         val bytes = context.compressImage(uriPhoto)
         val fileName = "${UUID.randomUUID()}.jpg"
         val folder = PATH_IMAGE // Firebase path: images/*
@@ -447,6 +473,9 @@ object FireBaseInstance {
             onSuccess = success,
             onFailure = { e ->
                 Log.e("Check fail uploadImage Cloudinary", "uploadImage failed: ${e.message}", e)
+                failure?.invoke(
+                    e.message ?: MyApplication.appContext.getString(R.string.error_upload_image)
+                )
             }
         )
     }
@@ -547,32 +576,61 @@ object FireBaseInstance {
         uris: ArrayList<Uri>,
         roomId: List<String>,
         process: (Pair<Int, Double>) -> Unit,
-        success: (ArrayList<String>) -> Unit
+        success: (ArrayList<String>) -> Unit,
+        failure: ((Throwable) -> Unit)? = null,
     ) = CoroutineScope(Dispatchers.IO).launch {
-            val photos = arrayListOf<String>()
-            val deferredList = uris.map { uri ->
-                async {
-                    val photoUrl = uploadPhoto(context, uri, roomId)
-                    photoUrl?.let { photos.add(it) }
-                }
+        try {
+            val n = uris.size
+            if (n == 0) {
+                success.invoke(arrayListOf())
+                return@launch
             }
-            deferredList.awaitAll()
-            success.invoke(photos)
+            val urls = ArrayList<String>(n)
+            uris.forEachIndexed { index, uri ->
+                process(Pair(index, index * 100.0 / n))
+                val url = uploadSingleChatMedia(
+                    context = context,
+                    uri = uri,
+                    roomId = roomId,
+                    onFileUploadProgress = { filePct ->
+                        val overall = (index / n.toDouble() + filePct / 100.0 / n) * 100.0
+                        process(Pair(index, overall))
+                    }
+                ) ?: throw IllegalStateException("Upload failed for item $index")
+                urls.add(url)
+            }
+            success.invoke(urls)
+        } catch (t: Throwable) {
+            Log.e("FireBaseInstance", "uploadListPhoto", t)
+            failure?.invoke(t)
         }
+    }
 
-    /**
-     * This function is used to upload photo to the Storage Firebase
-     * @param context context of activity
-     * @param uri uri of photo
-     * @param idRoom id room of chat room
-     */
-    private suspend fun uploadPhoto(context: Context, uri: Uri, idRoom: List<String>): String? {
+    private suspend fun uploadSingleChatMedia(
+        context: Context,
+        uri: Uri,
+        roomId: List<String>,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? {
+        return if (context.isVideoUri(uri)) {
+            uploadVideoToCloud(context, uri, roomId, onFileUploadProgress)
+        } else {
+            uploadImageToCloud(context, uri, roomId, onFileUploadProgress)
+        }
+    }
+
+    private suspend fun uploadImageToCloud(
+        context: Context,
+        uri: Uri,
+        roomId: List<String>,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? {
         return suspendCoroutine { continuation ->
             try {
                 val bytes = context.compressImage(uri)
+                onFileUploadProgress(0f)
                 val fileName = "${UUID.randomUUID()}.jpg"
-                // Firebase path: photo/<roomId.toString()>/*
-                val folder = "$PATH_PHOTO/$idRoom"
+                val folder = "$PATH_PHOTO/$roomId"
 
                 CloudinaryManager.uploadBytes(
                     fileBytes = bytes,
@@ -584,7 +642,43 @@ object FireBaseInstance {
                     },
                     onFailure = { e ->
                         continuation.resumeWithException(e)
-                    }
+                    },
+                    onUploadProgress = { p -> onFileUploadProgress(p) },
+                )
+            } catch (t: Throwable) {
+                continuation.resumeWithException(t)
+            }
+        }
+    }
+
+    private suspend fun uploadVideoToCloud(
+        context: Context,
+        uri: Uri,
+        roomId: List<String>,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? {
+        return suspendCoroutine { continuation ->
+            try {
+                val bytes = context.readUriBytes(uri)
+                onFileUploadProgress(0f)
+                val mime = context.contentResolver.getType(uri) ?: "video/mp4"
+                val ext = when {
+                    mime.contains("webm", ignoreCase = true) -> "webm"
+                    mime.contains("quicktime", ignoreCase = true) || mime.contains("mov", ignoreCase = true) -> "mov"
+                    mime.contains("3gp", ignoreCase = true) -> "3gp"
+                    else -> "mp4"
+                }
+                val fileName = "${UUID.randomUUID()}.$ext"
+                val folder = "$PATH_PHOTO/$roomId"
+
+                CloudinaryManager.uploadBytes(
+                    fileBytes = bytes,
+                    fileName = fileName,
+                    mimeType = mime,
+                    folder = folder,
+                    onSuccess = { url -> continuation.resume(url) },
+                    onFailure = { e -> continuation.resumeWithException(e) },
+                    onUploadProgress = { p -> onFileUploadProgress(p) },
                 )
             } catch (t: Throwable) {
                 continuation.resumeWithException(t)
@@ -596,9 +690,18 @@ object FireBaseInstance {
      * This function is used to upload audio to the Storage Firebase
      * @param roomId id room of audio
      * @param uriAudio uri of audio
+     * @param process callback (0..100) khi upload lên Cloudinary
      * @param success callback when upload is successful
+     * @param failure callback when upload fails
      */
-    fun uploadAudio(roomId: List<String>, uriAudio: Uri, success: (String) -> Unit) {
+    fun uploadAudio(
+        roomId: List<String>,
+        uriAudio: Uri,
+        success: (String) -> Unit,
+        process: (Double) -> Unit = {},
+        failure: ((Throwable) -> Unit)? = null,
+    ) {
+        process(0.0)
         val audioFilePath = uriAudio.path
         val audioFile = audioFilePath?.let { File(it) }
         val bytes = audioFile?.takeIf { it.exists() }?.readBytes()
@@ -608,9 +711,13 @@ object FireBaseInstance {
                 "Check fail uploadAudio Cloudinary",
                 "uploadAudio failed: cannot read file from uri=$uriAudio path=$audioFilePath"
             )
+            failure?.invoke(
+                IllegalStateException("Không đọc được file ghi âm")
+            )
             return
         }
 
+        process(2.0)
         val fileName = "${UUID.randomUUID()}.mp3"
         // Firebase path: audios/<roomId.toString()>/*
         val folder = "$PATH_AUDIO/$roomId"
@@ -620,10 +727,17 @@ object FireBaseInstance {
             fileName = fileName,
             mimeType = "audio/mpeg",
             folder = folder,
-            onSuccess = success,
+            onSuccess = { url ->
+                process(100.0)
+                success.invoke(url)
+            },
             onFailure = { e ->
                 Log.e("Check fail uploadAudio Cloudinary", "uploadAudio failed: ${e.message}", e)
-            }
+                failure?.invoke(e)
+            },
+            onUploadProgress = { p ->
+                process(2.0 + (p / 100.0) * 98.0)
+            },
         )
     }
 
@@ -833,14 +947,58 @@ object FireBaseInstance {
             )
         )
 
+        // Accepter on sender's phone book: prefer name/avatar stored on the request when sent
+        // (avoids empty name if getInfoUser snapshot was incomplete — empty name is omitted from
+        // PhoneBook because grouping uses capitalLetters on friend.name).
+        val accepterName = request.toName.ifBlank { myName }
+        val accepterAvatar = request.toAvatar.ifBlank { myAvatar }
+
         val theirFriendRef = db.collection(PATH_USER).document(request.fromId)
             .collection(PATH_FRIENDS).document(request.toId)
         batch.set(
             theirFriendRef, Friend(
-                name = myName,
-                avatar = myAvatar,
+                name = accepterName,
+                avatar = accepterAvatar,
                 keyAuth = request.toId,
                 since = System.currentTimeMillis()
+            )
+        )
+
+        // Mirror sendMessage paths: Conversation{me}/{friendDocId}
+        val time = DateUtils.getTimeCurrent()
+        val becomeFriendsMsg = "Hai bạn đã trở thành bạn bè"
+
+        val convSenderRef =
+            db.collection("Conversation${request.fromId}").document(request.toId)
+        batch.set(
+            convSenderRef,
+            Conversation(
+                friendId = request.toId,
+                friendImage = accepterAvatar,
+                message = becomeFriendsMsg,
+                name = accepterName,
+                person = "Bạn",
+                sender = request.fromId,
+                time = time,
+                numberUnSeen = 0,
+                typing = false
+            )
+        )
+
+        val convAccepterRef =
+            db.collection("Conversation${request.toId}").document(request.fromId)
+        batch.set(
+            convAccepterRef,
+            Conversation(
+                friendId = request.fromId,
+                friendImage = request.fromAvatar,
+                message = becomeFriendsMsg,
+                name = request.fromName,
+                person = request.fromName,
+                sender = request.fromId,
+                time = time,
+                numberUnSeen = 0,
+                typing = false
             )
         )
 
@@ -1030,4 +1188,405 @@ object FireBaseInstance {
                 Log.e("getSticker", it.message.toString())
             }
     }
+
+    // region Diary posts (Firestore)
+
+    /**
+     * Số bài tối đa lấy mỗi chunk (whereIn). Không dùng orderBy trên server để tránh bắt buộc composite index;
+     * sắp xếp theo [DiaryPost.createdAtMillis] khi merge.
+     */
+    private const val DIARY_FEED_LIMIT_PER_CHUNK = 80
+
+    /** Số bài tối đa sau khi merge + sort (client). */
+    private const val DIARY_FEED_MAX_DISPLAY = 50
+
+    /**
+     * Local file URIs → Cloudinary URLs; [http/https] giữ nguyên (ảnh đã upload khi sửa bài).
+     */
+    private fun resolveDiaryImageUrls(
+        context: Context,
+        uris: List<Uri>,
+        onDone: (List<String>) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        if (uris.isEmpty()) {
+            onDone(emptyList())
+            return
+        }
+        val urls = mutableListOf<String>()
+        fun next(index: Int) {
+            if (index >= uris.size) {
+                onDone(urls)
+                return
+            }
+            val uri = uris[index]
+            val scheme = uri.scheme?.lowercase()
+            if (scheme == "http" || scheme == "https") {
+                urls.add(uri.toString())
+                next(index + 1)
+            } else {
+                uploadImage(
+                    context,
+                    uri,
+                    success = { url ->
+                        urls.add(url)
+                        next(index + 1)
+                    },
+                    failure = failure
+                )
+            }
+        }
+        next(0)
+    }
+
+    /**
+     * Uploads local images then creates [DiaryPostFirestore.COLLECTION] document.
+     */
+    fun createDiaryPost(
+        context: Context,
+        authorId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        content: String,
+        localImageUris: List<Uri>,
+        linkPreview: DiaryLinkPreview? = null,
+        success: (postId: String) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val col = db.collection(DiaryPostFirestore.COLLECTION)
+        fun writePost(imageUrls: List<String>) {
+            val doc = col.document()
+            val data = hashMapOf<String, Any>(
+                DiaryPostFirestore.FIELD_AUTHOR_ID to authorId,
+                DiaryPostFirestore.FIELD_AUTHOR_NAME to authorName,
+                DiaryPostFirestore.FIELD_AUTHOR_AVATAR to authorAvatarUrl,
+                DiaryPostFirestore.FIELD_CONTENT to content,
+                DiaryPostFirestore.FIELD_IMAGE_URLS to imageUrls,
+                DiaryPostFirestore.FIELD_CREATED_AT to FieldValue.serverTimestamp(),
+                DiaryPostFirestore.FIELD_LIKE_COUNT to 0,
+                DiaryPostFirestore.FIELD_COMMENT_COUNT to 0
+            )
+            if (linkPreview != null) {
+                data[DiaryPostFirestore.FIELD_LINK_PREVIEW] = hashMapOf(
+                    DiaryPostFirestore.LINK_FIELD_URL to linkPreview.url,
+                    DiaryPostFirestore.LINK_FIELD_TITLE to linkPreview.title,
+                    DiaryPostFirestore.LINK_FIELD_DESCRIPTION to linkPreview.description,
+                    DiaryPostFirestore.LINK_FIELD_IMAGE_URL to linkPreview.imageUrl.orEmpty()
+                )
+            }
+            doc.set(data)
+                .addOnSuccessListener { success(doc.id) }
+                .addOnFailureListener {
+                    failure(it.message ?: context.getString(R.string.error_save_post))
+                }
+        }
+        resolveDiaryImageUrls(context, localImageUris, onDone = { writePost(it) }, failure = failure)
+    }
+
+    fun getDiaryPost(
+        postId: String,
+        success: (DiaryPost) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        if (postId.isBlank()) {
+            failure(MyApplication.appContext.getString(R.string.error_load_post))
+            return
+        }
+        db.collection(DiaryPostFirestore.COLLECTION).document(postId).get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
+                    failure(MyApplication.appContext.getString(R.string.error_load_post))
+                    return@addOnSuccessListener
+                }
+                val post = DiaryPostFirestore.fromDocument(doc)
+                if (post != null) success(post)
+                else failure(MyApplication.appContext.getString(R.string.error_load_post))
+            }
+            .addOnFailureListener {
+                failure(it.message ?: MyApplication.appContext.getString(R.string.error_load_post))
+            }
+    }
+
+    fun updateDiaryPost(
+        context: Context,
+        postId: String,
+        editorUserId: String,
+        content: String,
+        imageUris: List<Uri>,
+        linkPreview: DiaryLinkPreview?,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val ref = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        ref.get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    failure(context.getString(R.string.error_load_post))
+                    return@addOnSuccessListener
+                }
+                val authorId = snap.getString(DiaryPostFirestore.FIELD_AUTHOR_ID).orEmpty()
+                if (authorId != editorUserId) {
+                    failure(context.getString(R.string.error_update_post))
+                    return@addOnSuccessListener
+                }
+                resolveDiaryImageUrls(
+                    context,
+                    imageUris,
+                    onDone = { urls ->
+                        val updates = hashMapOf<String, Any>(
+                            DiaryPostFirestore.FIELD_CONTENT to content,
+                            DiaryPostFirestore.FIELD_IMAGE_URLS to urls,
+                            DiaryPostFirestore.FIELD_UPDATED_AT to FieldValue.serverTimestamp()
+                        )
+                        if (linkPreview != null) {
+                            updates[DiaryPostFirestore.FIELD_LINK_PREVIEW] = hashMapOf(
+                                DiaryPostFirestore.LINK_FIELD_URL to linkPreview.url,
+                                DiaryPostFirestore.LINK_FIELD_TITLE to linkPreview.title,
+                                DiaryPostFirestore.LINK_FIELD_DESCRIPTION to linkPreview.description,
+                                DiaryPostFirestore.LINK_FIELD_IMAGE_URL to linkPreview.imageUrl.orEmpty()
+                            )
+                        } else {
+                            updates[DiaryPostFirestore.FIELD_LINK_PREVIEW] = FieldValue.delete()
+                        }
+                        ref.update(updates)
+                            .addOnSuccessListener { success() }
+                            .addOnFailureListener {
+                                failure(it.message ?: context.getString(R.string.error_update_post))
+                            }
+                    },
+                    failure = failure
+                )
+            }
+            .addOnFailureListener {
+                failure(it.message ?: context.getString(R.string.error_load_post))
+            }
+    }
+
+    fun deleteDiaryPost(
+        postId: String,
+        editorUserId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val ref = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        ref.get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    success()
+                    return@addOnSuccessListener
+                }
+                val authorId = snap.getString(DiaryPostFirestore.FIELD_AUTHOR_ID).orEmpty()
+                if (authorId != editorUserId) {
+                    failure(MyApplication.appContext.getString(R.string.error_delete_post))
+                    return@addOnSuccessListener
+                }
+                ref.delete()
+                    .addOnSuccessListener { success() }
+                    .addOnFailureListener {
+                        failure(it.message ?: MyApplication.appContext.getString(R.string.error_delete_post))
+                    }
+            }
+            .addOnFailureListener {
+                failure(it.message ?: MyApplication.appContext.getString(R.string.error_delete_post))
+            }
+    }
+
+    /**
+     * Real-time diary feed: posts where [authorId] is in `me + friends`.
+     * Firestore [Query.whereIn] allows at most 10 values — friends are chunked.
+     */
+    fun observeDiaryFeed(
+        userId: String,
+        onPosts: (List<DiaryPost>) -> Unit,
+        onError: (String) -> Unit
+    ): () -> Unit {
+        val postsCol = db.collection(DiaryPostFirestore.COLLECTION)
+        val chunkPosts = mutableMapOf<Int, Map<String, DiaryPost>>()
+        val likedByMe = mutableMapOf<String, Boolean>()
+        val likeRegs = mutableMapOf<String, ListenerRegistration>()
+        val postChunkRegs = mutableListOf<ListenerRegistration>()
+        var friendsReg: ListenerRegistration? = null
+
+        fun mergeAndEmit() {
+            val merged = linkedMapOf<String, DiaryPost>()
+            chunkPosts.values.forEach { map ->
+                map.forEach { (id, post) -> merged[id] = post }
+            }
+            val list = merged.values
+                .map { p -> p.copy(likedByMe = likedByMe[p.id] ?: false) }
+                .sortedByDescending { it.createdAtMillis }
+                .take(DIARY_FEED_MAX_DISPLAY)
+            onPosts(list)
+        }
+
+        fun syncMyLikeListeners(visiblePostIds: Set<String>) {
+            val toRemove = likeRegs.keys - visiblePostIds
+            toRemove.forEach { pid ->
+                likeRegs.remove(pid)?.remove()
+            }
+            val toAdd = visiblePostIds - likeRegs.keys
+            toAdd.forEach { postId ->
+                val reg = postsCol.document(postId)
+                    .collection(DiaryPostFirestore.SUB_LIKES)
+                    .document(userId)
+                    .addSnapshotListener { snap, _ ->
+                        likedByMe[postId] = snap?.exists() == true
+                        mergeAndEmit()
+                    }
+                likeRegs[postId] = reg
+            }
+        }
+
+        fun mergeKeys(): Set<String> {
+            val keys = mutableSetOf<String>()
+            chunkPosts.values.forEach { m -> keys.addAll(m.keys) }
+            return keys
+        }
+
+        fun attachPostListeners(authorIds: List<String>) {
+            postChunkRegs.forEach { it.remove() }
+            postChunkRegs.clear()
+            chunkPosts.clear()
+            if (authorIds.isEmpty()) {
+                mergeAndEmit()
+                syncMyLikeListeners(emptySet())
+                return
+            }
+            // whereIn tối đa 10 giá trị — chunk theo authorId.
+            // Không orderBy trên Firestore: tránh lỗi index + listener gọi onError lặp khi chưa deploy composite index.
+            val chunks = authorIds.distinct().chunked(10)
+            chunks.forEachIndexed { chunkIndex, chunk ->
+                val reg = postsCol
+                    .whereIn(DiaryPostFirestore.FIELD_AUTHOR_ID, chunk)
+                    .limit(DIARY_FEED_LIMIT_PER_CHUNK.toLong())
+                    .addSnapshotListener { snap, err ->
+                        if (err != null) {
+                            onError(
+                                err.message ?: MyApplication.appContext.getString(R.string.error_load_posts)
+                            )
+                            return@addSnapshotListener
+                        }
+                        val map = snap?.documents?.mapNotNull { doc ->
+                            DiaryPostFirestore.fromDocument(doc, likedByMe = false)
+                                ?.let { d -> d.id to d }
+                        }?.toMap().orEmpty()
+                        chunkPosts[chunkIndex] = map
+                        mergeAndEmit()
+                        syncMyLikeListeners(mergeKeys())
+                    }
+                    postChunkRegs.add(reg)
+            }
+            mergeAndEmit()
+            syncMyLikeListeners(mergeKeys())
+        }
+
+        friendsReg = db.collection(PATH_USER).document(userId)
+            .collection(PATH_FRIENDS)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    onError(
+                        error.message ?: MyApplication.appContext.getString(R.string.error_friends_list)
+                    )
+                    return@addSnapshotListener
+                }
+                val friendIds = value?.documents?.map { it.id }.orEmpty()
+                val authorIds = (listOf(userId) + friendIds).distinct().filter { it.isNotBlank() }
+                likeRegs.values.forEach { it.remove() }
+                likeRegs.clear()
+                likedByMe.clear()
+                attachPostListeners(authorIds)
+            }
+
+        return {
+            friendsReg?.remove()
+            friendsReg = null
+            postChunkRegs.forEach { it.remove() }
+            postChunkRegs.clear()
+            likeRegs.values.forEach { it.remove() }
+            likeRegs.clear()
+            chunkPosts.clear()
+            likedByMe.clear()
+        }
+    }
+
+    fun toggleDiaryPostLike(
+        postId: String,
+        userId: String,
+        currentlyLiked: Boolean,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        val likeRef = postRef.collection(DiaryPostFirestore.SUB_LIKES).document(userId)
+        val batch = db.batch()
+        if (currentlyLiked) {
+            batch.delete(likeRef)
+            batch.update(postRef, DiaryPostFirestore.FIELD_LIKE_COUNT, FieldValue.increment(-1))
+        } else {
+            batch.set(likeRef, mapOf("createdAt" to FieldValue.serverTimestamp()))
+            batch.update(postRef, DiaryPostFirestore.FIELD_LIKE_COUNT, FieldValue.increment(1))
+        }
+        batch.commit()
+            .addOnSuccessListener { success() }
+            .addOnFailureListener {
+                failure(
+                    it.message ?: MyApplication.appContext.getString(R.string.error_toggle_like)
+                )
+            }
+    }
+
+    fun addDiaryComment(
+        postId: String,
+        authorId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        text: String,
+        success: (commentId: String) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        val newRef = postRef.collection(DiaryPostFirestore.SUB_COMMENTS).document()
+        val data = hashMapOf<String, Any>(
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_ID to authorId,
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_NAME to authorName,
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_AVATAR to authorAvatarUrl,
+            DiaryPostFirestore.COMMENT_FIELD_TEXT to text.trim(),
+            DiaryPostFirestore.COMMENT_FIELD_CREATED_AT to FieldValue.serverTimestamp()
+        )
+        val batch = db.batch()
+        batch.set(newRef, data)
+        batch.update(postRef, DiaryPostFirestore.FIELD_COMMENT_COUNT, FieldValue.increment(1))
+        batch.commit()
+            .addOnSuccessListener { success(newRef.id) }
+            .addOnFailureListener {
+                failure(
+                    it.message ?: MyApplication.appContext.getString(R.string.error_send_comment)
+                )
+            }
+    }
+
+    fun observeDiaryComments(
+        postId: String,
+        onUpdate: (List<DiaryPostComment>) -> Unit,
+        onError: (String) -> Unit
+    ): ListenerRegistration {
+        return db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+            .collection(DiaryPostFirestore.SUB_COMMENTS)
+            .orderBy(DiaryPostFirestore.COMMENT_FIELD_CREATED_AT, Query.Direction.ASCENDING)
+            .limit(100)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    onError(
+                        err.message ?: MyApplication.appContext.getString(R.string.error_load_comments)
+                    )
+                    return@addSnapshotListener
+                }
+                val list = snap?.documents?.mapNotNull { doc ->
+                    DiaryPostFirestore.commentFromDocument(postId, doc)
+                }.orEmpty()
+                onUpdate(list)
+            }
+    }
+
+    // endregion Diary posts
 }

@@ -36,6 +36,26 @@ object FileUtils {
         return outputStream.toByteArray()
     }
 
+    fun Context.readUriBytes(uri: Uri): ByteArray {
+        if ("file".equals(uri.scheme, ignoreCase = true) && !uri.path.isNullOrBlank()) {
+            return File(uri.path!!).readBytes()
+        }
+        return contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: throw IllegalArgumentException("Cannot read uri=$uri")
+    }
+
+    fun Context.isVideoUri(uri: Uri): Boolean {
+        val mime = contentResolver.getType(uri) ?: return false
+        return mime.startsWith("video/", ignoreCase = true)
+    }
+
+    fun isLikelyVideoUrl(url: String): Boolean {
+        if (url.contains("/video/upload", ignoreCase = true)) return true
+        val lower = url.lowercase()
+        return lower.endsWith(".mp4") || lower.endsWith(".webm") ||
+            lower.endsWith(".mov") || lower.endsWith(".3gp")
+    }
+
     fun Context.loadImg(url: String, cir: ImageView, imgDefault: Int = R.mipmap.ic_launcher) {
         Glide.with(this)
             .load(url)

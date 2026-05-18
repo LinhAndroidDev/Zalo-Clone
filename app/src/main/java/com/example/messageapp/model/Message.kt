@@ -11,6 +11,8 @@ data class Message(
     val time: String = "",
     var emotion: Emotion? = null,
     val photos: ArrayList<String> = arrayListOf(),
+    /** Cùng thứ tự với [photos], mỗi phần tử dạng "widthxheight" (px sau khi xử lý rotation đối với video). */
+    val photoSizes: ArrayList<String>? = null,
     val singlePhoto: ArrayList<String> = arrayListOf(),
     val audio: String? = null,
     val type: Int = 0 // 0: message, 1: photos, 2: single photo, 3: audio

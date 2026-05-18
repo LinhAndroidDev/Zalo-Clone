@@ -4,13 +4,16 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.MultipartBody
+import okio.BufferedSink
 import org.json.JSONObject
 import java.io.File
 import java.io.InputStream
+import kotlin.math.min
 
 object CloudinaryManager {
     // Provided by user (unsigned upload).
@@ -21,20 +24,28 @@ object CloudinaryManager {
 
     private fun uploadUrl(): String = "https://api.cloudinary.com/v1_1/$CLOUD_NAME/upload"
 
+    /**
+     * @param onUploadProgress gọi trên thread OkHttp, 0f..100f theo phần body file đã ghi lên socket.
+     */
     fun uploadBytes(
         fileBytes: ByteArray,
         fileName: String,
         mimeType: String? = null,
         folder: String? = null,
         onSuccess: (String) -> Unit,
-        onFailure: (Throwable) -> Unit
+        onFailure: (Throwable) -> Unit,
+        onUploadProgress: ((Float) -> Unit)? = null,
     ) {
         try {
             val mediaType =
                 (mimeType ?: "application/octet-stream").toMediaTypeOrNull()
                     ?: "application/octet-stream".toMediaTypeOrNull()
 
-            val fileBody = fileBytes.toRequestBody(mediaType)
+            val fileBody = if (onUploadProgress != null && fileBytes.isNotEmpty()) {
+                progressByteRequestBody(fileBytes, mediaType!!, onUploadProgress)
+            } else {
+                fileBytes.toRequestBody(mediaType!!)
+            }
 
             val multipart = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -72,11 +83,39 @@ object CloudinaryManager {
                         onFailure.invoke(RuntimeException("Cloudinary upload missing secure_url. body=$bodyStr"))
                         return
                     }
+                    onUploadProgress?.invoke(100f)
                     onSuccess.invoke(secureUrl)
                 }
             })
         } catch (t: Throwable) {
             onFailure.invoke(t)
+        }
+    }
+
+    private fun progressByteRequestBody(
+        fileBytes: ByteArray,
+        mediaType: okhttp3.MediaType,
+        onUploadProgress: (Float) -> Unit,
+    ): RequestBody = object : RequestBody() {
+        override fun contentType() = mediaType
+
+        override fun contentLength() = fileBytes.size.toLong()
+
+        override fun writeTo(sink: BufferedSink) {
+            var offset = 0
+            val total = fileBytes.size
+            val segment = 16 * 1024
+            var lastReported = -1f
+            while (offset < total) {
+                val read = min(segment, total - offset)
+                sink.write(fileBytes, offset, read)
+                offset += read
+                val pct = offset * 100f / total
+                if (pct - lastReported >= 1f || offset == total) {
+                    lastReported = pct
+                    onUploadProgress(pct.coerceIn(0f, 100f))
+                }
+            }
         }
     }
 
@@ -87,7 +126,8 @@ object CloudinaryManager {
         mimeType: String? = null,
         folder: String? = null,
         onSuccess: (String) -> Unit,
-        onFailure: (Throwable) -> Unit
+        onFailure: (Throwable) -> Unit,
+        onUploadProgress: ((Float) -> Unit)? = null,
     ) {
         val bytes = readBytesFromUri(context.contentResolver, uri)
         uploadBytes(
@@ -96,7 +136,8 @@ object CloudinaryManager {
             mimeType = mimeType,
             folder = folder,
             onSuccess = onSuccess,
-            onFailure = onFailure
+            onFailure = onFailure,
+            onUploadProgress = onUploadProgress,
         )
     }
 
@@ -113,4 +154,3 @@ object CloudinaryManager {
         }
     }
 }
-

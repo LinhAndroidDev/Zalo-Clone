@@ -120,6 +120,7 @@
     <string name="album">Album</string>
     <string name="memory">Kỉ niệm</string>
     <string name="moment">Khoảnh khắc</string>
+    <string name="diary_feed_empty">Chưa có bài đăng. Tạo bài mới từ ô trạng thái phía trên.</string>
     <string name="create_new">Tạo mới</string>
     <string name="setting_style">Cài zStyle</string>
     <string name="my_photo">Ảnh của tôi</string>
@@ -143,4 +144,67 @@
     <string name="my_qr_code">Mã QR của tôi</string>
     <string name="qr_hint">Quét mã QR để thêm bạn bè</string>
     <string name="recently_searched">Đã tìm kiếm gần đây</string>
+
+    <!-- Status / đăng bài -->
+    <string name="status_title_create_post">Tạo bài viết</string>
+    <string name="status_title_edit_post">Chỉnh sửa bài viết</string>
+    <string name="status_pick_media_preview">Xem ảnh đã chọn</string>
+    <string name="status_camera_permission_denied">Cần quyền camera để chụp ảnh</string>
+    <string name="status_camera_failed">Không mở được camera</string>
+    <string name="status_audience_friends">Bạn bè</string>
+    <string name="status_hint_what_thinking">Bạn đang nghĩ gì?</string>
+    <string name="status_need_content_or_image">Vui lòng nhập nội dung, chọn ảnh hoặc đính kèm liên kết</string>
+    <string name="status_link_dialog_title">Đính kèm liên kết</string>
+    <string name="status_link_hint">https://…</string>
+    <string name="status_link_ok">Đồng ý</string>
+    <string name="status_link_cancel">Hủy</string>
+    <string name="status_link_enter_url">Vui lòng nhập liên kết</string>
+    <string name="status_link_invalid">Liên kết không tồn tại hoặc không truy cập được. Vui lòng nhập lại.</string>
+    <string name="status_link_remove_cd">Xóa liên kết</string>
+    <string name="status_link_attach_cd">Đính kèm liên kết</string>
+    <string name="status_pick_image_cd">Chọn ảnh</string>
+    <string name="status_pick_video_cd">Chọn video</string>
+    <string name="status_sticker_cd">Sticker</string>
+    <string name="status_pick_location_cd">Địa điểm</string>
+    <string name="status_post_success">Đã đăng bài</string>
+    <string name="status_feature_developing">Tính năng đang phát triển</string>
+    <string name="status_max_photos_limit">Bạn chỉ có thể chọn tối đa %d ảnh</string>
+    <string name="status_max_photos_capped">Đã giới hạn tối đa %d ảnh</string>
+
+    <!-- Nhật ký: thích / bình luận / thời gian tương đối -->
+    <string name="diary_like_label">Thích</string>
+    <string name="diary_comments_title">Bình luận</string>
+    <string name="diary_comment_hint">Viết bình luận…</string>
+    <string name="diary_send_comment_cd">Gửi bình luận</string>
+    <string name="diary_enter_comment_body">Nhập nội dung bình luận</string>
+    <string name="diary_not_logged_in">Chưa đăng nhập</string>
+    <string name="diary_default_user_name">Người dùng</string>
+    <string name="time_just_now">Vừa xong</string>
+    <string name="time_minutes_ago">%d phút trước</string>
+    <string name="time_hours_ago">%d giờ trước</string>
+    <string name="time_days_ago">%d ngày trước</string>
+
+    <!-- Lỗi Firestore / diary (fallback khi không có message từ server) -->
+    <string name="error_upload_image">Upload ảnh thất bại</string>
+    <string name="error_save_post">Không lưu được bài đăng</string>
+    <string name="error_load_posts">Lỗi tải bài đăng</string>
+    <string name="error_friends_list">Lỗi danh sách bạn bè</string>
+    <string name="error_toggle_like">Không cập nhật được thích</string>
+    <string name="error_send_comment">Không gửi được bình luận</string>
+    <string name="error_load_comments">Lỗi bình luận</string>
+    <string name="error_load_post">Không tải được bài đăng</string>
+    <string name="error_update_post">Không cập nhật được bài đăng</string>
+    <string name="error_delete_post">Không xoá được bài đăng</string>
+
+    <!-- Menu bài đăng nhật ký -->
+    <string name="diary_post_menu_cd">Tuỳ chọn bài đăng</string>
+    <string name="diary_post_menu_edit">Chỉnh sửa bài đăng</string>
+    <string name="diary_post_menu_delete">Xoá bài đăng</string>
+    <string name="diary_post_delete_title">Xoá bài đăng?</string>
+    <string name="diary_post_delete_message">Bài đăng sẽ bị xoá và không thể khôi phục.</string>
+    <string name="diary_post_delete_confirm">Xoá</string>
+    <string name="diary_post_delete_cancel">Huỷ</string>
+    <string name="status_post_updated">Đã cập nhật bài đăng</string>
+    <string name="chat_upload_sending">Đang gửi</string>
+    <string name="chat_upload_progress">Đang tải lên %d%%</string>
 </resources>

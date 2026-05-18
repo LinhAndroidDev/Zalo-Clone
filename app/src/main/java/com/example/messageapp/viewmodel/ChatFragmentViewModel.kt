@@ -10,9 +10,11 @@ import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.FileUtils
+import com.example.messageapp.utils.FileUtils.isVideoUri
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.utils.getImageDimensions
+import com.example.messageapp.utils.getVideoDimensions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +38,10 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     private val _typing: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val typing = _typing.asStateFlow()
+
+    /** null = ẩn; 0f..100f = tiến độ upload Cloudinary (ảnh/video/ghi âm). */
+    private val _cloudUploadProgress = MutableStateFlow<Float?>(null)
+    val cloudUploadProgress = _cloudUploadProgress.asStateFlow()
 
     /**
      * This function used to send message to FireStore
@@ -68,10 +74,10 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             success = { result ->
                 val messageData = arrayListOf<Message>()
                 result?.forEach { document ->
-                    val message = document.toObject(Message::class.java)
-                    if (isOfThisConversation(message, friendId)) {
-                        messageData.add(message)
-                    }
+                    val raw = document.toObject(Message::class.java) ?: return@forEach
+                    if (!isOfThisConversation(raw, friendId)) return@forEach
+                    val timeResolved = raw.time.ifBlank { document.id }
+                    messageData.add(raw.copy(time = timeResolved))
                 }
                 _messages.value = messageData
             },
@@ -127,40 +133,91 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         sendFirst: Boolean
     ) {
         val idRoom = listOf(conversation.friendId, shared.getAuth()).sorted()
+        val intrinsicByIndex = ArrayList<Pair<Int, Int>?>(uris.size)
+        for (uri in uris) {
+            val dim = if (context.isVideoUri(uri)) {
+                getVideoDimensions(context, uri)
+            } else {
+                getImageDimensions(context, uri)
+            }
+            intrinsicByIndex.add(dim)
+        }
+        setCloudUploadProgress(0f)
         FireBaseInstance.uploadListPhoto(
             context = context,
             uris = uris,
             roomId = idRoom,
-            process = {},
-            success = { photos ->
-                val isSinglePhoto = photos.size == 1
-                val type = if (isSinglePhoto) TypeMessage.SINGLE_PHOTO else TypeMessage.PHOTOS
+            process = { (_, overall) ->
+                setCloudUploadProgress(overall.toFloat().coerceIn(0f, 100f))
+            },
+            failure = { t ->
+                setCloudUploadProgress(null)
+                showError(t.message ?: "Gửi file thất bại")
+            },
+            success = { uploadedUrls ->
+                try {
+                if (uploadedUrls.size == 1) {
+                    val (w, h) = intrinsicByIndex.getOrNull(0) ?: (0 to 0)
+                    val message = Message(
+                        receiver = conversation.friendId,
+                        sender = shared.getAuth(),
+                        time = time,
+                        photos = arrayListOf(),
+                        photoSizes = null,
+                        singlePhoto = arrayListOf(
+                            uploadedUrls[0],
+                            w.toString(),
+                            h.toString()
+                        ),
+                        type = TypeMessage.SINGLE_PHOTO.ordinal
+                    )
+                    FireBaseInstance.sendMessage(
+                        message = message,
+                        userId = shared.getAuth(),
+                        time = time,
+                        conversation = conversation,
+                        nameSender = shared.getNameUser(),
+                        type = TypeMessage.SINGLE_PHOTO,
+                        sendFirst = sendFirst
+                    ) {}
+                } else {
+                    val sizeTokens = ArrayList<String>(uploadedUrls.size)
+                    for (i in uploadedUrls.indices) {
+                        val dim = intrinsicByIndex.getOrNull(i)
+                        sizeTokens.add(
+                            if (dim != null) "${dim.first}x${dim.second}" else "0x0"
+                        )
+                    }
 
-                val singlePhoto = if (isSinglePhoto) {
-                    val (width, height) = getImageDimensions(context, uris[0]) ?: (0 to 0)
-                    arrayListOf(photos[0], width.toString(), height.toString())
-                } else arrayListOf()
+                    val message = Message(
+                        receiver = conversation.friendId,
+                        sender = shared.getAuth(),
+                        time = time,
+                        photos = uploadedUrls,
+                        photoSizes = sizeTokens,
+                        singlePhoto = arrayListOf(),
+                        type = TypeMessage.PHOTOS.ordinal
+                    )
 
-                val message = Message(
-                    receiver = conversation.friendId,
-                    sender = shared.getAuth(),
-                    time = time,
-                    photos = if (isSinglePhoto) arrayListOf() else photos,
-                    singlePhoto = singlePhoto,
-                    type = type.ordinal
-                )
-
-                FireBaseInstance.sendMessage(
-                    message = message,
-                    userId = shared.getAuth(),
-                    time = time,
-                    conversation = conversation,
-                    nameSender = shared.getNameUser(),
-                    type = TypeMessage.PHOTOS,
-                    sendFirst = sendFirst
-                ) {}
+                    FireBaseInstance.sendMessage(
+                        message = message,
+                        userId = shared.getAuth(),
+                        time = time,
+                        conversation = conversation,
+                        nameSender = shared.getNameUser(),
+                        type = TypeMessage.PHOTOS,
+                        sendFirst = sendFirst
+                    ) {}
+                }
+                } finally {
+                    setCloudUploadProgress(null)
+                }
             }
         )
+    }
+
+    private fun setCloudUploadProgress(value: Float?) {
+        _cloudUploadProgress.value = value
     }
 
     fun uploadAudio(
@@ -171,27 +228,40 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         sendFirst: Boolean
     ) {
         val idRoom = listOf(friendId, shared.getAuth()).sorted()
+        setCloudUploadProgress(0f)
         FireBaseInstance.uploadAudio(
             roomId = idRoom,
-            uriAudio = uriAudio
-        ) { audioUrl ->
-            val message = Message(
-                receiver = friendId,
-                sender = shared.getAuth(),
-                time = time,
-                audio = audioUrl,
-                type = TypeMessage.AUDIO.ordinal
-            )
-            FireBaseInstance.sendMessage(
-                message = message,
-                userId = shared.getAuth(),
-                time = time,
-                conversation = conversation,
-                nameSender = shared.getNameUser(),
-                type = TypeMessage.AUDIO,
-                sendFirst = sendFirst
-            ) {}
-        }
+            uriAudio = uriAudio,
+            success = { audioUrl ->
+                try {
+                    val message = Message(
+                        receiver = friendId,
+                        sender = shared.getAuth(),
+                        time = time,
+                        audio = audioUrl,
+                        type = TypeMessage.AUDIO.ordinal
+                    )
+                    FireBaseInstance.sendMessage(
+                        message = message,
+                        userId = shared.getAuth(),
+                        time = time,
+                        conversation = conversation,
+                        nameSender = shared.getNameUser(),
+                        type = TypeMessage.AUDIO,
+                        sendFirst = sendFirst
+                    ) {}
+                } finally {
+                    setCloudUploadProgress(null)
+                }
+            },
+            process = { p ->
+                setCloudUploadProgress(p.toFloat().coerceIn(0f, 100f))
+            },
+            failure = { t ->
+                setCloudUploadProgress(null)
+                showError(t.message ?: "Gửi ghi âm thất bại")
+            }
+        )
     }
 
     /**

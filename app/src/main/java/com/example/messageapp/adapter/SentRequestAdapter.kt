@@ -5,6 +5,7 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemSentRequestFriendBinding
 import com.example.messageapp.model.FriendRequest
+import com.example.messageapp.utils.FireBaseInstance
 
 class SentRequestAdapter : BaseAdapter<FriendRequest, ItemSentRequestFriendBinding>() {
 
@@ -18,10 +19,12 @@ class SentRequestAdapter : BaseAdapter<FriendRequest, ItemSentRequestFriendBindi
         position: Int
     ) {
         val request = items[position]
-        Glide.with(holder.v.root)
-            .load(request.toAvatar)
-            .placeholder(R.drawable.bg_grey_equal)
-            .into(holder.v.avatarFriend)
+        FireBaseInstance.getInfoUser(request.toId) { u ->
+            Glide.with(holder.v.root)
+                .load(u.avatar)
+                .placeholder(R.drawable.bg_grey_equal)
+                .into(holder.v.avatarFriend)
+        }
         holder.v.nameFriend.text = request.toName
         holder.v.root.setOnClickListener { onItemClick?.invoke(request) }
         holder.v.btnCancel.setOnClickListener { onCancel?.invoke(request) }

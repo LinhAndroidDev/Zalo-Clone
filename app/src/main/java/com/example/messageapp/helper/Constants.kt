@@ -3,7 +3,14 @@ package com.example.messageapp.helper
 var screenWidth = 0
 var screenHeight = 0
 
-val capitalLetters = listOf("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
+/**
+ * Section keys for phone book: Latin A–Z plus Vietnamese initials so
+ * `name.startsWith(letter, ignoreCase = true)` matches (e.g. Ăn → Ă, Đức → Đ).
+ */
+val capitalLetters = listOf(
+    "A", "Ă", "Â", "B", "C", "D", "Đ", "E", "Ê", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "Ô", "Ơ", "P", "Q", "R", "S", "T", "U", "Ư", "V", "W", "X", "Y", "Z"
+)
 
 val avatars = listOf(
     "https://www.vietnamworks.com/hrinsider/wp-content/uploads/2023/12/anh-den-ngau-003.jpg",
