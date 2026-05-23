@@ -16,6 +16,7 @@ import com.example.messageapp.model.DiaryLinkPreview
 import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.model.DiaryPostComment
 import com.example.messageapp.model.DiaryPostFirestore
+import com.example.messageapp.model.GroupChat
 import com.example.messageapp.model.User
 import com.example.messageapp.remote.ApiClient
 import com.example.messageapp.remote.Token
@@ -66,6 +67,7 @@ object FireBaseInstance {
     private const val PATH_FRIENDS = "friends"
     private const val PATH_SEARCH_HISTORY = "searchHistory"
     private const val PATH_ITEMS = "items"
+    private const val PATH_GROUPS = "groups"
 
     /**
      * This function is used to check the login of the user
@@ -149,6 +151,106 @@ object FireBaseInstance {
     }
 
     /**
+     * Creates a group chat document and an inbox [Conversation] row for each member.
+     */
+    fun createGroup(
+        name: String,
+        creatorId: String,
+        creatorAvatar: String,
+        otherMemberIds: List<String>,
+        success: (groupId: String, inboxConversation: Conversation) -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        val others = otherMemberIds.filter { it.isNotBlank() && it != creatorId }.distinct()
+        if (others.isEmpty()) {
+            failure.invoke("Chọn ít nhất một thành viên")
+            return
+        }
+        val memberIds = (listOf(creatorId) + others).distinct()
+        if (memberIds.size < 2) {
+            failure.invoke("Nhóm cần ít nhất 2 thành viên")
+            return
+        }
+        val groupId = UUID.randomUUID().toString()
+        val displayName = name.ifBlank { "Nhóm mới" }
+        val photoUrl = creatorAvatar.trim()
+        val group = GroupChat(
+            name = displayName,
+            photoUrl = photoUrl,
+            memberIds = memberIds,
+            createdBy = creatorId,
+            createdAt = System.currentTimeMillis(),
+        )
+        val time = DateUtils.getTimeCurrent()
+        val inboxConversation = Conversation(
+            friendId = groupId,
+            friendImage = photoUrl,
+            message = "Nhóm đã được tạo",
+            name = displayName,
+            person = "Hệ thống",
+            sender = creatorId,
+            time = time,
+            seen = "1",
+            numberUnSeen = 0,
+            typing = false,
+            isGroup = true,
+        )
+        val batch = db.batch()
+        batch.set(db.collection(PATH_GROUPS).document(groupId), group)
+        for (m in memberIds) {
+            batch.set(db.collection("Conversation$m").document(groupId), inboxConversation)
+        }
+        batch.commit()
+            .addOnSuccessListener { success.invoke(groupId, inboxConversation) }
+            .addOnFailureListener { e ->
+                failure.invoke(e.message ?: "Lỗi tạo nhóm")
+            }
+    }
+
+    /**
+     * One-time read of [GroupChat] for [groupId].
+     */
+    fun getGroup(
+        groupId: String,
+        success: (GroupChat) -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        if (groupId.isBlank()) {
+            failure.invoke("ID nhóm không hợp lệ")
+            return
+        }
+        db.collection(PATH_GROUPS).document(groupId)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
+                    failure.invoke("Không tìm thấy nhóm")
+                    return@addOnSuccessListener
+                }
+                val g = doc.toObject(GroupChat::class.java)
+                if (g == null || g.memberIds.isEmpty()) {
+                    failure.invoke("Dữ liệu nhóm không hợp lệ")
+                    return@addOnSuccessListener
+                }
+                success.invoke(g)
+            }
+            .addOnFailureListener { failure.invoke(it.message.toString()) }
+    }
+
+    /**
+     * Marks the current user's group inbox row as read.
+     */
+    fun markGroupConversationSeen(userId: String, groupId: String) {
+        if (userId.isBlank() || groupId.isBlank()) return
+        db.collection("Conversation$userId").document(groupId)
+            .update(
+                mapOf(
+                    "seen" to "1",
+                    "numberUnSeen" to 0,
+                )
+            )
+    }
+
+    /**
      * This function is used to send a message to the FireStore database
      * + Here we send a message and create 2 conversations between the sender and the receiver
      * @param message data message
@@ -169,13 +271,31 @@ object FireBaseInstance {
         sendFirst: Boolean,
         success: () -> Unit,
     ) {
-        val idRoom = listOf(conversation.friendId, userId).sorted()
+        val idRoom = if (conversation.isGroup) {
+            conversation.friendId
+        } else {
+            listOf(conversation.friendId, userId).sorted().toString()
+        }
 
         db.collection(PATH_MESSAGE)
-            .document(idRoom.toString())
+            .document(idRoom)
             .collection(PATH_CHAT)
             .document(time)
             .set(message)
+
+        if (conversation.isGroup) {
+            if (sendFirst) {
+                handleSendMessageGroup(
+                    message, userId, time, conversation, nameSender, type, sendFirst = true
+                )
+            } else {
+                handleSendMessageGroup(
+                    message, userId, time, conversation, nameSender, type, sendFirst = false
+                )
+            }
+            success.invoke()
+            return
+        }
 
         if (sendFirst) {
             Log.e("sendMessage", "sendFirst")
@@ -237,26 +357,12 @@ object FireBaseInstance {
                                 "$nameSender đã gửi 1 file ghi âm cho bạn"
                             }
                         },
-                        senderId = userId
+                        senderId = userId,
+                        groupId = null,
                     )
                 )
 
-                ApiClient.api?.sendMessage(MessageRequest(message = notificationNotification))
-                    ?.enqueue(object : Callback<MessageRequest> {
-                        override fun onFailure(
-                            call: Call<MessageRequest>,
-                            t: Throwable
-                        ) {
-                            Log.e("Send Message", "Send Fail")
-                        }
-
-                        override fun onResponse(
-                            call: Call<MessageRequest>,
-                            response: Response<MessageRequest>
-                        ) {
-                            Log.e("Send Message", "Send Successful")
-                        }
-                    })
+                enqueueSendMessageApi(notificationNotification)
             },
             failure = {
                 Log.e("Send Message", "Token retrieval failed")
@@ -326,6 +432,156 @@ object FireBaseInstance {
         db.collection("Conversation${conversation.friendId}")
             .document(userId)
             .set(conversationFriend)
+    }
+
+    private fun enqueueSendMessageApi(notification: NotificationData) {
+        ApiClient.api?.sendMessage(MessageRequest(message = notification))
+            ?.enqueue(object : Callback<MessageRequest> {
+                override fun onFailure(call: Call<MessageRequest>, t: Throwable) {
+                    Log.e("Send Message", "Send Fail")
+                }
+
+                override fun onResponse(
+                    call: Call<MessageRequest>,
+                    response: Response<MessageRequest>,
+                ) {
+                    Log.e("Send Message", "Send Successful")
+                }
+            })
+    }
+
+    private fun notificationBodyForType(
+        type: TypeMessage,
+        message: Message,
+        nameSender: String,
+    ): String = when (type) {
+        TypeMessage.MESSAGE -> message.message
+        TypeMessage.PHOTOS -> "$nameSender đã gửi ảnh cho bạn"
+        TypeMessage.SINGLE_PHOTO -> "$nameSender đã gửi 1 ảnh cho bạn"
+        TypeMessage.AUDIO -> "$nameSender đã gửi 1 file ghi âm cho bạn"
+    }
+
+    private fun inboxMessagePreviewSender(
+        type: TypeMessage,
+        message: Message,
+        conversationName: String,
+    ): String = when (type) {
+        TypeMessage.MESSAGE -> message.message
+        TypeMessage.PHOTOS -> "Bạn đã gửi ảnh cho $conversationName"
+        TypeMessage.SINGLE_PHOTO -> "Bạn đã gửi 1 ảnh cho $conversationName"
+        TypeMessage.AUDIO -> "Bạn đã gửi 1 file ghi âm cho $conversationName"
+    }
+
+    private fun inboxMessagePreviewOthers(
+        type: TypeMessage,
+        message: Message,
+        nameSender: String,
+    ): String = when (type) {
+        TypeMessage.MESSAGE -> message.message
+        TypeMessage.PHOTOS -> "$nameSender đã gửi ảnh cho bạn"
+        TypeMessage.SINGLE_PHOTO -> "$nameSender đã gửi 1 ảnh cho bạn"
+        TypeMessage.AUDIO -> "$nameSender đã gửi 1 file ghi âm cho bạn"
+    }
+
+    private fun handleSendMessageGroup(
+        message: Message,
+        userId: String,
+        time: String,
+        conversation: Conversation,
+        nameSender: String,
+        type: TypeMessage,
+        sendFirst: Boolean,
+    ) {
+        val groupId = conversation.friendId
+        getGroup(
+            groupId,
+            success = { group ->
+                val memberIds = group.memberIds.distinct().filter { it.isNotBlank() }
+                val notifBody = notificationBodyForType(type, message, nameSender)
+                for (mid in memberIds) {
+                    if (mid == userId) continue
+                    getTokenMessage(
+                        mid,
+                        success = { token ->
+                            enqueueSendMessageApi(
+                                NotificationData(
+                                    token = token,
+                                    data = Data(
+                                        title = nameSender,
+                                        body = notifBody,
+                                        senderId = userId,
+                                        groupId = groupId,
+                                    ),
+                                )
+                            )
+                        },
+                        failure = { Log.e("Send Message", "Token retrieval failed for $mid") },
+                    )
+                }
+
+                val batch = db.batch()
+                for (m in memberIds) {
+                    val ref = db.collection("Conversation$m").document(groupId)
+                    if (m == userId) {
+                        val conv = Conversation(
+                            friendId = groupId,
+                            friendImage = conversation.friendImage,
+                            message = inboxMessagePreviewSender(type, message, conversation.name),
+                            name = conversation.name,
+                            person = "Bạn",
+                            sender = userId,
+                            time = time,
+                            seen = "1",
+                            numberUnSeen = 0,
+                            typing = false,
+                            isGroup = true,
+                        )
+                        batch.set(ref, conv, SetOptions.merge())
+                    } else {
+                        if (sendFirst) {
+                            val conv = Conversation(
+                                friendId = groupId,
+                                friendImage = conversation.friendImage,
+                                message = inboxMessagePreviewOthers(type, message, nameSender),
+                                name = conversation.name,
+                                person = nameSender,
+                                sender = userId,
+                                time = time,
+                                seen = "0",
+                                numberUnSeen = 1,
+                                typing = false,
+                                isGroup = true,
+                            )
+                            batch.set(ref, conv, SetOptions.merge())
+                        } else {
+                            batch.update(
+                                ref,
+                                mapOf(
+                                    "message" to inboxMessagePreviewOthers(type, message, nameSender),
+                                    "person" to nameSender,
+                                    "sender" to userId,
+                                    "time" to time,
+                                    "typing" to false,
+                                    "numberUnSeen" to FieldValue.increment(1),
+                                    "isGroup" to true,
+                                ),
+                            )
+                        }
+                    }
+                }
+                val groupDocRef = db.collection(PATH_GROUPS).document(groupId)
+                batch.update(
+                    groupDocRef,
+                    mapOf("typing" to false, "typingUserId" to ""),
+                )
+                batch.commit().addOnFailureListener {
+                    Log.e("Send Message", "batch group inbox: ${it.message}")
+                }
+            },
+            failure = { err ->
+                Log.e("Send Message", "getGroup failed: $err")
+            },
+        )
     }
 
     /**
@@ -748,9 +1004,13 @@ object FireBaseInstance {
      * @param time time message sent
      */
     fun removeMessage(conversation: Conversation, userId: String, time: String) {
-        val idRoom = listOf(conversation.friendId, userId).sorted()
+        val idRoom = if (conversation.isGroup) {
+            conversation.friendId
+        } else {
+            listOf(conversation.friendId, userId).sorted().toString()
+        }
         db.collection(PATH_MESSAGE)
-            .document(idRoom.toString())
+            .document(idRoom)
             .collection(PATH_CHAT)
             .document(time)
             .delete()
@@ -828,6 +1088,38 @@ object FireBaseInstance {
         db.collection("Conversation${userId}")
             .document(friendId)
             .update(PATH_TYPING, typing)
+    }
+
+    /** Typing indicator for group chats (stored on the group document). */
+    fun updateGroupTyping(groupId: String, userId: String, typing: Boolean) {
+        if (groupId.isBlank() || userId.isBlank()) return
+        db.collection(PATH_GROUPS).document(groupId)
+            .update(
+                mapOf(
+                    "typing" to typing,
+                    "typingUserId" to if (typing) userId else "",
+                ),
+            )
+    }
+
+    /**
+     * Listens for typing from other members (not [myUserId]).
+     */
+    fun observeGroupTyping(
+        groupId: String,
+        myUserId: String,
+        onTypingFromOthers: (Boolean) -> Unit,
+    ): ListenerRegistration {
+        return db.collection(PATH_GROUPS).document(groupId)
+            .addSnapshotListener { snap, _ ->
+                if (snap == null || !snap.exists()) {
+                    onTypingFromOthers(false)
+                    return@addSnapshotListener
+                }
+                val typing = snap.getBoolean("typing") == true
+                val uid = snap.getString("typingUserId").orEmpty()
+                onTypingFromOthers(typing && uid.isNotBlank() && uid != myUserId)
+            }
     }
 
     /**

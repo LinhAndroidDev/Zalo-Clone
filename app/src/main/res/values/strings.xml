@@ -207,4 +207,11 @@
     <string name="status_post_updated">Đã cập nhật bài đăng</string>
     <string name="chat_upload_sending">Đang gửi</string>
     <string name="chat_upload_progress">Đang tải lên %d%%</string>
+
+    <!-- Group chat -->
+    <string name="create_group_title">Tạo nhóm</string>
+    <string name="group_name_hint">Tên nhóm</string>
+    <string name="select_group_members">Chọn thành viên (tối thiểu 1)</string>
+    <string name="create_group_button">Tạo và mở chat</string>
+    <string name="cd_back">Quay lại</string>
 </resources>

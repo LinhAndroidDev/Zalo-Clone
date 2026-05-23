@@ -8,5 +8,7 @@ data class NotificationData(
 data class Data(
     val title: String,
     val body: String,
-    val senderId: String
+    val senderId: String,
+    /** Present for group chat notifications so the app can open the correct room. */
+    val groupId: String? = null,
 )

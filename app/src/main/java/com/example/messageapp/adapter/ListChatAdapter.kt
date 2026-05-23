@@ -41,16 +41,31 @@ class ListChatAdapter(private val userId: String) :
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
         v.tvNameFriend.text = conversation.name
-        FireBaseInstance.getConversationRlt(conversation.friendId, userId) { cvt ->
-            v.typingView.isVisible = cvt.typing
-            v.tvMessage.isVisible = !cvt.typing
+        if (conversation.isGroup) {
+            v.typingView.isVisible = false
+            v.tvMessage.isVisible = true
+        } else {
+            FireBaseInstance.getConversationRlt(conversation.friendId, userId) { cvt ->
+                v.typingView.isVisible = cvt.typing
+                v.tvMessage.isVisible = !cvt.typing
+            }
         }
         v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         v.tvTime.text = DateUtils.formatTime(conversation.time)
         this.handleWhenConversationIsChanged(conversation)
-        FireBaseInstance.getInfoUser(conversation.friendId) { user ->
-            itemView.context.loadImg(user.avatar.toString(), v.avatarFriend)
-            itemView.context.loadImg(user.avatar.toString(), v.avtSeen)
+        if (conversation.isGroup) {
+            if (conversation.friendImage.isNotBlank()) {
+                itemView.context.loadImg(conversation.friendImage, v.avatarFriend)
+                itemView.context.loadImg(conversation.friendImage, v.avtSeen)
+            } else {
+                v.avatarFriend.setImageResource(R.drawable.bg_grey_equal)
+                v.avtSeen.setImageResource(R.drawable.bg_grey_equal)
+            }
+        } else {
+            FireBaseInstance.getInfoUser(conversation.friendId) { user ->
+                itemView.context.loadImg(user.avatar.toString(), v.avatarFriend)
+                itemView.context.loadImg(user.avatar.toString(), v.avtSeen)
+            }
         }
         v.itemChat.setOnClickListener {
             onClickView?.invoke(conversation)
@@ -83,6 +98,18 @@ class ListChatAdapter(private val userId: String) :
      * This function is used to handle the change in the conversation
      */
     private fun BaseViewHolder<ItemListChatBinding>.handleWhenConversationIsChanged(conversation: Conversation) {
+        if (conversation.isGroup) {
+            if (conversation.numberUnSeen > 0) {
+                v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
+                v.tvTime.setTextColor(itemView.context.getColor(R.color.text_common))
+            } else {
+                v.tvMessage.setTextColor(itemView.context.getColor(R.color.grey_1))
+                v.tvTime.setTextColor(itemView.context.getColor(R.color.grey_1))
+            }
+            hideNewMessage()
+            v.avtSeen.isVisible = false
+            return
+        }
         if (conversation.numberUnSeen > 0) {
             v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
             v.tvTime.setTextColor(itemView.context.getColor(R.color.text_common))

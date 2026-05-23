@@ -14,6 +14,7 @@ import androidx.core.app.RemoteInput
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.broadcast.NotificationReply
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.User
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
@@ -37,12 +38,33 @@ class ReceiverMessageService : FirebaseMessagingService() {
         super.onMessageReceived(remoteMessage)
 
         if (shared.getStatusLoggedIn()) {
-            var senderId = ""
-            remoteMessage.data.isNotEmpty().let {
-                Log.d(TAG, "Message data payload: ${remoteMessage.data}")
-                val title = remoteMessage.data["title"]
-                val body = remoteMessage.data["body"]
-                senderId = remoteMessage.data["senderId"] ?: ""
+            val data = remoteMessage.data
+            if (data.isEmpty()) return
+            Log.d(TAG, "Message data payload: $data")
+            val title = data["title"]
+            val body = data["body"]
+            val senderId = data["senderId"] ?: ""
+            val groupId = data["groupId"]?.trim().orEmpty()
+
+            if (groupId.isNotEmpty()) {
+                FireBaseInstance.getGroup(
+                    groupId,
+                    success = { group ->
+                        val conv = Conversation(
+                            friendId = groupId,
+                            friendImage = group.photoUrl,
+                            message = "",
+                            name = group.name,
+                            person = "",
+                            sender = "",
+                            time = "",
+                            isGroup = true,
+                        )
+                        sendGroupNotification(title, body, conv)
+                    },
+                    failure = { Log.e(TAG, "getGroup failed: $it") },
+                )
+            } else {
                 FireBaseInstance.getInfoUser(senderId) { user ->
                     user.keyAuth = senderId
                     sendNotification(title, body, senderId, user)
@@ -103,10 +125,52 @@ class ReceiverMessageService : FirebaseMessagingService() {
         notificationManager.notify(channelId, notificationBuilder.build())
     }
 
+    @SuppressLint("ServiceCast")
+    private fun sendGroupNotification(
+        title: String?,
+        messageBody: String?,
+        conversation: Conversation,
+    ) {
+        val channelId = Random().nextInt()
+        val intent = Intent(this, MainActivity::class.java)
+        intent.putExtra(OBJECT_GROUP_CONVERSATION, conversation)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            channelId,
+            intent,
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val notificationBuilder = NotificationCompat.Builder(this, getString(R.string.title_app))
+            .setSmallIcon(R.drawable.ic_message)
+            .setContentTitle(title)
+            .setContentText(messageBody)
+            .setAutoCancel(true)
+            .setSound(defaultSoundUri)
+            .setContentIntent(pendingIntent)
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                getString(R.string.title_app),
+                "Channel human readable title",
+                NotificationManager.IMPORTANCE_HIGH,
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        shared.saveChannelId(channelId)
+        notificationManager.notify(channelId, notificationBuilder.build())
+    }
+
     companion object {
         private const val TAG = "MyFirebaseMsgService"
         const val KEY_REPLY_TEXT = "KEY_REPLY_TEXT"
         const val SENDER_ID = "SENDER_ID"
         const val OBJECT_FRIEND = "OBJECT_FRIEND"
+        const val OBJECT_GROUP_CONVERSATION = "OBJECT_GROUP_CONVERSATION"
     }
 }

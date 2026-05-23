@@ -13,6 +13,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.messageapp.databinding.ActivityMainBinding
 import com.example.messageapp.fragment.SplashFragment
+import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.User
 import com.example.messageapp.service.ReceiverMessageService
 import com.example.messageapp.viewmodel.MainViewModel
@@ -41,8 +42,13 @@ class MainActivity : AppCompatActivity() {
         navGraph.setStartDestination(R.id.splashFragment)
 
         //Receive Data from Notification
+        @Suppress("DEPRECATION")
+        val groupConv: Conversation? =
+            intent.getParcelableExtra(ReceiverMessageService.OBJECT_GROUP_CONVERSATION)
+        @Suppress("DEPRECATION")
         val friendData: User? = intent.getParcelableExtra(ReceiverMessageService.OBJECT_FRIEND)
         val bundle = Bundle()
+        bundle.putParcelable(SplashFragment.DATA_GROUP_CONVERSATION, groupConv)
         bundle.putParcelable(SplashFragment.DATA_FRIEND, friendData)
         navController.setGraph(navGraph, bundle)
 

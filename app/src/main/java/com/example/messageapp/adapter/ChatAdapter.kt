@@ -44,6 +44,8 @@ data class ClickPhotoModel(
 class ChatAdapter(
     private val context: Context,
     private val friendId: String,
+    private val isGroup: Boolean = false,
+    private val myUserId: String,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
     private val audioPlaybackStateMap = hashMapOf<String, AudioPlaybackState>()
@@ -164,7 +166,8 @@ class ChatAdapter(
                 holder as ReceiverViewHolder
                 holder.checkShowEmotion(message)
                 if (!isGroupedWithPrevious(position)) {
-                    holder.showAvatarReceiver(context, friendId)
+                    val avatarId = if (isGroup) message.sender else friendId
+                    holder.showAvatarReceiver(context, avatarId)
                 }
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
@@ -303,6 +306,12 @@ class ChatAdapter(
      * @param position position of message
      */
     private fun checkShowSeenMessage(holder: SenderViewHolder, position: Int) {
+        if (isGroup) {
+            holder.showSeen(false)
+            holder.v.avtSeen.isVisible = false
+            holder.v.viewReceived.isVisible = false
+            return
+        }
         if (position == messages.lastIndex) {
             if (seen) {
                 FireBaseInstance.getInfoUser(friendId) { user ->
@@ -490,7 +499,12 @@ class ChatAdapter(
      * This function used to get view type of chat adapter
      */
     override fun getItemViewType(position: Int): Int {
-        return if (messages[position].sender != friendId) VIEW_SENDER else VIEW_RECEIVER
+        val msg = messages[position]
+        return if (!isGroup) {
+            if (msg.sender != friendId) VIEW_SENDER else VIEW_RECEIVER
+        } else {
+            if (msg.sender == myUserId) VIEW_SENDER else VIEW_RECEIVER
+        }
     }
 
     override fun getItemId(position: Int): Long {

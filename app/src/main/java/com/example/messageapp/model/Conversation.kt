@@ -15,6 +15,8 @@ data class Conversation(
     var seen: String = "0",
     var numberUnSeen: Int = 0,
     var typing: Boolean = false,
+    /** When true, [friendId] is the group document id (room id), not a user id. */
+    val isGroup: Boolean = false,
 ) : Parcelable {
     constructor(user: User) : this (
         friendId = user.keyAuth ?: "",

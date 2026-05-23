@@ -22,14 +22,21 @@ class SplashFragment : BaseFragment<FragmentSplashBinding, SplashFragmentViewMod
     private var dataFromMainActivity: Conversation? = null
     companion object {
         const val DATA_FRIEND = "DATA_FRIEND"
+        const val DATA_GROUP_CONVERSATION = "DATA_GROUP_CONVERSATION"
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val groupConv: Conversation? = arguments?.getParcelable(DATA_GROUP_CONVERSATION)
         val friendData: User? = arguments?.getParcelable(DATA_FRIEND)
-        friendData?.let {
-            dataFromMainActivity = Conversation(friendData)
+        when {
+            groupConv != null -> {
+                dataFromMainActivity = groupConv
+            }
+            friendData != null -> {
+                dataFromMainActivity = Conversation(friendData)
+            }
         }
 
         runnable = Runnable {

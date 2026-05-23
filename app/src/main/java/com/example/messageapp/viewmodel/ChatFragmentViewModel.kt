@@ -15,6 +15,7 @@ import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.utils.getImageDimensions
 import com.example.messageapp.utils.getVideoDimensions
+import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,8 @@ import javax.inject.Inject
 class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
+
+    private var typingListener: ListenerRegistration? = null
 
     private val _messages: MutableStateFlow<ArrayList<Message>?> = MutableStateFlow(null)
     val messages = _messages.asStateFlow()
@@ -65,17 +68,26 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         ) {}
     }
 
-    /** This function used to get message from FireStore
-     * @param friendId key auth of friend
-     */
-    fun getMessage(friendId: String) = viewModelScope.launch {
-        val idRoom = listOf(friendId, shared.getAuth()).sorted()
-        FireBaseInstance.getMessage(idRoom.toString(),
+    fun roomIdListForCloudinary(conversation: Conversation): List<String> =
+        if (conversation.isGroup) listOf(conversation.friendId)
+        else listOf(conversation.friendId, shared.getAuth()).sorted()
+
+    fun messageReceiverId(conversation: Conversation): String = conversation.friendId
+
+    /** Load messages for 1-1 or group chat. */
+    fun getMessage(conversation: Conversation) = viewModelScope.launch {
+        val idRoom = if (conversation.isGroup) {
+            conversation.friendId
+        } else {
+            listOf(conversation.friendId, shared.getAuth()).sorted().toString()
+        }
+        FireBaseInstance.getMessage(
+            idRoom,
             success = { result ->
                 val messageData = arrayListOf<Message>()
                 result?.forEach { document ->
-                    val raw = document.toObject(Message::class.java) ?: return@forEach
-                    if (!isOfThisConversation(raw, friendId)) return@forEach
+                    val raw = document.toObject(Message::class.java)
+                    if (!isMessageInConversation(raw, conversation)) return@forEach
                     val timeResolved = raw.time.ifBlank { document.id }
                     messageData.add(raw.copy(time = timeResolved))
                 }
@@ -83,17 +95,16 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             },
             failure = { error ->
                 showError(error)
-            })
+            },
+        )
     }
 
-    /**
-     * This function used to check if the message is from this conversation
-     * @param message data receive from FireStore
-     * @param friendId key auth of friend
-     */
-    private fun isOfThisConversation(message: Message, friendId: String): Boolean {
-        return message.sender == shared.getAuth() && message.receiver == friendId
-                || message.receiver == shared.getAuth() && message.sender == friendId
+    private fun isMessageInConversation(message: Message, conversation: Conversation): Boolean {
+        if (conversation.isGroup) {
+            return message.receiver == conversation.friendId
+        }
+        return message.sender == shared.getAuth() && message.receiver == conversation.friendId
+            || message.receiver == shared.getAuth() && message.sender == conversation.friendId
     }
 
     /**
@@ -102,6 +113,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
      * @param conversation data friend
      */
     fun updateSeenMessage(msg: Message, conversation: Conversation) = viewModelScope.launch {
+        if (conversation.isGroup) {
+            if (msg.sender != shared.getAuth()) {
+                FireBaseInstance.markGroupConversationSeen(shared.getAuth(), conversation.friendId)
+            }
+            return@launch
+        }
         if (msg.sender != shared.getAuth()) {
             FireBaseInstance.getConversation(
                 friendId = shared.getAuth(),
@@ -110,10 +127,10 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                     if (!cvt.isSeenMessage() && cvt.sender == conversation.friendId) {
                         FireBaseInstance.seenMessage(
                             shared.getAuth(),
-                            friendId = conversation.friendId
+                            friendId = conversation.friendId,
                         )
                     }
-                }
+                },
             )
         }
     }
@@ -132,7 +149,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         time: String,
         sendFirst: Boolean
     ) {
-        val idRoom = listOf(conversation.friendId, shared.getAuth()).sorted()
+        val idRoom = roomIdListForCloudinary(conversation)
         val intrinsicByIndex = ArrayList<Pair<Int, Int>?>(uris.size)
         for (uri in uris) {
             val dim = if (context.isVideoUri(uri)) {
@@ -159,7 +176,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                 if (uploadedUrls.size == 1) {
                     val (w, h) = intrinsicByIndex.getOrNull(0) ?: (0 to 0)
                     val message = Message(
-                        receiver = conversation.friendId,
+                        receiver = messageReceiverId(conversation),
                         sender = shared.getAuth(),
                         time = time,
                         photos = arrayListOf(),
@@ -190,7 +207,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                     }
 
                     val message = Message(
-                        receiver = conversation.friendId,
+                        receiver = messageReceiverId(conversation),
                         sender = shared.getAuth(),
                         time = time,
                         photos = uploadedUrls,
@@ -221,13 +238,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun uploadAudio(
-        friendId: String,
         uriAudio: Uri,
         time: String,
         conversation: Conversation,
         sendFirst: Boolean
     ) {
-        val idRoom = listOf(friendId, shared.getAuth()).sorted()
+        val idRoom = roomIdListForCloudinary(conversation)
         setCloudUploadProgress(0f)
         FireBaseInstance.uploadAudio(
             roomId = idRoom,
@@ -235,7 +251,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             success = { audioUrl ->
                 try {
                     val message = Message(
-                        receiver = friendId,
+                        receiver = messageReceiverId(conversation),
                         sender = shared.getAuth(),
                         time = time,
                         audio = audioUrl,
@@ -283,8 +299,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
      * @param friendId key auth of friend
      * @param data data emotion
      */
-    fun releaseEmotion(time: String, friendId: String, data: Emotion) {
-        val idRoom = listOf(friendId, shared.getAuth()).sorted().toString()
+    fun releaseEmotion(time: String, conversation: Conversation, data: Emotion) {
+        val idRoom = if (conversation.isGroup) {
+            conversation.friendId
+        } else {
+            listOf(conversation.friendId, shared.getAuth()).sorted().toString()
+        }
         FireBaseInstance.releaseEmotion(
             time = time,
             idRoom = idRoom,
@@ -319,17 +339,35 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
-    fun updateTyping(friendId: String, typing: Boolean) {
-        FireBaseInstance.updateTypingMessage(
-            friendId = friendId,
-            userId = shared.getAuth(),
-            typing = typing
-        )
+    fun updateTyping(conversation: Conversation, typing: Boolean) {
+        if (conversation.isGroup) {
+            FireBaseInstance.updateGroupTyping(conversation.friendId, shared.getAuth(), typing)
+        } else {
+            FireBaseInstance.updateTypingMessage(
+                userId = shared.getAuth(),
+                friendId = conversation.friendId,
+                typing = typing,
+            )
+        }
     }
 
-    fun checkShowTyping(friendId: String) {
-        FireBaseInstance.getConversationRlt(friendId, shared.getAuth()) { cvt ->
-            _typing.value = cvt.typing
+    fun observeTyping(conversation: Conversation) {
+        typingListener?.remove()
+        typingListener = null
+        if (conversation.isGroup) {
+            typingListener = FireBaseInstance.observeGroupTyping(
+                conversation.friendId,
+                shared.getAuth(),
+            ) { show -> _typing.value = show }
+        } else {
+            FireBaseInstance.getConversationRlt(conversation.friendId, shared.getAuth()) { cvt ->
+                _typing.value = cvt.typing
+            }
         }
+    }
+
+    override fun onCleared() {
+        typingListener?.remove()
+        super.onCleared()
     }
 }

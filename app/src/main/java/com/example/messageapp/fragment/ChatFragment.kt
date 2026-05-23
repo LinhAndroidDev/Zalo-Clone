@@ -97,8 +97,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 }
                 return
             }
-            val keyId = if (data.fromSender) viewModel?.shared?.getAuth()
-                .toString() else conversation?.friendId.toString()
+            val keyId = when {
+                data.fromSender -> viewModel?.shared?.getAuth().orEmpty()
+                conversation?.isGroup == true -> conversation?.friendId.orEmpty()
+                else -> conversation?.friendId.orEmpty()
+            }
             val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
             val previewPhotoArgument = PreviewPhotoArgument(
                 message = data.message,
@@ -159,16 +162,26 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         FirebaseAnalyticsInstance.logChatScreen()
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
-        conversation?.let {
-            chatAdapter = ChatAdapter(requireActivity(), conversation?.friendId ?: "")
+        conversation?.let { cvt ->
+            val uid = viewModel?.shared?.getAuth().orEmpty()
+            chatAdapter = ChatAdapter(
+                requireActivity(),
+                cvt.friendId,
+                cvt.isGroup,
+                uid,
+            )
             chatAdapter?.setOnActionClickItem(mCallBackClickItem)
             binding?.rcvChat?.adapter = chatAdapter
-            binding?.header?.setTitleChatView(conversation?.name ?: "")
-            binding?.header?.showInfoFriend = {
-                val intent = Intent(requireActivity(), PersonalActivity::class.java)
-                intent.putExtra(PersonalActivity.FRIEND_ID_KEY, conversation?.friendId)
-                startActivity(intent)
-                activity?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            binding?.header?.setTitleChatView(cvt.name)
+            binding?.header?.showInfoFriend = if (cvt.isGroup) {
+                null
+            } else {
+                {
+                    val intent = Intent(requireActivity(), PersonalActivity::class.java)
+                    intent.putExtra(PersonalActivity.FRIEND_ID_KEY, cvt.friendId)
+                    startActivity(intent)
+                    activity?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                }
             }
         }
         binding?.edtMessage?.doOnTextChanged { text, _, _, _ ->
@@ -182,7 +195,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         binding?.edtMessage?.setOnFocusChangeListener { _, hasFocus ->
-            viewModel?.updateTyping(conversation?.friendId.toString(), hasFocus)
+            conversation?.let { viewModel?.updateTyping(it, hasFocus) }
         }
     }
 
@@ -275,35 +288,35 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         imgFavourite.setOnClickListener {
             val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
             val emotion = Emotion(favourite = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
             popupWindow.dismiss()
         }
 
         imgLike.setOnClickListener {
             val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
             val emotion = Emotion(like = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
             popupWindow.dismiss()
         }
 
         imgLaugh.setOnClickListener {
             val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
             val emotion = Emotion(laugh = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
             popupWindow.dismiss()
         }
 
         imgCry.setOnClickListener {
             val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
             val emotion = Emotion(cry = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
             popupWindow.dismiss()
         }
 
         imgAngry.setOnClickListener {
             val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
             val emotion = Emotion(angry = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
             popupWindow.dismiss()
         }
     }
@@ -345,8 +358,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         super.bindData()
 
         conversation?.let { cvt ->
-            viewModel?.getMessage(friendId = cvt.friendId)
-            viewModel?.checkShowTyping(friendId = cvt.friendId)
+            viewModel?.getMessage(cvt)
+            viewModel?.observeTyping(cvt)
 
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -398,11 +411,20 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
      */
     private fun updateSeenMessage(msg: ArrayList<Message>) {
         val userId = viewModel?.shared?.getAuth() ?: ""
+        val cvt = conversation ?: return
+        if (cvt.isGroup) {
+            chatAdapter?.seen = false
+            if (msg.isNotEmpty()) {
+                chatAdapter?.notifyItemChanged(msg.lastIndex)
+            }
+            conversation?.let { viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
+            return
+        }
         FireBaseInstance.getConversationRlt(
             friendId = conversation?.friendId ?: "",
             userId = userId,
-            success = { cvt ->
-                if (cvt.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
+            success = { conv ->
+                if (conv.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
                     chatAdapter?.seen = true
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
                 } else {
@@ -460,7 +482,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 conversation?.let { cvt ->
                     val file = File(path)
                     viewModel?.uploadAudio(
-                        friendId = cvt.friendId,
                         uriAudio = Uri.fromFile(file),
                         time = DateUtils.getTimeCurrent(),
                         conversation = cvt,
@@ -491,11 +512,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun onStop() {
         super.onStop()
-        viewModel?.updateTyping(conversation?.friendId.toString(), false)
+        conversation?.let { viewModel?.updateTyping(it, false) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        viewModel?.updateTyping(conversation?.friendId.toString(), false)
+        conversation?.let { viewModel?.updateTyping(it, false) }
     }
 }

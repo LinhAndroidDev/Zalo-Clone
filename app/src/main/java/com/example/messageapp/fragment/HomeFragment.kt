@@ -61,6 +61,12 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override fun onClickView() {
         super.onClickView()
 
+        binding?.menuOther?.findViewById<View>(R.id.rowCreateGroup)?.setOnClickListener {
+            menuOtherShowing = false
+            binding?.menuOther?.showView(false)
+            findNavController().navigate(R.id.action_homeFragment_to_createGroupFragment)
+        }
+
         binding?.btnFindMoreFriend?.setOnClickListener {
             if (android.provider.Settings.canDrawOverlays(requireActivity())) {
                 activity?.startService(Intent(requireActivity(), ChatHeadService::class.java))
