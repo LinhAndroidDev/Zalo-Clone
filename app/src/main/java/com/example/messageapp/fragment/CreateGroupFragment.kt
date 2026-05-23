@@ -54,8 +54,13 @@ class CreateGroupFragment : BaseFragment<FragmentCreateGroupBinding, CreateGroup
                 Toast.makeText(requireContext(), R.string.select_group_members, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            val groupTitle = name.ifBlank { getString(R.string.create_group_title) }
+            val welcomeMessage = getString(R.string.group_welcome_message, groupTitle)
+            val welcomePerson = getString(R.string.group_welcome_inbox_person)
             viewModel?.createGroup(
-                displayName = name.ifBlank { getString(R.string.create_group_title) },
+                displayName = groupTitle,
+                welcomeMessage = welcomeMessage,
+                welcomeInboxPerson = welcomePerson,
                 otherMemberIds = selected,
                 onSuccess = { conversation ->
                     findNavController().navigate(

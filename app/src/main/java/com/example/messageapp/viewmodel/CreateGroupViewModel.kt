@@ -32,6 +32,8 @@ class CreateGroupViewModel @Inject constructor() : BaseViewModel() {
 
     fun createGroup(
         displayName: String,
+        welcomeMessage: String,
+        welcomeInboxPerson: String,
         otherMemberIds: List<String>,
         onSuccess: (Conversation) -> Unit,
         onFailure: (String) -> Unit,
@@ -40,6 +42,8 @@ class CreateGroupViewModel @Inject constructor() : BaseViewModel() {
             name = displayName,
             creatorId = shared.getAuth(),
             creatorAvatar = "",
+            welcomeMessage = welcomeMessage,
+            welcomeInboxPerson = welcomeInboxPerson,
             otherMemberIds = otherMemberIds,
             success = { _, inbox -> onSuccess(inbox) },
             failure = onFailure,

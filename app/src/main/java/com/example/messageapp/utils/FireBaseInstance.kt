@@ -157,6 +157,8 @@ object FireBaseInstance {
         name: String,
         creatorId: String,
         creatorAvatar: String,
+        welcomeMessage: String,
+        welcomeInboxPerson: String,
         otherMemberIds: List<String>,
         success: (groupId: String, inboxConversation: Conversation) -> Unit,
         failure: (String) -> Unit,
@@ -182,12 +184,12 @@ object FireBaseInstance {
             createdAt = System.currentTimeMillis(),
         )
         val time = DateUtils.getTimeCurrent()
-        val inboxConversation = Conversation(
+        val inboxConversationCreator = Conversation(
             friendId = groupId,
             friendImage = photoUrl,
-            message = "Nhóm đã được tạo",
+            message = welcomeMessage,
             name = displayName,
-            person = "Hệ thống",
+            person = welcomeInboxPerson,
             sender = creatorId,
             time = time,
             seen = "1",
@@ -195,13 +197,29 @@ object FireBaseInstance {
             typing = false,
             isGroup = true,
         )
+        val inboxConversationMember = inboxConversationCreator.copy(
+            seen = "0",
+            numberUnSeen = 1,
+        )
+        val welcomeChatMessage = Message(
+            message = welcomeMessage,
+            receiver = groupId,
+            sender = creatorId,
+            time = time,
+            type = TypeMessage.MESSAGE.rawValue,
+        )
         val batch = db.batch()
         batch.set(db.collection(PATH_GROUPS).document(groupId), group)
         for (m in memberIds) {
-            batch.set(db.collection("Conversation$m").document(groupId), inboxConversation)
+            val row = if (m == creatorId) inboxConversationCreator else inboxConversationMember
+            batch.set(db.collection("Conversation$m").document(groupId), row)
         }
+        batch.set(
+            db.collection(PATH_MESSAGE).document(groupId).collection(PATH_CHAT).document(time),
+            welcomeChatMessage,
+        )
         batch.commit()
-            .addOnSuccessListener { success.invoke(groupId, inboxConversation) }
+            .addOnSuccessListener { success.invoke(groupId, inboxConversationCreator) }
             .addOnFailureListener { e ->
                 failure.invoke(e.message ?: "Lỗi tạo nhóm")
             }

@@ -213,5 +213,7 @@
     <string name="group_name_hint">Tên nhóm</string>
     <string name="select_group_members">Chọn thành viên (tối thiểu 1)</string>
     <string name="create_group_button">Tạo và mở chat</string>
+    <string name="group_welcome_inbox_person">Thông báo</string>
+    <string name="group_welcome_message">Chào mừng bạn đến với nhóm \"%1$s\"! Hãy gửi tin nhắn đầu tiên cùng mọi người.</string>
     <string name="cd_back">Quay lại</string>
 </resources>

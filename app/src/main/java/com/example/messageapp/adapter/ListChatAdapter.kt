@@ -32,7 +32,7 @@ class ListChatAdapter(private val userId: String) :
 
     fun updateDiffConversation(conversations : ArrayList<Conversation>) {
         updateDiffList(conversations,
-            compareItem = { old, new -> old.time == new.time },
+            compareItem = { old, new -> old.friendId == new.friendId && old.isGroup == new.isGroup },
             compareContent = { old, new -> old == new }
         )
     }
