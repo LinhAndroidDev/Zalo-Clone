@@ -74,13 +74,23 @@ class ChatAdapter(
      */
     @SuppressLint("NotifyDataSetChanged")
     fun updateDiffList(newList: List<Message>) {
+        val oldList = ArrayList(messages)
+        val oldSize = oldList.size
         val diffResult = DiffUtil.calculateDiff(BaseDiffUtil(messages, newList,
             areContentsTheSame = { old, new -> old.time == new.time },
             areItemsTheSame = { old, new -> old == new }
         ))
         messages.clear()
         messages.addAll(newList)
+        val newSize = messages.size
         diffResult.dispatchUpdatesTo(this)
+        // Khi chỉ nối thêm ở cuối, Diff thường không rebind hàng "cuối cũ" → viewBottom + cluster vẫn như lúc là last.
+        val appendedAtEnd = newSize > oldSize && oldSize > 0 &&
+            newList.size >= oldSize &&
+            (0 until oldSize).all { i -> oldList[i] == newList[i] }
+        if (appendedAtEnd) {
+            notifyItemChanged(oldSize - 1)
+        }
     }
 
     /**
