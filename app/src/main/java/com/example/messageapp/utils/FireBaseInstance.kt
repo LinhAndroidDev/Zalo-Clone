@@ -1233,6 +1233,9 @@ object FireBaseInstance {
      * Accept a friend request. Uses a batch write to atomically:
      * - Update request status to "accepted"
      * - Add both users to each other's friends subcollection
+     * - If neither user already has a 1:1 inbox row for the other (`Conversation{me}/{other}`),
+     *   seed both rows with the "became friends" preview (avoids a second welcome thread after
+     *   unfriend / re-friend when the old inbox docs were kept).
      */
     fun acceptFriendRequest(
         request: FriendRequest,
@@ -1241,79 +1244,91 @@ object FireBaseInstance {
         success: () -> Unit,
         failure: (String) -> Unit
     ) {
-        val batch = db.batch()
-
-        val requestRef = db.collection(PATH_FRIEND_REQUESTS).document(request.requestId)
-        batch.update(requestRef, "status", FriendRequest.STATUS_ACCEPTED)
-
-        val myFriendRef = db.collection(PATH_USER).document(request.toId)
-            .collection(PATH_FRIENDS).document(request.fromId)
-        batch.set(
-            myFriendRef, Friend(
-                name = request.fromName,
-                avatar = request.fromAvatar,
-                keyAuth = request.fromId,
-                since = System.currentTimeMillis()
-            )
-        )
-
-        // Accepter on sender's phone book: prefer name/avatar stored on the request when sent
-        // (avoids empty name if getInfoUser snapshot was incomplete — empty name is omitted from
-        // PhoneBook because grouping uses capitalLetters on friend.name).
-        val accepterName = request.toName.ifBlank { myName }
-        val accepterAvatar = request.toAvatar.ifBlank { myAvatar }
-
-        val theirFriendRef = db.collection(PATH_USER).document(request.fromId)
-            .collection(PATH_FRIENDS).document(request.toId)
-        batch.set(
-            theirFriendRef, Friend(
-                name = accepterName,
-                avatar = accepterAvatar,
-                keyAuth = request.toId,
-                since = System.currentTimeMillis()
-            )
-        )
-
-        // Mirror sendMessage paths: Conversation{me}/{friendDocId}
-        val time = DateUtils.getTimeCurrent()
-        val becomeFriendsMsg = "Hai bạn đã trở thành bạn bè"
-
         val convSenderRef =
             db.collection("Conversation${request.fromId}").document(request.toId)
-        batch.set(
-            convSenderRef,
-            Conversation(
-                friendId = request.toId,
-                friendImage = accepterAvatar,
-                message = becomeFriendsMsg,
-                name = accepterName,
-                person = "Bạn",
-                sender = request.fromId,
-                time = time,
-                numberUnSeen = 0,
-                typing = false
-            )
-        )
-
         val convAccepterRef =
             db.collection("Conversation${request.toId}").document(request.fromId)
-        batch.set(
-            convAccepterRef,
-            Conversation(
-                friendId = request.fromId,
-                friendImage = request.fromAvatar,
-                message = becomeFriendsMsg,
-                name = request.fromName,
-                person = request.fromName,
-                sender = request.fromId,
-                time = time,
-                numberUnSeen = 0,
-                typing = false
-            )
-        )
 
-        batch.commit()
-            .addOnSuccessListener { success.invoke() }
+        convSenderRef.get()
+            .addOnSuccessListener { snapFrom ->
+                convAccepterRef.get()
+                    .addOnSuccessListener { snapTo ->
+                        val convAlreadyExists = snapFrom.exists() || snapTo.exists()
+                        val batch = db.batch()
+
+                        val requestRef =
+                            db.collection(PATH_FRIEND_REQUESTS).document(request.requestId)
+                        batch.update(requestRef, "status", FriendRequest.STATUS_ACCEPTED)
+
+                        val myFriendRef = db.collection(PATH_USER).document(request.toId)
+                            .collection(PATH_FRIENDS).document(request.fromId)
+                        batch.set(
+                            myFriendRef, Friend(
+                                name = request.fromName,
+                                avatar = request.fromAvatar,
+                                keyAuth = request.fromId,
+                                since = System.currentTimeMillis()
+                            )
+                        )
+
+                        // Accepter on sender's phone book: prefer name/avatar stored on the request when sent
+                        // (avoids empty name if getInfoUser snapshot was incomplete — empty name is omitted from
+                        // PhoneBook because grouping uses capitalLetters on friend.name).
+                        val accepterName = request.toName.ifBlank { myName }
+                        val accepterAvatar = request.toAvatar.ifBlank { myAvatar }
+
+                        val theirFriendRef = db.collection(PATH_USER).document(request.fromId)
+                            .collection(PATH_FRIENDS).document(request.toId)
+                        batch.set(
+                            theirFriendRef, Friend(
+                                name = accepterName,
+                                avatar = accepterAvatar,
+                                keyAuth = request.toId,
+                                since = System.currentTimeMillis()
+                            )
+                        )
+
+                        if (!convAlreadyExists) {
+                            val time = DateUtils.getTimeCurrent()
+                            val becomeFriendsMsg = "Hai bạn đã trở thành bạn bè"
+
+                            batch.set(
+                                convSenderRef,
+                                Conversation(
+                                    friendId = request.toId,
+                                    friendImage = accepterAvatar,
+                                    message = becomeFriendsMsg,
+                                    name = accepterName,
+                                    person = "Bạn",
+                                    sender = request.fromId,
+                                    time = time,
+                                    numberUnSeen = 0,
+                                    typing = false
+                                )
+                            )
+
+                            batch.set(
+                                convAccepterRef,
+                                Conversation(
+                                    friendId = request.fromId,
+                                    friendImage = request.fromAvatar,
+                                    message = becomeFriendsMsg,
+                                    name = request.fromName,
+                                    person = request.fromName,
+                                    sender = request.fromId,
+                                    time = time,
+                                    numberUnSeen = 0,
+                                    typing = false
+                                )
+                            )
+                        }
+
+                        batch.commit()
+                            .addOnSuccessListener { success.invoke() }
+                            .addOnFailureListener { failure.invoke(it.message.toString()) }
+                    }
+                    .addOnFailureListener { failure.invoke(it.message.toString()) }
+            }
             .addOnFailureListener { failure.invoke(it.message.toString()) }
     }
 
