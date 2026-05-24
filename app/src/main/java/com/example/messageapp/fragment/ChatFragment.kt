@@ -99,7 +99,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             }
             val keyId = when {
                 data.fromSender -> viewModel?.shared?.getAuth().orEmpty()
-                conversation?.isGroup == true -> conversation?.friendId.orEmpty()
+                conversation?.isGroupThread() == true -> conversation?.friendId.orEmpty()
                 else -> conversation?.friendId.orEmpty()
             }
             val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
@@ -167,13 +167,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             chatAdapter = ChatAdapter(
                 requireActivity(),
                 cvt.friendId,
-                cvt.isGroup,
+                cvt.isGroupThread(),
                 uid,
             )
             chatAdapter?.setOnActionClickItem(mCallBackClickItem)
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(cvt.name)
-            binding?.header?.showInfoFriend = if (cvt.isGroup) {
+            binding?.header?.showInfoFriend = if (cvt.isGroupThread()) {
                 null
             } else {
                 {
@@ -412,7 +412,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private fun updateSeenMessage(msg: ArrayList<Message>) {
         val userId = viewModel?.shared?.getAuth() ?: ""
         val cvt = conversation ?: return
-        if (cvt.isGroup) {
+        if (cvt.isGroupThread()) {
             chatAdapter?.seen = false
             if (msg.isNotEmpty()) {
                 chatAdapter?.notifyItemChanged(msg.lastIndex)

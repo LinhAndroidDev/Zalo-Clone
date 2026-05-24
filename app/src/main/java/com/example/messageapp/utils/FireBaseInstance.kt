@@ -129,7 +129,7 @@ object FireBaseInstance {
 
     /**
      * This function is used to get all messages from the FireStore database
-     * @param idRoom id room of chat room
+     * @param idRoom document id under [PATH_MESSAGE] (see [messageThreadDocumentId])
      * @param success callback when query is successful
      */
     fun getMessage(
@@ -149,6 +149,14 @@ object FireBaseInstance {
                 success.invoke(value)
             }
     }
+
+    /**
+     * Document id under [PATH_MESSAGE] for this chat thread.
+     * Group: [Conversation.friendId] is the group id (or UUID-shaped room id when [Conversation.isGroupThread]).
+     */
+    fun messageThreadDocumentId(conversation: Conversation, userId: String): String =
+        if (conversation.isGroupThread()) conversation.friendId
+        else listOf(conversation.friendId, userId).sorted().toString()
 
     /**
      * Creates a group chat document and an inbox [Conversation] row for each member.
@@ -289,11 +297,7 @@ object FireBaseInstance {
         sendFirst: Boolean,
         success: () -> Unit,
     ) {
-        val idRoom = if (conversation.isGroup) {
-            conversation.friendId
-        } else {
-            listOf(conversation.friendId, userId).sorted().toString()
-        }
+        val idRoom = messageThreadDocumentId(conversation, userId)
 
         db.collection(PATH_MESSAGE)
             .document(idRoom)
@@ -301,7 +305,7 @@ object FireBaseInstance {
             .document(time)
             .set(message)
 
-        if (conversation.isGroup) {
+        if (conversation.isGroupThread()) {
             if (sendFirst) {
                 handleSendMessageGroup(
                     message, userId, time, conversation, nameSender, type, sendFirst = true
@@ -1022,11 +1026,7 @@ object FireBaseInstance {
      * @param time time message sent
      */
     fun removeMessage(conversation: Conversation, userId: String, time: String) {
-        val idRoom = if (conversation.isGroup) {
-            conversation.friendId
-        } else {
-            listOf(conversation.friendId, userId).sorted().toString()
-        }
+        val idRoom = messageThreadDocumentId(conversation, userId)
         db.collection(PATH_MESSAGE)
             .document(idRoom)
             .collection(PATH_CHAT)

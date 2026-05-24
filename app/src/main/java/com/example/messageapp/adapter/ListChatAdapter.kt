@@ -32,7 +32,9 @@ class ListChatAdapter(private val userId: String) :
 
     fun updateDiffConversation(conversations : ArrayList<Conversation>) {
         updateDiffList(conversations,
-            compareItem = { old, new -> old.friendId == new.friendId && old.isGroup == new.isGroup },
+            compareItem = { old, new ->
+                old.friendId == new.friendId && old.isGroupThread() == new.isGroupThread()
+            },
             compareContent = { old, new -> old == new }
         )
     }
@@ -41,7 +43,7 @@ class ListChatAdapter(private val userId: String) :
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
         v.tvNameFriend.text = conversation.name
-        if (conversation.isGroup) {
+        if (conversation.isGroupThread()) {
             v.typingView.isVisible = false
             v.tvMessage.isVisible = true
         } else {
@@ -53,7 +55,7 @@ class ListChatAdapter(private val userId: String) :
         v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         v.tvTime.text = DateUtils.formatTime(conversation.time)
         this.handleWhenConversationIsChanged(conversation)
-        if (conversation.isGroup) {
+        if (conversation.isGroupThread()) {
             if (conversation.friendImage.isNotBlank()) {
                 itemView.context.loadImg(conversation.friendImage, v.avatarFriend)
                 itemView.context.loadImg(conversation.friendImage, v.avtSeen)
@@ -98,7 +100,7 @@ class ListChatAdapter(private val userId: String) :
      * This function is used to handle the change in the conversation
      */
     private fun BaseViewHolder<ItemListChatBinding>.handleWhenConversationIsChanged(conversation: Conversation) {
-        if (conversation.isGroup) {
+        if (conversation.isGroupThread()) {
             if (conversation.numberUnSeen > 0) {
                 v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
                 v.tvTime.setTextColor(itemView.context.getColor(R.color.text_common))

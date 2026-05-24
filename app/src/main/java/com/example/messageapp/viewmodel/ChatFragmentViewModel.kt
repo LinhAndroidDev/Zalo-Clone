@@ -69,18 +69,14 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun roomIdListForCloudinary(conversation: Conversation): List<String> =
-        if (conversation.isGroup) listOf(conversation.friendId)
+        if (conversation.isGroupThread()) listOf(conversation.friendId)
         else listOf(conversation.friendId, shared.getAuth()).sorted()
 
     fun messageReceiverId(conversation: Conversation): String = conversation.friendId
 
     /** Load messages for 1-1 or group chat. */
     fun getMessage(conversation: Conversation) = viewModelScope.launch {
-        val idRoom = if (conversation.isGroup) {
-            conversation.friendId
-        } else {
-            listOf(conversation.friendId, shared.getAuth()).sorted().toString()
-        }
+        val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, shared.getAuth())
         FireBaseInstance.getMessage(
             idRoom,
             success = { result ->
@@ -100,7 +96,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     }
 
     private fun isMessageInConversation(message: Message, conversation: Conversation): Boolean {
-        if (conversation.isGroup) {
+        if (conversation.isGroupThread()) {
             return message.receiver == conversation.friendId
         }
         return message.sender == shared.getAuth() && message.receiver == conversation.friendId
@@ -113,7 +109,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
      * @param conversation data friend
      */
     fun updateSeenMessage(msg: Message, conversation: Conversation) = viewModelScope.launch {
-        if (conversation.isGroup) {
+        if (conversation.isGroupThread()) {
             if (msg.sender != shared.getAuth()) {
                 FireBaseInstance.markGroupConversationSeen(shared.getAuth(), conversation.friendId)
             }
@@ -300,11 +296,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
      * @param data data emotion
      */
     fun releaseEmotion(time: String, conversation: Conversation, data: Emotion) {
-        val idRoom = if (conversation.isGroup) {
-            conversation.friendId
-        } else {
-            listOf(conversation.friendId, shared.getAuth()).sorted().toString()
-        }
+        val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, shared.getAuth())
         FireBaseInstance.releaseEmotion(
             time = time,
             idRoom = idRoom,
@@ -340,7 +332,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun updateTyping(conversation: Conversation, typing: Boolean) {
-        if (conversation.isGroup) {
+        if (conversation.isGroupThread()) {
             FireBaseInstance.updateGroupTyping(conversation.friendId, shared.getAuth(), typing)
         } else {
             FireBaseInstance.updateTypingMessage(
@@ -354,7 +346,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     fun observeTyping(conversation: Conversation) {
         typingListener?.remove()
         typingListener = null
-        if (conversation.isGroup) {
+        if (conversation.isGroupThread()) {
             typingListener = FireBaseInstance.observeGroupTyping(
                 conversation.friendId,
                 shared.getAuth(),
