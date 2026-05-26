@@ -46,6 +46,7 @@ import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils
@@ -56,6 +57,9 @@ import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import java.io.File
@@ -69,6 +73,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var stateScrollable = true
     private var isChatScreenActive = false
     private var isMessageEmpty = true
+    private var lastFriendPresence: UserPresence? = null
+    private var presenceRefreshJob: Job? = null
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -173,6 +179,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             chatAdapter?.setOnActionClickItem(mCallBackClickItem)
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(cvt.name)
+            if (cvt.isGroupThread()) {
+                binding?.header?.setFriendStatusVisible(false)
+            } else {
+                binding?.header?.setFriendStatusVisible(true)
+                viewModel?.startObservingFriendPresence(cvt.friendId)
+            }
             binding?.header?.showInfoFriend = if (cvt.isGroupThread()) {
                 null
             } else {
@@ -389,6 +401,15 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel?.friendPresence?.collect { presence ->
+                    lastFriendPresence = presence
+                    updateFriendStatusHeader(presence)
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel?.cloudUploadProgress?.collect { pct ->
                     val b = binding ?: return@collect
@@ -402,6 +423,18 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 }
             }
         }
+    }
+
+    private fun updateFriendStatusHeader(presence: UserPresence?) {
+        if (conversation?.isGroupThread() == true) {
+            binding?.header?.setFriendStatusVisible(false)
+            return
+        }
+        binding?.header?.setFriendStatusVisible(true)
+        val currentPresence = presence ?: return
+        binding?.header?.setFriendStatus(
+            DateUtils.formatLastSeenStatus(currentPresence.online, currentPresence.lastSeen),
+        )
     }
 
     /**
@@ -503,11 +536,24 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         isChatScreenActive = true
         val notificationManager = context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancelAll()
+        presenceRefreshJob = lifecycleScope.launch {
+            while (isActive) {
+                delay(60_000L)
+                lastFriendPresence?.let { updateFriendStatusHeader(it) }
+            }
+        }
     }
 
     override fun onPause() {
         isChatScreenActive = false
+        presenceRefreshJob?.cancel()
+        presenceRefreshJob = null
         super.onPause()
+    }
+
+    override fun onDestroyView() {
+        viewModel?.stopObservingFriendPresence()
+        super.onDestroyView()
     }
 
     override fun onStop() {

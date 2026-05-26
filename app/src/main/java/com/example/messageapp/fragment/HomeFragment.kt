@@ -129,6 +129,12 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
             }
         }
 
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.presenceMap?.collect { presenceMap ->
+                listChatAdapter?.updatePresenceMap(presenceMap)
+            }
+        }
+
         viewModel?.getNumberUnSeen()
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.numberMsgUnSeen?.collect { num ->

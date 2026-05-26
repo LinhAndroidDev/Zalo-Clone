@@ -9,6 +9,7 @@ import com.example.messageapp.library.swipe.SwipeRevealLayout
 import com.example.messageapp.library.swipe.ViewBinderHelper
 import com.example.messageapp.databinding.ItemListChatBinding
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
@@ -20,6 +21,7 @@ class ListChatAdapter(private val userId: String) :
     var onClickView: ((Conversation) -> Unit)? = null
     var showOptionConversation: (() -> Unit)? = null
     var indexOpenSwipe: Int? = null
+    private var presenceMap: Map<String, UserPresence> = emptyMap()
 
     override fun getLayout(): Int = R.layout.item_list_chat
 
@@ -39,6 +41,13 @@ class ListChatAdapter(private val userId: String) :
         )
     }
 
+    @SuppressLint("NotifyDataSetChanged")
+    fun updatePresenceMap(map: Map<String, UserPresence>) {
+        if (presenceMap == map) return
+        presenceMap = map
+        notifyDataSetChanged()
+    }
+
     @SuppressLint("SetTextI18n", "NotifyDataSetChanged")
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
@@ -54,6 +63,7 @@ class ListChatAdapter(private val userId: String) :
         }
         v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         v.tvTime.text = DateUtils.formatTime(conversation.time)
+        bindOnlineIndicator(conversation)
         this.handleWhenConversationIsChanged(conversation)
         if (conversation.isGroupThread()) {
             if (conversation.friendImage.isNotBlank()) {
@@ -94,6 +104,14 @@ class ListChatAdapter(private val userId: String) :
             }
 
         })
+    }
+
+    private fun BaseViewHolder<ItemListChatBinding>.bindOnlineIndicator(conversation: Conversation) {
+        if (conversation.isGroupThread()) {
+            v.onlineIndicator.isVisible = false
+            return
+        }
+        v.onlineIndicator.isVisible = presenceMap[conversation.friendId]?.online == true
     }
 
     /**

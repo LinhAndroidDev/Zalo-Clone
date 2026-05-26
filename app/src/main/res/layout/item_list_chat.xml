@@ -100,12 +100,25 @@
                 android:layout_height="wrap_content"
                 android:paddingHorizontal="15dp">
 
-                <de.hdodenhof.circleimageview.CircleImageView
-                    android:id="@+id/avatarFriend"
+                <FrameLayout
                     android:layout_width="60dp"
                     android:layout_height="60dp"
-                    android:layout_marginVertical="10dp"
-                    android:src="@mipmap/ic_launcher" />
+                    android:layout_marginVertical="10dp">
+
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/avatarFriend"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@mipmap/ic_launcher" />
+
+                    <View
+                        android:id="@+id/onlineIndicator"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_gravity="bottom|end"
+                        android:background="@drawable/bg_online_indicator"
+                        android:visibility="gone" />
+                </FrameLayout>
 
                 <LinearLayout
                     android:layout_width="0dp"

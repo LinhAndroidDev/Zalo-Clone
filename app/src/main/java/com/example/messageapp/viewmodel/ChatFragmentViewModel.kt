@@ -9,9 +9,11 @@ import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isVideoUri
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.PresenceManager
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.utils.getImageDimensions
 import com.example.messageapp.utils.getVideoDimensions
@@ -34,13 +36,20 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
 
+    @Inject
+    lateinit var presenceManager: PresenceManager
+
     private var typingListener: ListenerRegistration? = null
+    private var presenceUnsubscriber: (() -> Unit)? = null
 
     private val _messages: MutableStateFlow<ArrayList<Message>?> = MutableStateFlow(null)
     val messages = _messages.asStateFlow()
 
     private val _typing: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val typing = _typing.asStateFlow()
+
+    private val _friendPresence: MutableStateFlow<UserPresence?> = MutableStateFlow(null)
+    val friendPresence = _friendPresence.asStateFlow()
 
     /** null = ẩn; 0f..100f = tiến độ upload Cloudinary (ảnh/video/ghi âm). */
     private val _cloudUploadProgress = MutableStateFlow<Float?>(null)
@@ -358,8 +367,23 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
+    fun startObservingFriendPresence(friendId: String) {
+        stopObservingFriendPresence()
+        if (friendId.isBlank()) return
+        presenceUnsubscriber = presenceManager.observePresence(friendId) { presence ->
+            _friendPresence.value = presence
+        }
+    }
+
+    fun stopObservingFriendPresence() {
+        presenceUnsubscriber?.invoke()
+        presenceUnsubscriber = null
+        _friendPresence.value = null
+    }
+
     override fun onCleared() {
         typingListener?.remove()
+        stopObservingFriendPresence()
         super.onCleared()
     }
 }
