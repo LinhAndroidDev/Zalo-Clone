@@ -372,6 +372,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         conversation?.let { cvt ->
             viewModel?.getMessage(cvt)
             viewModel?.observeTyping(cvt)
+            if (cvt.isGroupThread()) {
+                viewModel?.startGroupReadTracking(cvt.friendId)
+            }
 
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -405,6 +408,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewModel?.friendPresence?.collect { presence ->
                     lastFriendPresence = presence
                     updateFriendStatusHeader(presence)
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel?.groupLastMessageReaders?.collect { readerIds ->
+                    chatAdapter?.updateGroupReaders(readerIds)
                 }
             }
         }
@@ -446,7 +457,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val userId = viewModel?.shared?.getAuth() ?: ""
         val cvt = conversation ?: return
         if (cvt.isGroupThread()) {
-            chatAdapter?.seen = false
             if (msg.isNotEmpty()) {
                 chatAdapter?.notifyItemChanged(msg.lastIndex)
             }
@@ -553,6 +563,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun onDestroyView() {
         viewModel?.stopObservingFriendPresence()
+        viewModel?.stopGroupReadTracking()
         super.onDestroyView()
     }
 

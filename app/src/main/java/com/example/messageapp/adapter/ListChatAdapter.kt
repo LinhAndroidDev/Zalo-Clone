@@ -126,7 +126,13 @@ class ListChatAdapter(private val userId: String) :
                 v.tvMessage.setTextColor(itemView.context.getColor(R.color.grey_1))
                 v.tvTime.setTextColor(itemView.context.getColor(R.color.grey_1))
             }
-            hideNewMessage()
+            if (conversation.numberUnSeen > 0) {
+                v.newMessage.isVisible = true
+                showMultiMessage(conversation.numberUnSeen > 1)
+                v.tvMultiMessage.text = conversation.numberUnSeen.toString()
+            } else {
+                hideNewMessage()
+            }
             v.avtSeen.isVisible = false
             return
         }

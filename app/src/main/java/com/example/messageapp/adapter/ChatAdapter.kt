@@ -50,6 +50,7 @@ class ChatAdapter(
     private var messages = arrayListOf<Message>()
     private val audioPlaybackStateMap = hashMapOf<String, AudioPlaybackState>()
     var seen: Boolean = false
+    private var groupReaderIds: List<String> = emptyList()
     private var mCallBack: CallBackClickItem? = null
 
     companion object {
@@ -67,6 +68,16 @@ class ChatAdapter(
      */
     fun setOnActionClickItem(callBackClickItem: CallBackClickItem) {
         this.mCallBack = callBackClickItem
+    }
+
+    fun updateGroupReaders(readerIds: List<String>) {
+        if (groupReaderIds == readerIds) return
+        groupReaderIds = readerIds
+        if (!isGroup || messages.isEmpty()) return
+        val lastIndex = messages.lastIndex
+        if (messages[lastIndex].sender == myUserId) {
+            notifyItemChanged(lastIndex)
+        }
     }
 
     /**
@@ -317,9 +328,15 @@ class ChatAdapter(
      */
     private fun checkShowSeenMessage(holder: SenderViewHolder, position: Int) {
         if (isGroup) {
-            holder.showSeen(false)
             holder.v.avtSeen.isVisible = false
             holder.v.viewReceived.isVisible = false
+            if (position == messages.lastIndex &&
+                messages[position].sender == myUserId
+            ) {
+                holder.bindGroupSeenAvatars(context, groupReaderIds)
+            } else {
+                holder.hideGroupSeenAvatars()
+            }
             return
         }
         if (position == messages.lastIndex) {

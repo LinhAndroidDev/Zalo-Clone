@@ -68,6 +68,7 @@ object FireBaseInstance {
     private const val PATH_SEARCH_HISTORY = "searchHistory"
     private const val PATH_ITEMS = "items"
     private const val PATH_GROUPS = "groups"
+    private const val PATH_MEMBER_READ = "memberRead"
 
     /**
      * This function is used to check the login of the user
@@ -266,14 +267,66 @@ object FireBaseInstance {
      * Marks the current user's group inbox row as read.
      */
     fun markGroupConversationSeen(userId: String, groupId: String) {
+        markGroupMessageRead(userId, groupId, lastReadTime = "")
+    }
+
+    /**
+     * Marks group inbox read and updates this member's read cursor for read receipts.
+     */
+    fun markGroupMessageRead(userId: String, groupId: String, lastReadTime: String) {
         if (userId.isBlank() || groupId.isBlank()) return
         db.collection("Conversation$userId").document(groupId)
             .update(
                 mapOf(
                     "seen" to "1",
                     "numberUnSeen" to 0,
-                )
+                ),
             )
+        if (lastReadTime.isNotBlank()) {
+            db.collection(PATH_GROUPS).document(groupId)
+                .collection(PATH_MEMBER_READ).document(userId)
+                .set(mapOf("lastReadTime" to lastReadTime))
+        }
+    }
+
+    fun observeGroupMemberRead(
+        groupId: String,
+        onChange: (Map<String, String>) -> Unit,
+    ): ListenerRegistration {
+        if (groupId.isBlank()) {
+            onChange(emptyMap())
+            return object : ListenerRegistration {
+                override fun remove() {}
+            }
+        }
+        return db.collection(PATH_GROUPS).document(groupId)
+            .collection(PATH_MEMBER_READ)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) {
+                    onChange(emptyMap())
+                    return@addSnapshotListener
+                }
+                val map = hashMapOf<String, String>()
+                snapshot.documents.forEach { doc ->
+                    val time = doc.getString("lastReadTime").orEmpty()
+                    if (time.isNotBlank()) {
+                        map[doc.id] = time
+                    }
+                }
+                onChange(map)
+            }
+    }
+
+    fun getGroupMemberIds(
+        groupId: String,
+        success: (List<String>) -> Unit,
+        failure: (String) -> Unit = {},
+    ) {
+        getGroup(
+            groupId = groupId,
+            success = { group -> success.invoke(group.memberIds.distinct().filter { it.isNotBlank() }) },
+            failure = failure,
+        )
     }
 
     /**

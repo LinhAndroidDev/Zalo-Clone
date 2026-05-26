@@ -15,6 +15,7 @@ import com.example.messageapp.utils.FileUtils.isVideoUri
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.PresenceManager
 import com.example.messageapp.utils.SharePreferenceRepository
+import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.getImageDimensions
 import com.example.messageapp.utils.getVideoDimensions
 import com.google.firebase.firestore.ListenerRegistration
@@ -41,9 +42,17 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     private var typingListener: ListenerRegistration? = null
     private var presenceUnsubscriber: (() -> Unit)? = null
+    private var groupMemberReadListener: ListenerRegistration? = null
+    private var groupMemberIds: List<String> = emptyList()
 
     private val _messages: MutableStateFlow<ArrayList<Message>?> = MutableStateFlow(null)
     val messages = _messages.asStateFlow()
+
+    private val _groupMemberReadMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    val groupMemberReadMap = _groupMemberReadMap.asStateFlow()
+
+    private val _groupLastMessageReaders = MutableStateFlow<List<String>>(emptyList())
+    val groupLastMessageReaders = _groupLastMessageReaders.asStateFlow()
 
     private val _typing: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val typing = _typing.asStateFlow()
@@ -97,6 +106,9 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                     messageData.add(raw.copy(time = timeResolved))
                 }
                 _messages.value = messageData
+                if (conversation.isGroupThread()) {
+                    recomputeGroupReaders(messageData)
+                }
             },
             failure = { error ->
                 showError(error)
@@ -119,8 +131,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
      */
     fun updateSeenMessage(msg: Message, conversation: Conversation) = viewModelScope.launch {
         if (conversation.isGroupThread()) {
-            if (msg.sender != shared.getAuth()) {
-                FireBaseInstance.markGroupConversationSeen(shared.getAuth(), conversation.friendId)
+            if (msg.time.isNotBlank()) {
+                FireBaseInstance.markGroupMessageRead(
+                    userId = shared.getAuth(),
+                    groupId = conversation.friendId,
+                    lastReadTime = msg.time,
+                )
             }
             return@launch
         }
@@ -381,9 +397,57 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         _friendPresence.value = null
     }
 
+    fun startGroupReadTracking(groupId: String) {
+        if (groupId.isBlank()) return
+        stopGroupReadTracking()
+        FireBaseInstance.getGroupMemberIds(
+            groupId = groupId,
+            success = { memberIds ->
+                groupMemberIds = memberIds
+                recomputeGroupReaders(_messages.value.orEmpty())
+            },
+        )
+        groupMemberReadListener = FireBaseInstance.observeGroupMemberRead(groupId) { readMap ->
+            _groupMemberReadMap.value = readMap
+            recomputeGroupReaders(_messages.value.orEmpty())
+        }
+    }
+
+    fun stopGroupReadTracking() {
+        groupMemberReadListener?.remove()
+        groupMemberReadListener = null
+        groupMemberIds = emptyList()
+        _groupMemberReadMap.value = emptyMap()
+        _groupLastMessageReaders.value = emptyList()
+    }
+
+    private fun recomputeGroupReaders(messages: List<Message>) {
+        if (groupMemberIds.isEmpty() || messages.isEmpty()) {
+            _groupLastMessageReaders.value = emptyList()
+            return
+        }
+        val lastMsg = messages.last()
+        if (lastMsg.sender != shared.getAuth()) {
+            _groupLastMessageReaders.value = emptyList()
+            return
+        }
+        val lastMsgMillis = DateUtils.parseChatMessageTimeMillis(lastMsg.time) ?: run {
+            _groupLastMessageReaders.value = emptyList()
+            return
+        }
+        val readMap = _groupMemberReadMap.value
+        val readers = groupMemberIds
+            .filter { memberId ->
+                memberId != shared.getAuth() &&
+                    (DateUtils.parseChatMessageTimeMillis(readMap[memberId].orEmpty()) ?: 0L) >= lastMsgMillis
+            }
+        _groupLastMessageReaders.value = readers
+    }
+
     override fun onCleared() {
         typingListener?.remove()
         stopObservingFriendPresence()
+        stopGroupReadTracking()
         super.onCleared()
     }
 }
