@@ -11,4 +11,6 @@ data class Data(
     val senderId: String,
     /** Present for group chat notifications so the app can open the correct room. */
     val groupId: String? = null,
+    val isMention: String? = "0",
+    val mentionType: String? = null,
 )

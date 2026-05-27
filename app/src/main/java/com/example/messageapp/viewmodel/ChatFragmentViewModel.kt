@@ -10,6 +10,7 @@ import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.UserPresence
+import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isVideoUri
 import com.example.messageapp.utils.FireBaseInstance
@@ -63,6 +64,9 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     /** null = ẩn; 0f..100f = tiến độ upload Cloudinary (ảnh/video/ghi âm). */
     private val _cloudUploadProgress = MutableStateFlow<Float?>(null)
     val cloudUploadProgress = _cloudUploadProgress.asStateFlow()
+
+    private val _mentionCandidates = MutableStateFlow<List<MentionHelper.MentionCandidate>>(emptyList())
+    val mentionCandidates = _mentionCandidates.asStateFlow()
 
     /**
      * This function used to send message to FireStore
@@ -396,6 +400,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     fun startGroupReadTracking(groupId: String) {
         if (groupId.isBlank()) return
         stopGroupReadTracking()
+        loadGroupMentionMembers(groupId)
         FireBaseInstance.getGroupMemberIds(
             groupId = groupId,
             success = { memberIds ->
@@ -415,6 +420,37 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         groupMemberIds = emptyList()
         _groupMemberReadMap.value = emptyMap()
         _groupLastMessageReaders.value = emptyList()
+        _mentionCandidates.value = emptyList()
+    }
+
+    fun loadGroupMentionMembers(groupId: String) {
+        if (groupId.isBlank()) {
+            _mentionCandidates.value = emptyList()
+            return
+        }
+        FireBaseInstance.getGroupMemberIds(
+            groupId = groupId,
+            success = { memberIds ->
+                if (memberIds.isEmpty()) {
+                    _mentionCandidates.value = emptyList()
+                    return@getGroupMemberIds
+                }
+                val users = ArrayList<com.example.messageapp.model.User>(memberIds.size)
+                var remaining = memberIds.size
+                memberIds.forEach { memberId ->
+                    FireBaseInstance.getInfoUser(memberId) { user ->
+                        users.add(
+                            user.copy(keyAuth = user.keyAuth?.takeIf { it.isNotBlank() } ?: memberId),
+                        )
+                        remaining -= 1
+                        if (remaining == 0) {
+                            _mentionCandidates.value = MentionHelper.buildMentionCandidates(users)
+                        }
+                    }
+                }
+            },
+            failure = { _mentionCandidates.value = emptyList() },
+        )
     }
 
     private fun recomputeGroupReaders(messages: List<Message>) {

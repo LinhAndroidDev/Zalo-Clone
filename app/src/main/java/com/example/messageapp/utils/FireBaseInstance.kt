@@ -574,19 +574,44 @@ object FireBaseInstance {
             success = { group ->
                 val memberIds = group.memberIds.distinct().filter { it.isNotBlank() }
                 val notifBody = notificationBodyForType(type, message, nameSender)
+                val mentionedTargets = MentionHelper.resolveMentionTargetUserIds(
+                    mentions = message.mentions,
+                    memberIds = memberIds,
+                    senderId = userId,
+                )
+                val isAllMention = MentionHelper.hasAllMention(message.mentions)
+                val appContext = MyApplication.appContext
                 for (mid in memberIds) {
                     if (mid == userId) continue
                     getTokenMessage(
                         mid,
                         success = { token ->
+                            val isMentioned = mid in mentionedTargets
+                            val body = if (isMentioned) {
+                                MentionHelper.mentionNotificationBody(
+                                    context = appContext,
+                                    senderName = nameSender,
+                                    groupName = conversation.name,
+                                    messageText = message.message,
+                                    isAllMention = isAllMention,
+                                )
+                            } else {
+                                notifBody
+                            }
                             enqueueSendMessageApi(
                                 NotificationData(
                                     token = token,
                                     data = Data(
                                         title = nameSender,
-                                        body = notifBody,
+                                        body = body,
                                         senderId = userId,
                                         groupId = groupId,
+                                        isMention = if (isMentioned) "1" else "0",
+                                        mentionType = when {
+                                            !isMentioned -> null
+                                            isAllMention -> "all"
+                                            else -> "user"
+                                        },
                                     ),
                                 )
                             )

@@ -215,6 +215,11 @@
     <string name="create_group_button">Tạo và mở chat</string>
     <string name="group_welcome_inbox_person">Thông báo</string>
     <string name="group_welcome_message">Chào mừng bạn đến với nhóm \"%1$s\"! Hãy gửi tin nhắn đầu tiên cùng mọi người.</string>
+    <string name="mention_all_label">Tất cả</string>
+    <string name="mention_picker_hint">Nhắc tới thành viên</string>
+    <string name="notification_mention_title">[Nhắc bạn] %1$s</string>
+    <string name="notification_mention_body">%1$s đã nhắc bạn: %2$s</string>
+    <string name="notification_mention_all_body">%1$s đã nhắc @All trong %2$s: %3$s</string>
     <string name="cd_back">Quay lại</string>
 
     <!-- User presence -->

@@ -15,6 +15,7 @@ import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.MentionHelper
 
 class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root),
     ViewTypeMessage {
@@ -72,7 +73,11 @@ class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHold
         v.viewMarginBottomMessage.isVisible = message.emotion?.emotionEmpty() == false
         context.calculatorViewMarginEmotion(R.dimen.margin_100)
         showViewMessage(TypeMessage.MESSAGE)
-        v.tvReceiver.text = message.message
+        v.tvReceiver.text = if (message.mentions.isNotEmpty()) {
+            MentionHelper.applyMentionSpans(context, message.message, message.mentions)
+        } else {
+            message.message
+        }
         v.tvTime.text = DateUtils.convertTimeToHour(message.time)
         v.viewMessage.setOnLongClickListener {
             longClick.invoke(it)

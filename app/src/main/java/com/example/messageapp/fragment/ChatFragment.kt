@@ -35,6 +35,7 @@ import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.adapter.ClickPhotoModel
+import com.example.messageapp.adapter.MentionSuggestionAdapter
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
@@ -45,6 +46,7 @@ import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.MessageMention
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.AnimatorUtils
@@ -53,6 +55,7 @@ import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
+import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -75,6 +78,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var isMessageEmpty = true
     private var lastFriendPresence: UserPresence? = null
     private var presenceRefreshJob: Job? = null
+    private var mentionSuggestionAdapter: MentionSuggestionAdapter? = null
+    private val pendingMentions = mutableListOf<MessageMention>()
+    private var activeMentionQuery: MentionHelper.MentionQuery? = null
+    private var groupMentionMembers: List<MentionHelper.MentionCandidate> = emptyList()
+    private val allMentionCandidate by lazy {
+        MentionHelper.allMentionCandidate(getString(R.string.mention_all_label))
+    }
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -181,6 +191,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             binding?.header?.setTitleChatView(cvt.name)
             if (cvt.isGroupThread()) {
                 binding?.header?.setFriendStatusVisible(false)
+                setupMentionPicker()
             } else {
                 binding?.header?.setFriendStatusVisible(true)
                 viewModel?.startObservingFriendPresence(cvt.friendId)
@@ -203,6 +214,21 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             } else {
                 binding?.viewOptions?.isVisible = true
                 binding?.btnSend?.isVisible = false
+                pendingMentions.clear()
+                hideMentionPicker()
+            }
+            if (conversation?.isGroupThread() == true) {
+                val synced = MentionHelper.syncPendingMentions(text?.toString().orEmpty(), pendingMentions)
+                pendingMentions.clear()
+                pendingMentions.addAll(synced)
+                refreshInputMentionHighlight()
+                updateMentionPicker(text)
+            }
+        }
+
+        binding?.edtMessage?.setOnClickListener {
+            if (conversation?.isGroupThread() == true) {
+                updateMentionPicker(binding?.edtMessage?.text)
             }
         }
 
@@ -371,6 +397,15 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewModel?.startGroupReadTracking(cvt.friendId)
             }
 
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel?.mentionCandidates?.collect { members ->
+                        groupMentionMembers = members
+                        updateMentionPicker(binding?.edtMessage?.text)
+                    }
+                }
+            }
+
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
@@ -488,15 +523,28 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         binding?.btnSend?.setOnClickListener {
             conversation?.let { cvt ->
-                val msg = binding?.edtMessage?.text.toString()
+                val rawText = binding?.edtMessage?.text.toString()
+                val mentions = if (cvt.isGroupThread()) {
+                    MentionHelper.syncPendingMentions(rawText, pendingMentions)
+                } else {
+                    emptyList()
+                }
                 val receiver = cvt.friendId
                 val sender = viewModel?.shared?.getAuth().toString()
                 val time = DateUtils.getTimeCurrent()
-                val message = Message(msg, receiver, sender, time)
+                val message = Message(
+                    message = rawText,
+                    receiver = receiver,
+                    sender = sender,
+                    time = time,
+                    mentions = mentions,
+                )
                 // log event: send_message
-                FirebaseAnalyticsInstance.logSendMessage(messageType = msg, messageLength = msg.length, receiverId = receiver)
+                FirebaseAnalyticsInstance.logSendMessage(messageType = rawText, messageLength = rawText.length, receiverId = receiver)
                 viewModel?.sendMessage(message = message, time = time, conversation = cvt, sendFirst = isMessageEmpty)
                 binding?.edtMessage?.setText("")
+                pendingMentions.clear()
+                hideMentionPicker()
             }
             stateScrollable = true
         }
@@ -559,7 +607,69 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     override fun onDestroyView() {
         viewModel?.stopObservingFriendPresence()
         viewModel?.stopGroupReadTracking()
+        pendingMentions.clear()
+        hideMentionPicker()
         super.onDestroyView()
+    }
+
+    private fun setupMentionPicker() {
+        mentionSuggestionAdapter = MentionSuggestionAdapter { candidate ->
+            onMentionCandidateSelected(candidate)
+        }
+        binding?.rcvMentionSuggestions?.adapter = mentionSuggestionAdapter
+    }
+
+    private fun updateMentionPicker(text: CharSequence?) {
+        if (conversation?.isGroupThread() != true) {
+            hideMentionPicker()
+            return
+        }
+        val cursor = binding?.edtMessage?.selectionStart ?: 0
+        val query = MentionHelper.detectActiveMentionQuery(text ?: "", cursor)
+        activeMentionQuery = query
+        if (query == null) {
+            hideMentionPicker()
+            return
+        }
+        val filtered = MentionHelper.filterCandidates(
+            query = query.query,
+            members = groupMentionMembers,
+            allCandidate = allMentionCandidate,
+        )
+        if (filtered.isEmpty()) {
+            hideMentionPicker()
+            return
+        }
+        binding?.mentionPickerContainer?.isVisible = true
+        mentionSuggestionAdapter?.submitList(filtered)
+    }
+
+    private fun hideMentionPicker() {
+        activeMentionQuery = null
+        binding?.mentionPickerContainer?.isVisible = false
+        mentionSuggestionAdapter?.submitList(emptyList())
+    }
+
+    private fun onMentionCandidateSelected(candidate: MentionHelper.MentionCandidate) {
+        val query = activeMentionQuery ?: return
+        val editable = binding?.edtMessage?.text ?: return
+        val insertText = MentionHelper.insertTextForCandidate(candidate)
+        val newCursor = MentionHelper.insertMentionToken(editable, query, insertText)
+        binding?.edtMessage?.setSelection(newCursor)
+        pendingMentions.removeAll { it.userId == candidate.userId }
+        pendingMentions.add(MentionHelper.toMessageMention(candidate))
+        refreshInputMentionHighlight()
+        hideMentionPicker()
+    }
+
+    private fun refreshInputMentionHighlight() {
+        if (conversation?.isGroupThread() != true) return
+        val editable = binding?.edtMessage?.text ?: return
+        MentionHelper.applyMentionSpansToEditable(
+            requireContext(),
+            editable,
+            pendingMentions,
+        )
     }
 
     override fun onStop() {

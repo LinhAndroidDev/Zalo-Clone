@@ -45,6 +45,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
             val body = data["body"]
             val senderId = data["senderId"] ?: ""
             val groupId = data["groupId"]?.trim().orEmpty()
+            val isMention = data["isMention"] == "1"
 
             if (groupId.isNotEmpty()) {
                 FireBaseInstance.getGroup(
@@ -60,7 +61,12 @@ class ReceiverMessageService : FirebaseMessagingService() {
                             time = "",
                             isGroup = true,
                         )
-                        sendGroupNotification(title, body, conv)
+                        sendGroupNotification(
+                            title = title,
+                            messageBody = body,
+                            conversation = conv,
+                            isMention = isMention,
+                        )
                     },
                     failure = { Log.e(TAG, "getGroup failed: $it") },
                 )
@@ -130,6 +136,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
         title: String?,
         messageBody: String?,
         conversation: Conversation,
+        isMention: Boolean = false,
     ) {
         val channelId = Random().nextInt()
         val intent = Intent(this, MainActivity::class.java)
@@ -142,10 +149,16 @@ class ReceiverMessageService : FirebaseMessagingService() {
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val contentTitle = if (isMention) {
+            getString(R.string.notification_mention_title, conversation.name)
+        } else {
+            title
+        }
+
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, getString(R.string.title_app))
             .setSmallIcon(R.drawable.ic_message)
-            .setContentTitle(title)
+            .setContentTitle(contentTitle)
             .setContentText(messageBody)
             .setAutoCancel(true)
             .setSound(defaultSoundUri)

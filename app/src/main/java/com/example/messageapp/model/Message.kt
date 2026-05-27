@@ -4,12 +4,20 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
+data class MessageMention(
+    val userId: String = "",
+    val token: String = "",
+    val displayName: String = "",
+) : Parcelable
+
+@Parcelize
 data class Message(
     val message: String = "",
     val receiver: String = "",
     val sender: String = "",
     val time: String = "",
     var emotion: Emotion? = null,
+    val mentions: List<MessageMention> = emptyList(),
     val photos: ArrayList<String> = arrayListOf(),
     /** Cùng thứ tự với [photos], mỗi phần tử dạng "widthxheight" (px sau khi xử lý rotation đối với video). */
     val photoSizes: ArrayList<String>? = null,

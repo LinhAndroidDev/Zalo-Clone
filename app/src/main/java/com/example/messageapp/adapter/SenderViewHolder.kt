@@ -15,6 +15,7 @@ import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.MentionHelper
 
 class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root),
     ViewTypeMessage {
@@ -43,7 +44,11 @@ class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
         showViewMessage(TypeMessage.MESSAGE)
-        v.tvSender.text = message.message
+        v.tvSender.text = if (message.mentions.isNotEmpty()) {
+            MentionHelper.applyMentionSpans(context, message.message, message.mentions)
+        } else {
+            message.message
+        }
         v.tvTime.text = DateUtils.convertTimeToHour(message.time)
         v.viewMessage.setOnLongClickListener {
             longClick.invoke(it)
