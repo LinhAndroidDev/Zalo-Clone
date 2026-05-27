@@ -41,6 +41,16 @@ data class ClickPhotoModel(
     val imageView: ImageView
 )
 
+data class LongClickPhotoModel(
+    val anchor: View,
+    val message: Message,
+    val photoUrl: String,
+    val fromSender: Boolean,
+    val photoIndex: Int = 0,
+    val intrinsicWidth: Int = 0,
+    val intrinsicHeight: Int = 0,
+)
+
 class ChatAdapter(
     private val context: Context,
     private val friendId: String,
@@ -427,6 +437,15 @@ class ChatAdapter(
                 )
             )
         }
+        attachPhotoLongClickListener(
+            anchor = imageView,
+            message = message,
+            photoUrl = photo,
+            fromSender = fromSender,
+            photoIndex = 0,
+            intrinsicWidth = width,
+            intrinsicHeight = height,
+        )
         if (isLikelyVideoUrl(photo)) {
             val frame = FrameLayout(context)
             frame.layoutParams = ViewGroup.LayoutParams(w, h)
@@ -443,6 +462,15 @@ class ChatAdapter(
                 isClickable = false
             }
             frame.addView(play)
+            attachPhotoLongClickListener(
+                anchor = frame,
+                message = message,
+                photoUrl = photo,
+                fromSender = fromSender,
+                photoIndex = 0,
+                intrinsicWidth = width,
+                intrinsicHeight = height,
+            )
             viewPhoto.addView(frame)
         } else {
             viewPhoto.addView(imageView)
@@ -466,31 +494,20 @@ class ChatAdapter(
     private fun drawViewMultiPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
         val photos = message.photos
         viewPhotos.removeAllViews()
-        if (photos.isEmpty()) return
-
         val row = ceil(photos.size / 3f).toInt()
-        val cellMax = screenWidth / 4 - 40
         for (i in 0 until row) {
             val layoutRow = LinearLayout(context)
             layoutRow.layoutParams =
                 ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
             layoutRow.orientation = LinearLayout.HORIZONTAL
-            layoutRow.gravity = Gravity.BOTTOM
             for (j in 3 * i until 3 * i + 3) {
                 if (j >= photos.size) break
-                val (iw, ih) = parsePhotoSizeToken(message.photoSizes, j)
-                val (fw, fh) = gridCellDisplaySize(iw, ih, cellMax)
-                val frame = FrameLayout(context)
-                frame.layoutParams =
-                    MarginLayoutParams(fw, fh).apply {
+                val imgPhoto = ImageView(context)
+                imgPhoto.layoutParams =
+                    MarginLayoutParams(screenWidth / 4 - 40, screenWidth / 4 - 40).apply {
                         bottomMargin = if (i == row - 1) 0 else 8
                         rightMargin = if (j == 3 * i + 2) 0 else 8
                     }
-                val imgPhoto = ImageView(context)
-                imgPhoto.layoutParams = FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
                 imgPhoto.transitionName = message.time
                 imgPhoto.setOnClickListener {
                     mCallBack?.onPhotoClick(
@@ -503,20 +520,19 @@ class ChatAdapter(
                         )
                     )
                 }
+                val (intrinsicW, intrinsicH) = parsePhotoSizeToken(message.photoSizes, j)
+                attachPhotoLongClickListener(
+                    anchor = imgPhoto,
+                    message = message,
+                    photoUrl = photos[j],
+                    fromSender = fromSender,
+                    photoIndex = j,
+                    intrinsicWidth = intrinsicW,
+                    intrinsicHeight = intrinsicH,
+                )
                 imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
                 context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
-                frame.addView(imgPhoto)
-                if (isLikelyVideoUrl(photos[j])) {
-                    val playSize = (28 * context.resources.displayMetrics.density).toInt()
-                    val play = ImageView(context).apply {
-                        layoutParams = FrameLayout.LayoutParams(playSize, playSize, Gravity.CENTER)
-                        setImageResource(R.drawable.ic_play)
-                        scaleType = ImageView.ScaleType.FIT_CENTER
-                        isClickable = false
-                    }
-                    frame.addView(play)
-                }
-                layoutRow.addView(frame)
+                layoutRow.addView(imgPhoto)
             }
             viewPhotos.addView(layoutRow)
         }
@@ -556,6 +572,31 @@ class ChatAdapter(
 
     private fun buildAudioKey(message: Message): String = "${message.time}_${message.audio.orEmpty()}"
 
+    private fun attachPhotoLongClickListener(
+        anchor: View,
+        message: Message,
+        photoUrl: String,
+        fromSender: Boolean,
+        photoIndex: Int,
+        intrinsicWidth: Int,
+        intrinsicHeight: Int,
+    ) {
+        anchor.setOnLongClickListener {
+            mCallBack?.onPhotoLongClick(
+                LongClickPhotoModel(
+                    anchor = it,
+                    message = message,
+                    photoUrl = photoUrl,
+                    fromSender = fromSender,
+                    photoIndex = photoIndex,
+                    intrinsicWidth = intrinsicWidth,
+                    intrinsicHeight = intrinsicHeight,
+                )
+            )
+            true
+        }
+    }
+
     /**
      * This interface used to handle click item in chat adapter
      */
@@ -563,6 +604,7 @@ class ChatAdapter(
         fun onSenderLongClick(data: (Pair<View, Message>))
         fun onReceiverLongClick(data: (Pair<View, Message>))
         fun onPhotoClick(data: ClickPhotoModel)
+        fun onPhotoLongClick(data: LongClickPhotoModel)
         fun onOptionMenuClick(msg: Message)
     }
 

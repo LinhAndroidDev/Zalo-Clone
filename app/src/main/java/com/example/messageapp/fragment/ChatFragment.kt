@@ -18,6 +18,7 @@ import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
@@ -35,6 +36,7 @@ import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.adapter.ClickPhotoModel
+import com.example.messageapp.adapter.LongClickPhotoModel
 import com.example.messageapp.adapter.MentionSuggestionAdapter
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
@@ -48,11 +50,13 @@ import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.MessageMention
 import com.example.messageapp.model.TypeMessage
+import kotlin.math.min
 import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.utils.MentionHelper
@@ -98,6 +102,17 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         override fun onReceiverLongClick(data: Pair<View, Message>) {
             showPopupOption(data.first, data.second, false)
+        }
+
+        override fun onPhotoLongClick(data: LongClickPhotoModel) {
+            showPopupOption(
+                anchor = data.anchor,
+                message = data.message,
+                isItemSender = data.fromSender,
+                photoPreviewUrl = data.photoUrl,
+                photoIntrinsicWidth = data.intrinsicWidth,
+                photoIntrinsicHeight = data.intrinsicHeight,
+            )
         }
 
         override fun onPhotoClick(data: ClickPhotoModel) {
@@ -245,12 +260,17 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
      * This is how to calculate so that the popup does not lose view when it is near the bottom of the screen.
      */
     @SuppressLint("MissingInflatedId", "InflateParams", "ClickableViewAccessibility")
-    private fun showPopupOption(anchor: View, message: Message, isItemSender: Boolean = true) {
+    private fun showPopupOption(
+        anchor: View,
+        message: Message,
+        isItemSender: Boolean = true,
+        photoPreviewUrl: String? = null,
+        photoIntrinsicWidth: Int = 0,
+        photoIntrinsicHeight: Int = 0,
+    ) {
         // Lấy LayoutInflater để inflate layout của PopupWindow
         val inflater = requireActivity().getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val popupView = inflater.inflate(R.layout.popup_option_chat, null)
-        val layoutSender: LinearLayout = popupView.findViewById(R.id.layoutSender)
-        val layoutReceiver: LinearLayout = popupView.findViewById(R.id.layoutReceiver)
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
         val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
         val layoutEmotion: LinearLayout = popupView.findViewById(R.id.layoutEmotion)
@@ -265,17 +285,15 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         soundEmotion.start()
         AnimatorUtils.scaleEmotion(requireActivity(), layoutEmotion)
 
-        if (isItemSender) {
-            layoutSender.isVisible = true
-            popupView.findViewById<TextView>(R.id.tvSender).text = message.message
-            popupView.findViewById<TextView>(R.id.tvTimeSender).text =
-                DateUtils.convertTimeToHour(message.time)
-        } else {
-            layoutReceiver.isVisible = true
-            popupView.findViewById<TextView>(R.id.tvReceiver).text = message.message
-            popupView.findViewById<TextView>(R.id.tvTimeReceiver).text =
-                DateUtils.convertTimeToHour(message.time)
-        }
+        bindPopupPreview(
+            popupView = popupView,
+            message = message,
+            isItemSender = isItemSender,
+            photoPreviewUrl = photoPreviewUrl,
+            photoIntrinsicWidth = photoIntrinsicWidth,
+            photoIntrinsicHeight = photoIntrinsicHeight,
+        )
+        btnCopy.isVisible = photoPreviewUrl == null
 
         // Tạo PopupWindow với chiều rộng và chiều cao
         val popupWindow = PopupWindow(
@@ -352,6 +370,130 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private fun reactToMessage(message: Message, type: EmotionType) {
         val cvt = conversation ?: return
         viewModel?.toggleMessageReaction(message.time, cvt, type)
+    }
+
+    private fun bindPopupPreview(
+        popupView: View,
+        message: Message,
+        isItemSender: Boolean,
+        photoPreviewUrl: String?,
+        photoIntrinsicWidth: Int,
+        photoIntrinsicHeight: Int,
+    ) {
+        val timeText = DateUtils.convertTimeToHour(message.time)
+        if (isItemSender) {
+            val layoutSender = popupView.findViewById<LinearLayout>(R.id.layoutSender)
+            val tvTimeSender = popupView.findViewById<TextView>(R.id.tvTimeSender)
+            layoutSender.isVisible = true
+            popupView.findViewById<LinearLayout>(R.id.layoutReceiver).isVisible = false
+            val tvSender = popupView.findViewById<TextView>(R.id.tvSender)
+            val cardPreview = popupView.findViewById<View>(R.id.cardPreviewSender)
+            val imgPreview = popupView.findViewById<ImageView>(R.id.imgPreviewSender)
+            if (photoPreviewUrl.isNullOrBlank()) {
+                applyTextBubblePreviewHeader(layoutSender, tvTimeSender, isSender = true)
+                tvTimeSender.text = timeText
+                tvSender.isVisible = true
+                tvSender.text = message.message
+                cardPreview.isVisible = false
+            } else {
+                applyPhotoPreviewHeader(layoutSender, tvTimeSender)
+                tvSender.isVisible = false
+                bindPhotoPreviewImage(
+                    imgPreview = imgPreview,
+                    cardPreview = cardPreview,
+                    photoUrl = photoPreviewUrl,
+                    intrinsicWidth = photoIntrinsicWidth,
+                    intrinsicHeight = photoIntrinsicHeight,
+                )
+            }
+            return
+        }
+
+        val layoutReceiver = popupView.findViewById<LinearLayout>(R.id.layoutReceiver)
+        val tvTimeReceiver = popupView.findViewById<TextView>(R.id.tvTimeReceiver)
+        layoutReceiver.isVisible = true
+        popupView.findViewById<LinearLayout>(R.id.layoutSender).isVisible = false
+        val tvReceiver = popupView.findViewById<TextView>(R.id.tvReceiver)
+        val cardPreview = popupView.findViewById<View>(R.id.cardPreviewReceiver)
+        val imgPreview = popupView.findViewById<ImageView>(R.id.imgPreviewReceiver)
+        if (photoPreviewUrl.isNullOrBlank()) {
+            applyTextBubblePreviewHeader(layoutReceiver, tvTimeReceiver, isSender = false)
+            tvTimeReceiver.text = timeText
+            tvReceiver.isVisible = true
+            tvReceiver.text = message.message
+            cardPreview.isVisible = false
+        } else {
+            applyPhotoPreviewHeader(layoutReceiver, tvTimeReceiver)
+            tvReceiver.isVisible = false
+            bindPhotoPreviewImage(
+                imgPreview = imgPreview,
+                cardPreview = cardPreview,
+                photoUrl = photoPreviewUrl,
+                intrinsicWidth = photoIntrinsicWidth,
+                intrinsicHeight = photoIntrinsicHeight,
+            )
+        }
+    }
+
+    private fun applyTextBubblePreviewHeader(
+        container: LinearLayout,
+        tvTime: TextView,
+        isSender: Boolean,
+    ) {
+        container.setBackgroundResource(
+            if (isSender) R.drawable.bg_sender else R.drawable.bg_receiver,
+        )
+        val density = resources.displayMetrics.density
+        val horizontalPad = (15 * density).toInt()
+        val verticalPad = (7 * density).toInt()
+        container.setPadding(horizontalPad, verticalPad, horizontalPad, verticalPad)
+        tvTime.isVisible = true
+    }
+
+    private fun applyPhotoPreviewHeader(container: LinearLayout, tvTime: TextView) {
+        container.background = null
+        container.setPadding(0, 0, 0, 0)
+        tvTime.isVisible = false
+    }
+
+    private fun bindPhotoPreviewImage(
+        imgPreview: ImageView,
+        cardPreview: View,
+        photoUrl: String,
+        intrinsicWidth: Int,
+        intrinsicHeight: Int,
+    ) {
+        val (displayW, displayH) = popupPreviewDisplaySize(intrinsicWidth, intrinsicHeight)
+        val layoutParams = (imgPreview.layoutParams as? FrameLayout.LayoutParams)
+            ?: FrameLayout.LayoutParams(displayW, displayH)
+        layoutParams.width = displayW
+        layoutParams.height = displayH
+        imgPreview.layoutParams = layoutParams
+        imgPreview.scaleType = ImageView.ScaleType.FIT_CENTER
+        cardPreview.isVisible = true
+        requireContext().loadImg(
+            photoUrl,
+            imgPreview,
+            R.drawable.bg_grey_equal,
+        )
+    }
+
+    private fun popupPreviewDisplaySize(intrinsicW: Int, intrinsicH: Int): Pair<Int, Int> {
+        val density = resources.displayMetrics.density
+        val endMargin = (15 * density).toInt()
+        val maxW = resources.getDimensionPixelSize(R.dimen.width_popup_options) - endMargin
+        val maxH = min((screenHeight * 0.48f).toInt(), (300 * density).toInt())
+
+        var w = intrinsicW
+        var h = intrinsicH
+        if (w <= 0 || h <= 0) {
+            w = maxW
+            h = (maxW * 0.75f).toInt()
+            return w to h
+        }
+
+        val scale = min(maxW / w.toFloat(), maxH / h.toFloat())
+        return maxOf(1, (w * scale).toInt()) to maxOf(1, (h * scale).toInt())
     }
 
     @Deprecated("Deprecated in Java")
