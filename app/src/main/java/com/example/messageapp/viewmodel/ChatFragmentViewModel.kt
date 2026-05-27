@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
@@ -42,6 +43,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     lateinit var presenceManager: PresenceManager
 
     private var typingListener: ListenerRegistration? = null
+    private var messageListener: ListenerRegistration? = null
     private var presenceUnsubscriber: (() -> Unit)? = null
     private var groupMemberReadListener: ListenerRegistration? = null
     private var groupMemberIds: List<String> = emptyList()
@@ -98,8 +100,9 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     /** Load messages for 1-1 or group chat. */
     fun getMessage(conversation: Conversation) = viewModelScope.launch {
+        stopMessageListener()
         val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, shared.getAuth())
-        FireBaseInstance.getMessage(
+        messageListener = FireBaseInstance.getMessage(
             idRoom,
             success = { result ->
                 val messageData = arrayListOf<Message>()
@@ -118,6 +121,11 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                 showError(error)
             },
         )
+    }
+
+    private fun stopMessageListener() {
+        messageListener?.remove()
+        messageListener = null
     }
 
     private fun isMessageInConversation(message: Message, conversation: Conversation): Boolean {
@@ -319,13 +327,38 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun toggleMessageReaction(time: String, conversation: Conversation, type: EmotionType) {
-        val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, shared.getAuth())
+        if (time.isBlank()) return
+        val userId = shared.getAuth()
+        val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, userId)
+        val currentList = _messages.value ?: return
+        val index = currentList.indexOfFirst { it.time == time }
+        if (index < 0) return
+
+        val target = currentList[index]
+        val previousEmotion = target.emotion
+        val merged = (target.emotion ?: Emotion()).toggleUserReaction(userId, type)
+        val updatedMessage = target.copy(
+            emotion = merged.takeUnless { it.emotionEmpty() },
+        )
+
+        val optimisticList = ArrayList(currentList)
+        optimisticList[index] = updatedMessage
+        _messages.value = optimisticList
+
         FireBaseInstance.toggleMessageReaction(
             time = time,
             idRoom = idRoom,
-            userId = shared.getAuth(),
+            userId = userId,
             type = type,
-            onFailure = { error -> showError(error) },
+            onFailure = { error ->
+                val rollbackList = ArrayList(_messages.value.orEmpty())
+                val rollbackIndex = rollbackList.indexOfFirst { it.time == time }
+                if (rollbackIndex >= 0) {
+                    rollbackList[rollbackIndex] = rollbackList[rollbackIndex].copy(emotion = previousEmotion)
+                    _messages.value = rollbackList
+                }
+                showError(error)
+            },
         )
     }
 
@@ -478,6 +511,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     override fun onCleared() {
         typingListener?.remove()
+        stopMessageListener()
         stopObservingFriendPresence()
         stopGroupReadTracking()
         super.onCleared()

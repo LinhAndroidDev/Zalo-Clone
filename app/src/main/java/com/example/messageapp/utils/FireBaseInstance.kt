@@ -138,9 +138,9 @@ object FireBaseInstance {
     fun getMessage(
         idRoom: String,
         success: (QuerySnapshot?) -> Unit,
-        failure: (String) -> Unit
-    ) {
-        db.collection(PATH_MESSAGE)
+        failure: (String) -> Unit,
+    ): ListenerRegistration {
+        return db.collection(PATH_MESSAGE)
             .document(idRoom)
             .collection(PATH_CHAT)
             .orderBy("time", Query.Direction.ASCENDING)

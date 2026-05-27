@@ -88,8 +88,8 @@ class ChatAdapter(
         val oldList = ArrayList(messages)
         val oldSize = oldList.size
         val diffResult = DiffUtil.calculateDiff(BaseDiffUtil(messages, newList,
-            areContentsTheSame = { old, new -> old.time == new.time },
-            areItemsTheSame = { old, new -> old == new }
+            areItemsTheSame = { old, new -> old.time == new.time },
+            areContentsTheSame = { old, new -> old == new },
         ))
         messages.clear()
         messages.addAll(newList)
