@@ -111,6 +111,12 @@
                         android:layout_height="match_parent"
                         android:src="@mipmap/ic_launcher" />
 
+                    <com.example.messageapp.custom.GroupAvatarView
+                        android:id="@+id/groupAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:visibility="gone" />
+
                     <View
                         android:id="@+id/onlineIndicator"
                         android:layout_width="14dp"

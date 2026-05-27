@@ -37,6 +37,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -326,6 +327,50 @@ object FireBaseInstance {
         getGroup(
             groupId = groupId,
             success = { group -> success.invoke(group.memberIds.distinct().filter { it.isNotBlank() }) },
+            failure = failure,
+        )
+    }
+
+    fun getGroupMemberAvatars(
+        groupId: String,
+        limit: Int = 3,
+        success: (memberCount: Int, avatarUrls: List<String>) -> Unit,
+        failure: (String) -> Unit = {},
+    ) {
+        getGroupMemberIds(
+            groupId = groupId,
+            success = { memberIds ->
+                val totalCount = memberIds.size
+                val idsToFetch = memberIds.take(limit)
+                if (idsToFetch.isEmpty()) {
+                    success.invoke(0, emptyList())
+                    return@getGroupMemberIds
+                }
+
+                val avatarUrls = Array(idsToFetch.size) { "" }
+                var completed = 0
+
+                fun finishIfDone() {
+                    if (completed == idsToFetch.size) {
+                        success.invoke(totalCount, avatarUrls.toList())
+                    }
+                }
+
+                idsToFetch.forEachIndexed { index, userId ->
+                    getUserById(
+                        userId = userId,
+                        success = { user ->
+                            avatarUrls[index] = user.avatar.orEmpty()
+                            completed++
+                            finishIfDone()
+                        },
+                        failure = {
+                            completed++
+                            finishIfDone()
+                        },
+                    )
+                }
+            },
             failure = failure,
         )
     }
@@ -982,7 +1027,7 @@ object FireBaseInstance {
         roomId: List<String>,
         onFileUploadProgress: (Float) -> Unit = { },
     ): String? {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             try {
                 val bytes = context.compressImage(uri)
                 onFileUploadProgress(0f)
@@ -1014,7 +1059,7 @@ object FireBaseInstance {
         roomId: List<String>,
         onFileUploadProgress: (Float) -> Unit = { },
     ): String? {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             try {
                 val bytes = context.readUriBytes(uri)
                 onFileUploadProgress(0f)

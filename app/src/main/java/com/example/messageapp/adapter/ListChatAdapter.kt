@@ -13,6 +13,7 @@ import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.GroupAvatarLoader
 import com.google.firebase.firestore.ListenerRegistration
 
 class ListChatAdapter(private val userId: String) :
@@ -35,6 +36,8 @@ class ListChatAdapter(private val userId: String) :
 
     override fun onViewRecycled(holder: BaseViewHolder<ItemListChatBinding>) {
         holder.clearGroupTypingListener()
+        GroupAvatarLoader.cancel(holder.v.groupAvatar.tag as? String)
+        holder.v.groupAvatar.reset()
         super.onViewRecycled(holder)
     }
 
@@ -78,20 +81,7 @@ class ListChatAdapter(private val userId: String) :
         v.tvTime.text = DateUtils.formatTime(conversation.time)
         bindOnlineIndicator(conversation)
         this.handleWhenConversationIsChanged(conversation)
-        if (conversation.isGroupThread()) {
-            if (conversation.friendImage.isNotBlank()) {
-                itemView.context.loadImg(conversation.friendImage, v.avatarFriend)
-                itemView.context.loadImg(conversation.friendImage, v.avtSeen)
-            } else {
-                v.avatarFriend.setImageResource(R.drawable.bg_grey_equal)
-                v.avtSeen.setImageResource(R.drawable.bg_grey_equal)
-            }
-        } else {
-            FireBaseInstance.getInfoUser(conversation.friendId) { user ->
-                itemView.context.loadImg(user.avatar.toString(), v.avatarFriend)
-                itemView.context.loadImg(user.avatar.toString(), v.avtSeen)
-            }
-        }
+        bindAvatar(conversation)
         v.itemChat.setOnClickListener {
             onClickView?.invoke(conversation)
         }
@@ -117,6 +107,46 @@ class ListChatAdapter(private val userId: String) :
             }
 
         })
+    }
+
+    private fun BaseViewHolder<ItemListChatBinding>.bindAvatar(conversation: Conversation) {
+        val friendId = conversation.friendId
+
+        if (conversation.isGroupThread()) {
+            v.avatarFriend.isVisible = false
+            v.groupAvatar.isVisible = true
+            v.groupAvatar.tag = friendId
+
+            if (conversation.friendImage.isNotBlank()) {
+                v.groupAvatar.showSinglePhoto(conversation.friendImage)
+            } else {
+                v.groupAvatar.showPlaceholder()
+                GroupAvatarLoader.load(
+                    groupId = friendId,
+                    onReady = { data ->
+                        if (v.groupAvatar.tag != friendId) return@load
+                        v.groupAvatar.bindMemberAvatars(data.avatarUrls, data.totalCount)
+                    },
+                    onError = {
+                        if (v.groupAvatar.tag != friendId) return@load
+                        v.groupAvatar.showPlaceholder()
+                    },
+                )
+            }
+            return
+        }
+
+        v.groupAvatar.isVisible = false
+        v.groupAvatar.reset()
+        v.avatarFriend.isVisible = true
+        v.avatarFriend.tag = friendId
+
+        FireBaseInstance.getInfoUser(friendId) { user ->
+            if (v.avatarFriend.tag != friendId) return@getInfoUser
+            val avatarUrl = user.avatar.orEmpty()
+            itemView.context.loadImg(avatarUrl, v.avatarFriend)
+            itemView.context.loadImg(avatarUrl, v.avtSeen)
+        }
     }
 
     private fun BaseViewHolder<ItemListChatBinding>.clearGroupTypingListener() {

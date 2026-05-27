@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="android.widget.FrameLayout">
+
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/imgSingle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:src="@drawable/bg_grey_equal"
+        android:visibility="gone"
+        app:civ_border_color="@color/white"
+        app:civ_border_width="1dp"
+        tools:visibility="visible" />
+
+    <FrameLayout
+        android:id="@+id/layoutComposite"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/slot1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:src="@drawable/bg_grey_equal"
+            android:visibility="gone"
+            app:civ_border_color="@color/white"
+            app:civ_border_width="1.5dp"
+            tools:visibility="visible" />
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/slot2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:src="@drawable/bg_grey_equal"
+            android:visibility="gone"
+            app:civ_border_color="@color/white"
+            app:civ_border_width="1.5dp" />
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/slot3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:src="@drawable/bg_grey_equal"
+            android:visibility="gone"
+            app:civ_border_color="@color/white"
+            app:civ_border_width="1.5dp" />
+
+        <TextView
+            android:id="@+id/tvMore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_circle_stroke_1"
+            android:gravity="center"
+            android:textColor="@color/grey_2"
+            android:textSize="14sp"
+            android:visibility="gone"
+            tools:ignore="SmallSp"
+            tools:text="2"
+            tools:visibility="visible" />
+    </FrameLayout>
+</merge>
