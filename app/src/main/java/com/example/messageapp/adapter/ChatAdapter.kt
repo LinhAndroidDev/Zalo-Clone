@@ -27,8 +27,6 @@ import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 import kotlin.math.ceil
-import kotlin.math.max
-import kotlin.math.min
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
@@ -106,7 +104,7 @@ class ChatAdapter(
         val newSize = messages.size
         diffResult.dispatchUpdatesTo(this)
         // Khi chỉ nối thêm ở cuối, Diff thường không rebind hàng "cuối cũ" → viewBottom + cluster vẫn như lúc là last.
-        val appendedAtEnd = newSize > oldSize && oldSize > 0 &&
+        val appendedAtEnd = oldSize in 1..<newSize &&
             newList.size >= oldSize &&
             (0 until oldSize).all { i -> oldList[i] == newList[i] }
         if (appendedAtEnd) {
@@ -248,7 +246,7 @@ class ChatAdapter(
         val tPrev = messageTimeMillis(prev) ?: return false
         val tCurr = messageTimeMillis(curr) ?: return false
         val delta = tCurr - tPrev
-        return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
+        return delta in 0..MESSAGE_GROUP_GAP_MS
     }
 
     /** Tin liền sau cùng người gửi và trong [MESSAGE_GROUP_GAP_MS]. */
@@ -260,7 +258,7 @@ class ChatAdapter(
         val tCurr = messageTimeMillis(curr) ?: return false
         val tNext = messageTimeMillis(next) ?: return false
         val delta = tNext - tCurr
-        return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
+        return delta in 0..MESSAGE_GROUP_GAP_MS
     }
 
     /**
@@ -387,15 +385,6 @@ class ChatAdapter(
         val w = token.substring(0, ix).toIntOrNull() ?: return 0 to 0
         val h = token.substring(ix + 1).toIntOrNull() ?: return 0 to 0
         return w to h
-    }
-
-    /**
-     * Thu nhỏ media vào ô vuông tối đa [maxSide] nhưng giữ tỉ lệ (dùng trong lưới nhiều ảnh/video).
-     */
-    private fun gridCellDisplaySize(intrinsicW: Int, intrinsicH: Int, maxSide: Int): Pair<Int, Int> {
-        if (intrinsicW <= 0 || intrinsicH <= 0) return maxSide to maxSide
-        val scale = min(maxSide / intrinsicW.toFloat(), maxSide / intrinsicH.toFloat())
-        return max(1, (intrinsicW * scale).toInt()) to max(1, (intrinsicH * scale).toInt())
     }
 
     /**
