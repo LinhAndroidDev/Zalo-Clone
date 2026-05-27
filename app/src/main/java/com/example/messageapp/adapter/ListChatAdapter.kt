@@ -13,6 +13,7 @@ import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.google.firebase.firestore.ListenerRegistration
 
 class ListChatAdapter(private val userId: String) :
     BaseAdapter<Conversation, ItemListChatBinding>() {
@@ -30,6 +31,11 @@ class ListChatAdapter(private val userId: String) :
         binderHelper.bind(holder.v.swipeLayout, position.toString())
         binderHelper.setOpenOnlyOne(true)
         holder.initView(position)
+    }
+
+    override fun onViewRecycled(holder: BaseViewHolder<ItemListChatBinding>) {
+        holder.clearGroupTypingListener()
+        super.onViewRecycled(holder)
     }
 
     fun updateDiffConversation(conversations : ArrayList<Conversation>) {
@@ -52,9 +58,16 @@ class ListChatAdapter(private val userId: String) :
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
         v.tvNameFriend.text = conversation.name
+        clearGroupTypingListener()
         if (conversation.isGroupThread()) {
-            v.typingView.isVisible = false
-            v.tvMessage.isVisible = true
+            val registration = FireBaseInstance.observeGroupTyping(
+                groupId = conversation.friendId,
+                myUserId = userId,
+            ) { isTyping ->
+                v.typingView.isVisible = isTyping
+                v.tvMessage.isVisible = !isTyping
+            }
+            itemView.setTag(R.id.tag_group_typing_listener, registration)
         } else {
             FireBaseInstance.getConversationRlt(conversation.friendId, userId) { cvt ->
                 v.typingView.isVisible = cvt.typing
@@ -104,6 +117,11 @@ class ListChatAdapter(private val userId: String) :
             }
 
         })
+    }
+
+    private fun BaseViewHolder<ItemListChatBinding>.clearGroupTypingListener() {
+        (itemView.getTag(R.id.tag_group_typing_listener) as? ListenerRegistration)?.remove()
+        itemView.setTag(R.id.tag_group_typing_listener, null)
     }
 
     private fun BaseViewHolder<ItemListChatBinding>.bindOnlineIndicator(conversation: Conversation) {
