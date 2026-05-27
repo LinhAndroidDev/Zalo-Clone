@@ -6,7 +6,7 @@ import android.widget.Toast
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
-import com.example.messageapp.model.Emotion
+import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.UserPresence
@@ -314,18 +314,14 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
-    /**
-     * This function used to release emotion
-     * @param time time message sent
-     * @param friendId key auth of friend
-     * @param data data emotion
-     */
-    fun releaseEmotion(time: String, conversation: Conversation, data: Emotion) {
+    fun toggleMessageReaction(time: String, conversation: Conversation, type: EmotionType) {
         val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, shared.getAuth())
-        FireBaseInstance.releaseEmotion(
+        FireBaseInstance.toggleMessageReaction(
             time = time,
             idRoom = idRoom,
-            data = data,
+            userId = shared.getAuth(),
+            type = type,
+            onFailure = { error -> showError(error) },
         )
     }
 

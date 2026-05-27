@@ -7,6 +7,7 @@ import com.example.messageapp.MyApplication
 import com.example.messageapp.R
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
+import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Friend
 import com.example.messageapp.model.FriendRequest
 import com.example.messageapp.model.Message
@@ -1133,20 +1134,34 @@ object FireBaseInstance {
     }
 
     /**
-     * This function is used to release emotion from the FireStore database
-     * @param time time message sent
-     * @param idRoom id room of chat room
-     * @param data data emotion
+     * Toggle a reaction on a message. One reaction per user; same type toggles off.
      */
-    fun releaseEmotion(time: String, idRoom: String, data: Emotion) {
-        db.collection(PATH_MESSAGE)
+    fun toggleMessageReaction(
+        time: String,
+        idRoom: String,
+        userId: String,
+        type: EmotionType,
+        onFailure: (String) -> Unit = {},
+    ) {
+        if (time.isBlank() || idRoom.isBlank() || userId.isBlank()) return
+        val messageRef = db.collection(PATH_MESSAGE)
             .document(idRoom)
             .collection(PATH_CHAT)
             .document(time)
-            .set(
-                mapOf(PATH_EMOTION to data),
-                SetOptions.mergeFields(PATH_EMOTION)
-            )
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(messageRef)
+            val current = snapshot.toObject(Message::class.java)?.emotion ?: Emotion()
+            val merged = current.toggleUserReaction(userId, type)
+            if (merged.emotionEmpty()) {
+                transaction.update(messageRef, PATH_EMOTION, FieldValue.delete())
+            } else {
+                transaction.update(messageRef, PATH_EMOTION, merged)
+            }
+            null
+        }.addOnFailureListener { error ->
+            Log.e("toggleMessageReaction", error.message.orEmpty())
+            onFailure.invoke(error.message ?: "Không thể cập nhật cảm xúc")
+        }
     }
 
     /**

@@ -43,7 +43,7 @@ import com.example.messageapp.bottom_sheet.BottomSheetSticker
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
-import com.example.messageapp.model.Emotion
+import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.UserPresence
@@ -298,39 +298,34 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         imgFavourite.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(favourite = data)
-            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
+            reactToMessage(message, EmotionType.FAVOURITE)
             popupWindow.dismiss()
         }
 
         imgLike.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(like = data)
-            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
+            reactToMessage(message, EmotionType.LIKE)
             popupWindow.dismiss()
         }
 
         imgLaugh.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(laugh = data)
-            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
+            reactToMessage(message, EmotionType.LAUGH)
             popupWindow.dismiss()
         }
 
         imgCry.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(cry = data)
-            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
+            reactToMessage(message, EmotionType.CRY)
             popupWindow.dismiss()
         }
 
         imgAngry.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(angry = data)
-            viewModel?.releaseEmotion(message.time, conversation!!, data = emotion)
+            reactToMessage(message, EmotionType.ANGRY)
             popupWindow.dismiss()
         }
+    }
+
+    private fun reactToMessage(message: Message, type: EmotionType) {
+        val cvt = conversation ?: return
+        viewModel?.toggleMessageReaction(message.time, cvt, type)
     }
 
     @Deprecated("Deprecated in Java")
