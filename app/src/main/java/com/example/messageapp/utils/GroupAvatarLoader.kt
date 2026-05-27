@@ -43,8 +43,7 @@ object GroupAvatarLoader {
         FireBaseInstance.getGroupMemberAvatars(
             groupId = groupId,
             success = { totalCount, avatarUrls ->
-                val list = avatarUrls - avatarUrls[0]
-                val data = GroupAvatarData(totalCount = totalCount - 1, avatarUrls = list)
+                val data = GroupAvatarData(totalCount = totalCount - 1, avatarUrls = avatarUrls)
                 cache[groupId] = data
                 dispatch(groupId, Result.success(data))
             },

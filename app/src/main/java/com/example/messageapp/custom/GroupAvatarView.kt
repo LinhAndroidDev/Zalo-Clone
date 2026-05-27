@@ -59,13 +59,13 @@ class GroupAvatarView @JvmOverloads constructor(
         hideCompositeSlots()
 
         val urls = avatarUrls.take(3)
-        when {
-            totalMemberCount == 1 -> showOne(urls.firstOrNull().orEmpty())
-            totalMemberCount == 2 -> showTwo(
+        when (totalMemberCount) {
+            1 -> showOne(urls.firstOrNull().orEmpty())
+            2 -> showTwo(
                 urls.getOrElse(0) { "" },
                 urls.getOrElse(1) { "" },
             )
-            totalMemberCount == 3 -> showThree(
+            3 -> showThree(
                 urls.getOrElse(0) { "" },
                 urls.getOrElse(1) { "" },
                 urls.getOrElse(2) { "" },
@@ -85,14 +85,21 @@ class GroupAvatarView @JvmOverloads constructor(
     }
 
     private fun showOne(url: String) {
-        layoutSlotAt(binding.slot1, AVATAR_SIZE_ONE, 2, 2, elevation = 1f)
+        val inset = (CONTAINER_SIZE - AVATAR_SIZE_ONE) / 2
+        layoutSlotAt(binding.slot1, AVATAR_SIZE_ONE, inset, inset, elevation = 1f)
         binding.slot1.isVisible = true
         loadSlot(url, binding.slot1)
     }
 
     private fun showTwo(leftUrl: String, rightUrl: String) {
-        layoutSlotAt(binding.slot1, AVATAR_SIZE_TWO, xDp = 4, yDp = 12, elevation = 1f)
-        layoutSlotAt(binding.slot2, AVATAR_SIZE_TWO, xDp = 28, yDp = 12, elevation = 2f)
+        val size = AVATAR_SIZE_TWO
+        val overlap = OVERLAP_TWO
+        val totalWidth = size * 2 - overlap
+        val startX = (CONTAINER_SIZE - totalWidth) / 2
+        val startY = (CONTAINER_SIZE - size) / 2
+
+        layoutSlotAt(binding.slot1, size, xDp = startX, yDp = startY, elevation = 1f)
+        layoutSlotAt(binding.slot2, size, xDp = startX + size - overlap, yDp = startY, elevation = 2f)
         binding.slot1.isVisible = true
         binding.slot2.isVisible = true
         loadSlot(leftUrl, binding.slot1)
@@ -169,8 +176,10 @@ class GroupAvatarView @JvmOverloads constructor(
     }
 
     private companion object {
+        const val CONTAINER_SIZE = 60
         const val AVATAR_SIZE_ONE = 56
-        const val AVATAR_SIZE_TWO = 36
+        const val AVATAR_SIZE_TWO = 40
+        const val OVERLAP_TWO = 20
         const val AVATAR_SIZE_THREE = 34
         const val AVATAR_SIZE_SQUARE = 28
         const val OVERLAP_SQUARE = 6
