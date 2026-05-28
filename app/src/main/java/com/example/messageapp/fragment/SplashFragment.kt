@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
@@ -54,8 +55,16 @@ class SplashFragment : BaseFragment<FragmentSplashBinding, SplashFragmentViewMod
     }
 
     private fun goToChatFragment(conversation: Conversation) {
-        val action = SplashFragmentDirections.actionSplashFragmentToChatFragment(conversation)
-        findNavController().navigate(action)
+        val navController = findNavController()
+        navController.navigate(
+            R.id.homeFragment,
+            null,
+            NavOptions.Builder()
+                .setPopUpTo(R.id.splashFragment, true)
+                .build()
+        )
+        val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(conversation)
+        navController.navigate(action)
     }
 
     override fun onResume() {

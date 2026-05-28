@@ -136,8 +136,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             if (isFragmentCurrent(R.id.loginFragment)) {
                 backToFragment(R.id.introFragment)
-            } else if(isFragmentCurrent(R.id.chatFragment)) {
-                backToFragment(R.id.homeFragment)
             } else {
                 super.onBackPressed()
             }
