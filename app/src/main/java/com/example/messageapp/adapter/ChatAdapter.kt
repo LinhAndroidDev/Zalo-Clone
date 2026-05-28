@@ -6,7 +6,6 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
@@ -19,6 +18,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
+import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
@@ -38,6 +38,7 @@ import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.MessageReplyHelper
 import com.example.messageapp.utils.MentionHelper
 import kotlin.math.ceil
+import androidx.core.graphics.drawable.toDrawable
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
@@ -79,9 +80,9 @@ class ChatAdapter(
         /** Khoảng tối đa giữa hai tin cùng người gửi để gộp nhóm (kiểu Zalo / iMessage). */
         private const val MESSAGE_GROUP_GAP_MS = 3 * 60 * 1000L
         private const val PAYLOAD_REPLY_HIGHLIGHT = "reply_highlight"
-        private const val REPLY_HIGHLIGHT_HOLD_MS = 1600L
-        private const val REPLY_HIGHLIGHT_FADE_MS = 900L
-        private const val REPLY_HIGHLIGHT_FADE_DELAY_MS = 450L
+        private const val REPLY_HIGHLIGHT_HOLD_MS = 2400L
+        private const val REPLY_HIGHLIGHT_FADE_MS = 1200L
+        private const val REPLY_HIGHLIGHT_FADE_DELAY_MS = 800L
         private const val BUBBLE_NORMAL_STROKE_DP = 0.8f
         private const val BUBBLE_HIGHLIGHT_STROKE_DP = 2f
         private val HIGHLIGHT_ANIMATOR_TAG = "chat_reply_highlight_anim".hashCode()
@@ -90,8 +91,9 @@ class ChatAdapter(
 
     private data class ReplyHighlightState(
         val bubbleView: View?,
-        val bubbleDrawableRes: Int,
-        val normalStrokeColor: Int,
+        val bubbleDrawableRes: Int = 0,
+        val normalStrokeColor: Int = 0,
+        val foregroundCornerRadiusPx: Float = 0f,
     )
 
     private var highlightedMessageTime: String? = null
@@ -102,6 +104,7 @@ class ChatAdapter(
         setHasStableIds(true)
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     fun updateReplyNameContext(
         myName: String,
         peerDisplayName: String,
@@ -151,7 +154,8 @@ class ChatAdapter(
     fun updateDiffList(newList: List<Message>) {
         val oldList = ArrayList(messages)
         val oldSize = oldList.size
-        val diffResult = DiffUtil.calculateDiff(BaseDiffUtil(messages, newList,
+        val diffResult = DiffUtil.calculateDiff(BaseDiffUtil(
+            messages, newList,
             areItemsTheSame = { old, new -> old.time == new.time },
             areContentsTheSame = { old, new -> old == new },
         ))
@@ -202,8 +206,42 @@ class ChatAdapter(
      */
     override fun getItemCount(): Int = messages.size
 
-    fun indexOfMessageTime(time: String): Int =
-        messages.indexOfFirst { it.time == time }
+    fun indexOfMessageTime(time: String): Int {
+        val normalized = time.trim()
+        if (normalized.isBlank()) return -1
+        return messages.indexOfFirst { it.time.trim() == normalized }
+    }
+
+    /** Ước lượng chiều cao item để căn giữa khi cuộn tới tin ảnh/audio/text. */
+    fun estimateScrollItemHeightPx(index: Int): Int {
+        val message = messages.getOrNull(index) ?: return defaultScrollItemHeightPx()
+        val density = context.resources.displayMetrics.density
+        val cardExtraPx = (13 * density).toInt()
+        return when (MessageReplyHelper.resolveMessageType(message)) {
+            TypeMessage.MESSAGE -> defaultScrollItemHeightPx()
+            TypeMessage.AUDIO -> (58 * density).toInt() + cardExtraPx
+            TypeMessage.SINGLE_PHOTO -> estimateSinglePhotoScrollHeightPx(message) + cardExtraPx
+            TypeMessage.PHOTOS -> estimateMultiPhotoScrollHeightPx(message) + cardExtraPx
+        }
+    }
+
+    private fun defaultScrollItemHeightPx(): Int {
+        return (72 * context.resources.displayMetrics.density).toInt()
+    }
+
+    private fun estimateSinglePhotoScrollHeightPx(message: Message): Int {
+        val width = message.singlePhoto.getOrNull(1)?.toIntOrNull() ?: 0
+        val height = message.singlePhoto.getOrNull(2)?.toIntOrNull() ?: 0
+        if (width <= 0 || height <= 0) return screenWidth / 2
+        return bubbleDisplaySizeForPositive(width, height).second
+    }
+
+    private fun estimateMultiPhotoScrollHeightPx(message: Message): Int {
+        val rowCount = ceil(message.photos.size / 3f).toInt().coerceAtLeast(1)
+        val cellSize = screenWidth / 4 - 40
+        val rowGap = 8
+        return rowCount * cellSize + (rowCount - 1).coerceAtLeast(0) * rowGap
+    }
 
     fun flashReplyHighlight(messageTime: String) {
         val index = indexOfMessageTime(messageTime)
@@ -365,9 +403,7 @@ class ChatAdapter(
         val highlightState = buildReplyHighlightState(holder, message, position)
         row.setTag(HIGHLIGHT_STATE_TAG, highlightState)
 
-        val rowDrawable = ColorDrawable(
-            ContextCompat.getColor(context, R.color.reply_scroll_highlight),
-        )
+        val rowDrawable = ContextCompat.getColor(context, R.color.reply_scroll_highlight).toDrawable()
         row.background = rowDrawable
 
         highlightState.bubbleView?.let { bubble ->
@@ -403,22 +439,56 @@ class ChatAdapter(
         message: Message,
         position: Int,
     ): ReplyHighlightState {
-        if (TypeMessage.of(message.type) != TypeMessage.MESSAGE) {
-            return ReplyHighlightState(null, 0, 0)
-        }
+        val density = context.resources.displayMetrics.density
+        val photoCornerRadiusPx = 5f * density
         return when (holder) {
-            is SenderViewHolder -> ReplyHighlightState(
-                bubbleView = holder.v.viewMessage,
-                bubbleDrawableRes = senderGroupedTextBubbleDrawable(position),
-                normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
-            )
-            is ReceiverViewHolder -> ReplyHighlightState(
-                bubbleView = holder.v.viewMessage,
-                bubbleDrawableRes = receiverGroupedTextBubbleDrawable(position),
-                normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
-            )
-            else -> ReplyHighlightState(null, 0, 0)
+            is SenderViewHolder -> when (MessageReplyHelper.resolveMessageType(message)) {
+                TypeMessage.MESSAGE -> ReplyHighlightState(
+                    bubbleView = holder.v.viewMessage,
+                    bubbleDrawableRes = senderGroupedTextBubbleDrawable(position),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
+                )
+                TypeMessage.SINGLE_PHOTO, TypeMessage.PHOTOS -> ReplyHighlightState(
+                    bubbleView = photoHighlightTarget(holder.v.layoutPhoto),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                    foregroundCornerRadiusPx = photoCornerRadiusPx,
+                )
+                TypeMessage.AUDIO -> ReplyHighlightState(
+                    bubbleView = holder.v.viewRecordWave.findViewById(R.id.viewRecord),
+                    bubbleDrawableRes = R.drawable.bg_sender,
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
+                )
+            }
+            is ReceiverViewHolder -> when (MessageReplyHelper.resolveMessageType(message)) {
+                TypeMessage.MESSAGE -> ReplyHighlightState(
+                    bubbleView = holder.v.viewMessage,
+                    bubbleDrawableRes = receiverGroupedTextBubbleDrawable(position),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                )
+                TypeMessage.SINGLE_PHOTO, TypeMessage.PHOTOS -> ReplyHighlightState(
+                    bubbleView = photoHighlightTarget(holder.v.layoutPhoto),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                    foregroundCornerRadiusPx = photoCornerRadiusPx,
+                )
+                TypeMessage.AUDIO -> ReplyHighlightState(
+                    bubbleView = holder.v.viewRecordWave.findViewById(R.id.viewRecord),
+                    bubbleDrawableRes = R.drawable.bg_receiver,
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                )
+            }
+            else -> ReplyHighlightState(bubbleView = null)
         }
+    }
+
+    private fun photoHighlightTarget(layoutPhoto: LinearLayout): View? {
+        if (!layoutPhoto.isVisible) return null
+        for (i in 0 until layoutPhoto.childCount) {
+            val child = layoutPhoto.getChildAt(i)
+            if (child is CardView && child.id != R.id.optionMenuPhoto) {
+                return child
+            }
+        }
+        return layoutPhoto
     }
 
     private fun applyBubbleStrokeHighlight(
@@ -426,6 +496,10 @@ class ChatAdapter(
         state: ReplyHighlightState,
         alpha: Int,
     ) {
+        if (state.foregroundCornerRadiusPx > 0f) {
+            applyForegroundStrokeHighlight(bubble, state, alpha)
+            return
+        }
         if (state.bubbleDrawableRes == 0) return
         val drawable = ((bubble.background as? GradientDrawable)?.mutate() as? GradientDrawable)
             ?: (ContextCompat.getDrawable(context, state.bubbleDrawableRes)?.mutate() as? GradientDrawable)
@@ -444,12 +518,42 @@ class ChatAdapter(
         bubble.background = drawable
     }
 
+    private fun applyForegroundStrokeHighlight(
+        bubble: View,
+        state: ReplyHighlightState,
+        alpha: Int,
+    ) {
+        val ratio = alpha / 255f
+        val density = context.resources.displayMetrics.density
+        val normalStrokePx = (BUBBLE_NORMAL_STROKE_DP * density).toInt().coerceAtLeast(1)
+        val highlightStrokePx = (BUBBLE_HIGHLIGHT_STROKE_DP * density).toInt()
+            .coerceAtLeast(normalStrokePx + 1)
+        val strokeWidth = (normalStrokePx + (highlightStrokePx - normalStrokePx) * ratio).toInt()
+            .coerceAtLeast(normalStrokePx)
+        val highlightStrokeColor = ContextCompat.getColor(context, R.color.reply_bubble_stroke_highlight)
+        val strokeColor = blendColors(state.normalStrokeColor, highlightStrokeColor, ratio)
+
+        val overlay = (bubble.foreground as? GradientDrawable)?.mutate() as? GradientDrawable
+            ?: GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
+                cornerRadius = state.foregroundCornerRadiusPx
+            }
+        overlay.cornerRadius = state.foregroundCornerRadiusPx
+        overlay.setStroke(strokeWidth, strokeColor)
+        bubble.foreground = overlay
+    }
+
     private fun restoreReplyHighlightVisuals(row: View) {
         row.background = null
         row.setTag(HIGHLIGHT_ANIMATOR_TAG, null)
         val state = row.getTag(HIGHLIGHT_STATE_TAG) as? ReplyHighlightState
-        if (state?.bubbleView != null && state.bubbleDrawableRes != 0) {
-            state.bubbleView.setBackgroundResource(state.bubbleDrawableRes)
+        val bubble = state?.bubbleView
+        if (bubble != null) {
+            if (state.foregroundCornerRadiusPx > 0f) {
+                bubble.foreground = null
+            } else if (state.bubbleDrawableRes != 0) {
+                bubble.setBackgroundResource(state.bubbleDrawableRes)
+            }
         }
         row.setTag(HIGHLIGHT_STATE_TAG, null)
     }

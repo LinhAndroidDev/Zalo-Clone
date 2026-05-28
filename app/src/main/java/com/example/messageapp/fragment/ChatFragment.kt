@@ -13,6 +13,7 @@ import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Rect
 import android.media.MediaPlayer
 import android.net.Uri
 import android.view.LayoutInflater
@@ -29,6 +30,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -52,6 +55,7 @@ import com.example.messageapp.model.Message
 import com.example.messageapp.model.MessageMention
 import android.view.inputmethod.InputMethodManager
 import com.example.messageapp.model.TypeMessage
+import kotlin.math.max
 import kotlin.math.min
 import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.AnimatorUtils
@@ -882,7 +886,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             scrollHighlightToken = null
             replyHighlightScrollListener?.let { recyclerView.removeOnScrollListener(it) }
             replyHighlightScrollListener = null
-            chatAdapter?.flashReplyHighlight(messageTime)
+            nudgeToReplyScrollOffset(recyclerView, index) {
+                chatAdapter?.flashReplyHighlight(messageTime)
+            }
         }
 
         val listener = object : RecyclerView.OnScrollListener() {
@@ -893,10 +899,102 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
         replyHighlightScrollListener = listener
         recyclerView.addOnScrollListener(listener)
-        recyclerView.smoothScrollToPosition(index)
 
-        // Tin đã nằm trong viewport — smoothScroll có thể không kích hoạt SCROLL_STATE_IDLE.
-        recyclerView.postDelayed({ finishScrollAndHighlight() }, 500L)
+        recyclerView.post { smoothScrollToMessageWithOffset(recyclerView, index) }
+
+        // Item đã ở đúng vùng nhìn — smoothScroll có thể không chạy.
+        recyclerView.postDelayed({
+            if (scrollHighlightToken !== scrollToken) return@postDelayed
+            if (recyclerView.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
+                finishScrollAndHighlight()
+            }
+        }, 700L)
+    }
+
+    private fun smoothScrollToMessageWithOffset(recyclerView: RecyclerView, index: Int) {
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: run {
+            recyclerView.smoothScrollToPosition(index)
+            return
+        }
+        val scroller = object : LinearSmoothScroller(recyclerView.context) {
+            override fun getVerticalSnapPreference(): Int = SNAP_TO_START
+
+            override fun calculateDyToMakeVisible(view: View, snapPreference: Int): Int {
+                val topOffsetPx = replyScrollTopOffsetPx(recyclerView, index, view.height)
+                return layoutManager.getDecoratedTop(view) - layoutManager.paddingTop - topOffsetPx
+            }
+        }
+        scroller.targetPosition = index
+        layoutManager.startSmoothScroll(scroller)
+    }
+
+    /** Chỉnh nhẹ vị trí sau smooth scroll để khớp offset (vẫn có animation). */
+    private fun nudgeToReplyScrollOffset(
+        recyclerView: RecyclerView,
+        index: Int,
+        onComplete: () -> Unit,
+    ) {
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: run {
+            onComplete()
+            return
+        }
+        val targetView = layoutManager.findViewByPosition(index)
+        if (targetView == null) {
+            layoutManager.scrollToPositionWithOffset(
+                index,
+                replyScrollTopOffsetPx(recyclerView, index),
+            )
+            recyclerView.post(onComplete)
+            return
+        }
+        val topOffsetPx = replyScrollTopOffsetPx(recyclerView, index, targetView.height)
+        val dy = layoutManager.getDecoratedTop(targetView) - layoutManager.paddingTop - topOffsetPx
+        if (kotlin.math.abs(dy) <= 2) {
+            onComplete()
+            return
+        }
+        recyclerView.smoothScrollBy(0, dy)
+        val tuneListener = object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                if (newState != RecyclerView.SCROLL_STATE_IDLE) return
+                rv.removeOnScrollListener(this)
+                onComplete()
+            }
+        }
+        recyclerView.addOnScrollListener(tuneListener)
+    }
+
+    /**
+     * Offset từ mép trên RecyclerView tới item đích.
+     * Dùng vùng nhìn thấy trên màn hình (không dùng recyclerView.height vì layout wrap_content).
+     */
+    private fun replyScrollTopOffsetPx(
+        recyclerView: RecyclerView,
+        index: Int,
+        itemHeightPx: Int? = null,
+    ): Int {
+        val density = recyclerView.resources.displayMetrics.density
+        // ~2 dòng tin dưới header.
+        val minOffsetPx = (120 * density).toInt()
+        val visibleHeight = visibleChatListHeightPx(recyclerView)
+        if (visibleHeight <= 0) return minOffsetPx
+
+        val heightForCenter = itemHeightPx
+            ?: chatAdapter?.estimateScrollItemHeightPx(index)
+            ?: (64 * density).toInt()
+        val centeredOffsetPx = (visibleHeight - heightForCenter) / 2
+        return max(minOffsetPx, centeredOffsetPx)
+    }
+
+    private fun visibleChatListHeightPx(recyclerView: RecyclerView): Int {
+        val visibleRect = Rect()
+        if (recyclerView.getGlobalVisibleRect(visibleRect) && visibleRect.height() > 0) {
+            return visibleRect.height()
+        }
+        val density = recyclerView.resources.displayMetrics.density
+        val headerHeight = binding?.header?.height ?: (56 * density).toInt()
+        val bottomBarHeight = (130 * density).toInt()
+        return (screenHeight - headerHeight - bottomBarHeight).coerceAtLeast((200 * density).toInt())
     }
 
     private fun setupMentionPicker() {
