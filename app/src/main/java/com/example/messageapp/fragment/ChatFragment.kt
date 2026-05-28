@@ -70,6 +70,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import java.io.File
+import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() {
@@ -119,7 +120,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             val url = data.photoData.getOrNull(data.indexOfPhoto) ?: return
             if (isLikelyVideoUrl(url)) {
                 val viewIntent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(Uri.parse(url), "video/*")
+                    setDataAndType(url.toUri(), "video/*")
                 }
                 try {
                     startActivity(Intent.createChooser(viewIntent, null))
