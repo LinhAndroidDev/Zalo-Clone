@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
+import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.messageapp.PersonalActivity
@@ -90,6 +91,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var activeMentionQuery: MentionHelper.MentionQuery? = null
     private var groupMentionMembers: List<MentionHelper.MentionCandidate> = emptyList()
     private var replyingToMessage: Message? = null
+    private var replyHighlightScrollListener: RecyclerView.OnScrollListener? = null
     private val allMentionCandidate by lazy {
         MentionHelper.allMentionCandidate(getString(R.string.mention_all_label))
     }
@@ -790,6 +792,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         pendingMentions.clear()
         hideMentionPicker()
         clearReply()
+        replyHighlightScrollListener?.let { binding?.rcvChat?.removeOnScrollListener(it) }
+        replyHighlightScrollListener = null
+        chatAdapter?.clearReplyHighlight()
         super.onDestroyView()
     }
 
@@ -864,16 +869,34 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             ).show()
             return
         }
-        binding?.rcvChat?.smoothScrollToPosition(index)
-        binding?.rcvChat?.post {
-            val holder = binding?.rcvChat?.findViewHolderForAdapterPosition(index)
-            val target = holder?.itemView ?: return@post
-            val originalBackground = target.background
-            target.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.blue_light))
-            target.postDelayed({
-                target.background = originalBackground
-            }, 300L)
+        val recyclerView = binding?.rcvChat ?: return
+
+        replyHighlightScrollListener?.let { recyclerView.removeOnScrollListener(it) }
+        replyHighlightScrollListener = null
+
+        val scrollToken = Any()
+        var scrollHighlightToken: Any? = scrollToken
+
+        fun finishScrollAndHighlight() {
+            if (scrollHighlightToken !== scrollToken) return
+            scrollHighlightToken = null
+            replyHighlightScrollListener?.let { recyclerView.removeOnScrollListener(it) }
+            replyHighlightScrollListener = null
+            chatAdapter?.flashReplyHighlight(messageTime)
         }
+
+        val listener = object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                if (newState != RecyclerView.SCROLL_STATE_IDLE) return
+                finishScrollAndHighlight()
+            }
+        }
+        replyHighlightScrollListener = listener
+        recyclerView.addOnScrollListener(listener)
+        recyclerView.smoothScrollToPosition(index)
+
+        // Tin đã nằm trong viewport — smoothScroll có thể không kích hoạt SCROLL_STATE_IDLE.
+        recyclerView.postDelayed({ finishScrollAndHighlight() }, 500L)
     }
 
     private fun setupMentionPicker() {

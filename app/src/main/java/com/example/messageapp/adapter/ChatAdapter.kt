@@ -1,7 +1,15 @@
 package com.example.messageapp.adapter
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.Gravity
 import android.view.View
@@ -11,6 +19,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.DiffUtil
@@ -69,7 +78,25 @@ class ChatAdapter(
     companion object {
         /** Khoảng tối đa giữa hai tin cùng người gửi để gộp nhóm (kiểu Zalo / iMessage). */
         private const val MESSAGE_GROUP_GAP_MS = 3 * 60 * 1000L
+        private const val PAYLOAD_REPLY_HIGHLIGHT = "reply_highlight"
+        private const val REPLY_HIGHLIGHT_HOLD_MS = 1600L
+        private const val REPLY_HIGHLIGHT_FADE_MS = 900L
+        private const val REPLY_HIGHLIGHT_FADE_DELAY_MS = 450L
+        private const val BUBBLE_NORMAL_STROKE_DP = 0.8f
+        private const val BUBBLE_HIGHLIGHT_STROKE_DP = 2f
+        private val HIGHLIGHT_ANIMATOR_TAG = "chat_reply_highlight_anim".hashCode()
+        private val HIGHLIGHT_STATE_TAG = "chat_reply_highlight_state".hashCode()
     }
+
+    private data class ReplyHighlightState(
+        val bubbleView: View?,
+        val bubbleDrawableRes: Int,
+        val normalStrokeColor: Int,
+    )
+
+    private var highlightedMessageTime: String? = null
+    private val highlightHandler = Handler(Looper.getMainLooper())
+    private var clearHighlightRunnable: Runnable? = null
 
     init {
         setHasStableIds(true)
@@ -178,6 +205,50 @@ class ChatAdapter(
     fun indexOfMessageTime(time: String): Int =
         messages.indexOfFirst { it.time == time }
 
+    fun flashReplyHighlight(messageTime: String) {
+        val index = indexOfMessageTime(messageTime)
+        if (index < 0) return
+
+        val previous = highlightedMessageTime
+        highlightedMessageTime = messageTime
+
+        if (previous != null && previous != messageTime) {
+            val prevIndex = indexOfMessageTime(previous)
+            if (prevIndex >= 0) notifyItemChanged(prevIndex, PAYLOAD_REPLY_HIGHLIGHT)
+        }
+        notifyItemChanged(index, PAYLOAD_REPLY_HIGHLIGHT)
+
+        clearHighlightRunnable?.let { highlightHandler.removeCallbacks(it) }
+        clearHighlightRunnable = Runnable {
+            if (highlightedMessageTime != messageTime) return@Runnable
+            highlightedMessageTime = null
+            val currentIndex = indexOfMessageTime(messageTime)
+            if (currentIndex >= 0) notifyItemChanged(currentIndex, PAYLOAD_REPLY_HIGHLIGHT)
+        }
+        highlightHandler.postDelayed(clearHighlightRunnable!!, REPLY_HIGHLIGHT_HOLD_MS)
+    }
+
+    fun clearReplyHighlight() {
+        clearHighlightRunnable?.let { highlightHandler.removeCallbacks(it) }
+        clearHighlightRunnable = null
+        val time = highlightedMessageTime ?: return
+        highlightedMessageTime = null
+        val index = indexOfMessageTime(time)
+        if (index >= 0) notifyItemChanged(index, PAYLOAD_REPLY_HIGHLIGHT)
+    }
+
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+        payloads: MutableList<Any>,
+    ) {
+        if (payloads.isNotEmpty() && payloads.all { it == PAYLOAD_REPLY_HIGHLIGHT }) {
+            applyReplyScrollHighlight(holder, messages[position], position)
+            return
+        }
+        onBindViewHolder(holder, position)
+    }
+
     /**
      * This function used to bind view holder for chat adapter
      */
@@ -276,6 +347,126 @@ class ChatAdapter(
                 applyMessageClusterUi(holder, position, message)
             }
         }
+        applyReplyScrollHighlight(holder, message, position)
+    }
+
+    private fun applyReplyScrollHighlight(
+        holder: RecyclerView.ViewHolder,
+        message: Message,
+        position: Int,
+    ) {
+        val row = holder.itemView
+        if (message.time != highlightedMessageTime) {
+            cancelReplyHighlightAnimation(row)
+            return
+        }
+        if (row.getTag(HIGHLIGHT_ANIMATOR_TAG) != null) return
+
+        val highlightState = buildReplyHighlightState(holder, message, position)
+        row.setTag(HIGHLIGHT_STATE_TAG, highlightState)
+
+        val rowDrawable = ColorDrawable(
+            ContextCompat.getColor(context, R.color.reply_scroll_highlight),
+        )
+        row.background = rowDrawable
+
+        highlightState.bubbleView?.let { bubble ->
+            applyBubbleStrokeHighlight(bubble, highlightState, 255)
+        }
+
+        val animator = ValueAnimator.ofInt(255, 0).apply {
+            duration = REPLY_HIGHLIGHT_FADE_MS
+            startDelay = REPLY_HIGHLIGHT_FADE_DELAY_MS
+            addUpdateListener { animation ->
+                val alpha = animation.animatedValue as Int
+                rowDrawable.alpha = alpha
+                highlightState.bubbleView?.let { bubble ->
+                    applyBubbleStrokeHighlight(bubble, highlightState, alpha)
+                }
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    restoreReplyHighlightVisuals(row)
+                }
+
+                override fun onAnimationCancel(animation: Animator) {
+                    restoreReplyHighlightVisuals(row)
+                }
+            })
+            start()
+        }
+        row.setTag(HIGHLIGHT_ANIMATOR_TAG, animator)
+    }
+
+    private fun buildReplyHighlightState(
+        holder: RecyclerView.ViewHolder,
+        message: Message,
+        position: Int,
+    ): ReplyHighlightState {
+        if (TypeMessage.of(message.type) != TypeMessage.MESSAGE) {
+            return ReplyHighlightState(null, 0, 0)
+        }
+        return when (holder) {
+            is SenderViewHolder -> ReplyHighlightState(
+                bubbleView = holder.v.viewMessage,
+                bubbleDrawableRes = senderGroupedTextBubbleDrawable(position),
+                normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
+            )
+            is ReceiverViewHolder -> ReplyHighlightState(
+                bubbleView = holder.v.viewMessage,
+                bubbleDrawableRes = receiverGroupedTextBubbleDrawable(position),
+                normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+            )
+            else -> ReplyHighlightState(null, 0, 0)
+        }
+    }
+
+    private fun applyBubbleStrokeHighlight(
+        bubble: View,
+        state: ReplyHighlightState,
+        alpha: Int,
+    ) {
+        if (state.bubbleDrawableRes == 0) return
+        val drawable = ((bubble.background as? GradientDrawable)?.mutate() as? GradientDrawable)
+            ?: (ContextCompat.getDrawable(context, state.bubbleDrawableRes)?.mutate() as? GradientDrawable)
+            ?: return
+
+        val ratio = alpha / 255f
+        val density = context.resources.displayMetrics.density
+        val normalStrokePx = (BUBBLE_NORMAL_STROKE_DP * density).toInt().coerceAtLeast(1)
+        val highlightStrokePx = (BUBBLE_HIGHLIGHT_STROKE_DP * density).toInt()
+            .coerceAtLeast(normalStrokePx + 1)
+        val strokeWidth = (normalStrokePx + (highlightStrokePx - normalStrokePx) * ratio).toInt()
+            .coerceAtLeast(normalStrokePx)
+        val highlightStrokeColor = ContextCompat.getColor(context, R.color.reply_bubble_stroke_highlight)
+        val strokeColor = blendColors(state.normalStrokeColor, highlightStrokeColor, ratio)
+        drawable.setStroke(strokeWidth, strokeColor)
+        bubble.background = drawable
+    }
+
+    private fun restoreReplyHighlightVisuals(row: View) {
+        row.background = null
+        row.setTag(HIGHLIGHT_ANIMATOR_TAG, null)
+        val state = row.getTag(HIGHLIGHT_STATE_TAG) as? ReplyHighlightState
+        if (state?.bubbleView != null && state.bubbleDrawableRes != 0) {
+            state.bubbleView.setBackgroundResource(state.bubbleDrawableRes)
+        }
+        row.setTag(HIGHLIGHT_STATE_TAG, null)
+    }
+
+    private fun cancelReplyHighlightAnimation(row: View) {
+        (row.getTag(HIGHLIGHT_ANIMATOR_TAG) as? ValueAnimator)?.cancel()
+        restoreReplyHighlightVisuals(row)
+    }
+
+    private fun blendColors(from: Int, to: Int, ratio: Float): Int {
+        val inverse = 1f - ratio
+        return Color.argb(
+            (Color.alpha(from) * inverse + Color.alpha(to) * ratio).toInt().coerceIn(0, 255),
+            (Color.red(from) * inverse + Color.red(to) * ratio).toInt().coerceIn(0, 255),
+            (Color.green(from) * inverse + Color.green(to) * ratio).toInt().coerceIn(0, 255),
+            (Color.blue(from) * inverse + Color.blue(to) * ratio).toInt().coerceIn(0, 255),
+        )
     }
 
     private fun messageTimeMillis(msg: Message): Long? =
