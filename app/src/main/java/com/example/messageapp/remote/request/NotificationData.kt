@@ -13,4 +13,10 @@ data class Data(
     val groupId: String? = null,
     val isMention: String? = "0",
     val mentionType: String? = null,
+    /** Document id of the message this notification refers to (for inline reply quote). */
+    val messageTime: String? = null,
+    val replyPreviewText: String? = null,
+    val replySenderName: String? = null,
+    val replyType: String? = null,
+    val replyPhotoUrl: String? = null,
 )

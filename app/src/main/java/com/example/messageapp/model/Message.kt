@@ -11,6 +11,16 @@ data class MessageMention(
 ) : Parcelable
 
 @Parcelize
+data class MessageReply(
+    val messageTime: String = "",
+    val senderId: String = "",
+    val senderName: String = "",
+    val previewText: String = "",
+    val type: Int = 0,
+    val photoUrl: String? = null,
+) : Parcelable
+
+@Parcelize
 data class Message(
     val message: String = "",
     val receiver: String = "",
@@ -23,7 +33,8 @@ data class Message(
     val photoSizes: ArrayList<String>? = null,
     val singlePhoto: ArrayList<String> = arrayListOf(),
     val audio: String? = null,
-    val type: Int = 0 // 0: message, 1: photos, 2: single photo, 3: audio
+    val type: Int = 0, // 0: message, 1: photos, 2: single photo, 3: audio
+    val replyTo: MessageReply? = null,
 ) : Parcelable
 
 enum class EmotionType(val firestoreKey: String) {

@@ -26,6 +26,8 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.MessageReplyHelper
+import com.example.messageapp.utils.MentionHelper
 import kotlin.math.ceil
 
 const val VIEW_SENDER = 0
@@ -54,11 +56,14 @@ class ChatAdapter(
     private val friendId: String,
     private val isGroup: Boolean = false,
     private val myUserId: String,
+    private var myName: String = "",
+    private var peerDisplayName: String = "",
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
     private val audioPlaybackStateMap = hashMapOf<String, AudioPlaybackState>()
     var seen: Boolean = false
     private var groupReaderIds: List<String> = emptyList()
+    private var groupMembers: List<MentionHelper.MentionCandidate> = emptyList()
     private var mCallBack: CallBackClickItem? = null
 
     companion object {
@@ -68,6 +73,30 @@ class ChatAdapter(
 
     init {
         setHasStableIds(true)
+    }
+
+    fun updateReplyNameContext(
+        myName: String,
+        peerDisplayName: String,
+        groupMembers: List<MentionHelper.MentionCandidate>,
+    ) {
+        this.myName = myName
+        this.peerDisplayName = peerDisplayName
+        this.groupMembers = groupMembers
+        if (messages.any { it.replyTo != null }) {
+            notifyDataSetChanged()
+        }
+    }
+
+    private fun replyNameContext(): MessageReplyHelper.ReplyNameContext {
+        return MessageReplyHelper.ReplyNameContext(
+            myUserId = myUserId,
+            myName = myName,
+            peerUserId = friendId,
+            peerDisplayName = peerDisplayName,
+            isGroup = isGroup,
+            groupMembers = groupMembers,
+        )
     }
 
     /**
@@ -146,6 +175,9 @@ class ChatAdapter(
      */
     override fun getItemCount(): Int = messages.size
 
+    fun indexOfMessageTime(time: String): Int =
+        messages.indexOfFirst { it.time == time }
+
     /**
      * This function used to bind view holder for chat adapter
      */
@@ -161,6 +193,12 @@ class ChatAdapter(
                         holder.initViewMessage(context, message) {
                             mCallBack?.onSenderLongClick(it to message)
                         }
+                        holder.bindReplyQuote(
+                            context,
+                            message,
+                            replyNameContext(),
+                            mCallBack?.let { cb -> { time -> cb.onReplyQuoteClick(time) } },
+                        )
                     }
 
                     TypeMessage.PHOTOS -> {
@@ -203,6 +241,12 @@ class ChatAdapter(
                         holder.initViewMessage(context, message) {
                             mCallBack?.onReceiverLongClick(it to message)
                         }
+                        holder.bindReplyQuote(
+                            context,
+                            message,
+                            replyNameContext(),
+                            mCallBack?.let { cb -> { time -> cb.onReplyQuoteClick(time) } },
+                        )
                     }
 
                     TypeMessage.PHOTOS -> {
@@ -595,6 +639,7 @@ class ChatAdapter(
         fun onPhotoClick(data: ClickPhotoModel)
         fun onPhotoLongClick(data: LongClickPhotoModel)
         fun onOptionMenuClick(msg: Message)
+        fun onReplyQuoteClick(messageTime: String)
     }
 
     /**

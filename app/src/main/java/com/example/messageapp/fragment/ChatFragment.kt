@@ -49,6 +49,7 @@ import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.MessageMention
+import android.view.inputmethod.InputMethodManager
 import com.example.messageapp.model.TypeMessage
 import kotlin.math.min
 import com.example.messageapp.model.UserPresence
@@ -60,6 +61,7 @@ import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.utils.MentionHelper
+import com.example.messageapp.utils.MessageReplyHelper
 import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -87,6 +89,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private val pendingMentions = mutableListOf<MessageMention>()
     private var activeMentionQuery: MentionHelper.MentionQuery? = null
     private var groupMentionMembers: List<MentionHelper.MentionCandidate> = emptyList()
+    private var replyingToMessage: Message? = null
     private val allMentionCandidate by lazy {
         MentionHelper.allMentionCandidate(getString(R.string.mention_all_label))
     }
@@ -186,6 +189,10 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             })
         }
 
+        override fun onReplyQuoteClick(messageTime: String) {
+            scrollToMessage(messageTime)
+        }
+
     }
 
     override fun initView() {
@@ -201,6 +208,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 cvt.friendId,
                 cvt.isGroupThread(),
                 uid,
+                viewModel?.shared?.getNameUser().orEmpty(),
+                cvt.name,
+            )
+            chatAdapter?.updateReplyNameContext(
+                myName = viewModel?.shared?.getNameUser().orEmpty(),
+                peerDisplayName = cvt.name,
+                groupMembers = groupMentionMembers,
             )
             chatAdapter?.setOnActionClickItem(mCallBackClickItem)
             binding?.rcvChat?.adapter = chatAdapter
@@ -251,6 +265,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         binding?.edtMessage?.setOnFocusChangeListener { _, hasFocus ->
             conversation?.let { viewModel?.updateTyping(it, hasFocus) }
         }
+
+        binding?.btnCancelReply?.setOnClickListener { clearReply() }
     }
 
     /**
@@ -273,6 +289,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val inflater = requireActivity().getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val popupView = inflater.inflate(R.layout.popup_option_chat, null)
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
+        val btnReply: LinearLayout = popupView.findViewById(R.id.btnReply)
         val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
         val layoutEmotion: LinearLayout = popupView.findViewById(R.id.layoutEmotion)
         val imgFavourite: ImageView = popupView.findViewById(R.id.imgFavourite)
@@ -332,6 +349,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         btnCopy.setOnClickListener {
             handleCopyMessage(message)
+            popupWindow.dismiss()
+        }
+
+        btnReply.setOnClickListener {
+            startReply(message)
             popupWindow.dismiss()
         }
 
@@ -544,6 +566,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.mentionCandidates?.collect { members ->
                         groupMentionMembers = members
+                        chatAdapter?.updateReplyNameContext(
+                            myName = viewModel?.shared?.getNameUser().orEmpty(),
+                            peerDisplayName = cvt.name,
+                            groupMembers = members,
+                        )
                         updateMentionPicker(binding?.edtMessage?.text)
                     }
                 }
@@ -681,6 +708,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                     sender = sender,
                     time = time,
                     mentions = mentions,
+                    replyTo = replyingToMessage?.let {
+                        MessageReplyHelper.buildMessageReply(
+                            requireContext(),
+                            it,
+                            resolveSenderNameForMessage(it.sender),
+                        )
+                    },
                 )
                 // log event: send_message
                 FirebaseAnalyticsInstance.logSendMessage(messageType = rawText, messageLength = rawText.length, receiverId = receiver)
@@ -688,11 +722,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 binding?.edtMessage?.setText("")
                 pendingMentions.clear()
                 hideMentionPicker()
+                clearReply()
             }
             stateScrollable = true
         }
 
         binding?.btnSelectImage?.setOnClickListener {
+            clearReply()
             val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                 type = "*/*"
                 putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
@@ -706,6 +742,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         binding?.btnMicro?.setOnClickListener {
+            clearReply()
             val bottomSheetRecord = BottomSheetRecord()
             bottomSheetRecord.onRecordListener = { path ->
                 conversation?.let { cvt ->
@@ -752,7 +789,91 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         viewModel?.stopGroupReadTracking()
         pendingMentions.clear()
         hideMentionPicker()
+        clearReply()
         super.onDestroyView()
+    }
+
+    private fun resolveSenderNameForMessage(senderId: String): String {
+        MessageReplyHelper.cachedUserDisplayName(senderId)?.let { return it }
+        val cvt = conversation ?: return ""
+        val myUserId = viewModel?.shared?.getAuth().orEmpty()
+        return MessageReplyHelper.resolveSenderName(
+            senderId = senderId,
+            myUserId = myUserId,
+            myName = viewModel?.shared?.getNameUser().orEmpty(),
+            groupMembers = groupMentionMembers,
+            peerUserId = if (!cvt.isGroupThread()) cvt.friendId else "",
+            peerDisplayName = if (!cvt.isGroupThread()) cvt.name else "",
+        )
+    }
+
+    private fun bindReplySenderName(senderId: String) {
+        val syncName = resolveSenderNameForMessage(senderId)
+        if (syncName.isNotBlank()) {
+            binding?.tvReplySenderName?.text = syncName
+            binding?.tvReplySenderName?.isVisible = true
+            return
+        }
+        binding?.tvReplySenderName?.isVisible = false
+        MessageReplyHelper.fetchUserDisplayName(senderId) { fetchedName ->
+            if (replyingToMessage?.sender != senderId) return@fetchUserDisplayName
+            if (fetchedName.isBlank()) return@fetchUserDisplayName
+            binding?.tvReplySenderName?.text = fetchedName
+            binding?.tvReplySenderName?.isVisible = true
+        }
+    }
+
+    private fun startReply(message: Message) {
+        replyingToMessage = message
+        bindReplyBar(message)
+        binding?.replyPreviewContainer?.isVisible = true
+        binding?.edtMessage?.requestFocus()
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(binding?.edtMessage, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun bindReplyBar(message: Message) {
+        val ctx = requireContext()
+        bindReplySenderName(message.sender)
+        binding?.tvReplyPreview?.text = MessageReplyHelper.buildPreviewText(ctx, message)
+        binding?.tvReplyPreview?.maxLines = 1
+        binding?.tvReplyPreview?.ellipsize = android.text.TextUtils.TruncateAt.END
+        val photoUrl = MessageReplyHelper.firstPhotoUrl(message)
+        val imgReplyThumb = binding?.imgReplyThumb
+        if (photoUrl != null && MessageReplyHelper.resolveMessageType(message) != TypeMessage.AUDIO) {
+            imgReplyThumb?.isVisible = true
+            ctx.loadImg(photoUrl, imgReplyThumb!!)
+        } else {
+            imgReplyThumb?.isVisible = false
+        }
+    }
+
+    private fun clearReply() {
+        replyingToMessage = null
+        binding?.replyPreviewContainer?.isVisible = false
+        binding?.imgReplyThumb?.isVisible = false
+    }
+
+    private fun scrollToMessage(messageTime: String) {
+        val index = chatAdapter?.indexOfMessageTime(messageTime) ?: -1
+        if (index < 0) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.reply_original_not_found),
+                Toast.LENGTH_SHORT,
+            ).show()
+            return
+        }
+        binding?.rcvChat?.smoothScrollToPosition(index)
+        binding?.rcvChat?.post {
+            val holder = binding?.rcvChat?.findViewHolderForAdapterPosition(index)
+            val target = holder?.itemView ?: return@post
+            val originalBackground = target.background
+            target.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.blue_light))
+            target.postDelayed({
+                target.background = originalBackground
+            }, 300L)
+        }
     }
 
     private fun setupMentionPicker() {

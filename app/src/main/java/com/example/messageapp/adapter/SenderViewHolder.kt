@@ -16,6 +16,7 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.MentionHelper
+import com.example.messageapp.utils.MessageReplyHelper
 
 class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root),
     ViewTypeMessage {
@@ -54,6 +55,25 @@ class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v
             longClick.invoke(it)
             true
         }
+    }
+
+    fun bindReplyQuote(
+        context: Context,
+        message: Message,
+        nameContext: MessageReplyHelper.ReplyNameContext,
+        onQuoteClick: ((String) -> Unit)?,
+    ) {
+        val quoteRoot = v.root.findViewById<View>(R.id.layoutReplyQuote) ?: return
+        MessageReplyHelper.bindReplyQuote(
+            context = context,
+            quoteRoot = quoteRoot,
+            tvQuoteSender = quoteRoot.findViewById(R.id.tvQuoteSender),
+            tvQuotePreview = quoteRoot.findViewById(R.id.tvQuotePreview),
+            imgQuoteThumb = quoteRoot.findViewById(R.id.imgQuoteThumb),
+            reply = message.replyTo,
+            nameContext = nameContext,
+            onQuoteClick = onQuoteClick,
+        )
     }
 
     // This function used to show view multi photo of sender

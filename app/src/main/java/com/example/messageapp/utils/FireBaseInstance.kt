@@ -454,32 +454,24 @@ object FireBaseInstance {
     ) {
 
         //Get token of receiver to send notification message to receiver
+        val appContext = MyApplication.appContext
+        val fcmReply = MessageReplyHelper.buildFcmReplyFields(appContext, message, time, nameSender)
         getTokenMessage(
             conversation.friendId,
             success = { token ->
+                val baseBody = notificationBodyForType(type, message, nameSender)
                 val notificationNotification = NotificationData(
                     token = token,
                     data = Data(
                         title = nameSender,
-                        body = when (type) {
-                            TypeMessage.MESSAGE -> {
-                                message.message
-                            }
-
-                            TypeMessage.PHOTOS -> {
-                                "$nameSender đã gửi ảnh cho bạn"
-                            }
-
-                            TypeMessage.SINGLE_PHOTO -> {
-                                "$nameSender đã gửi 1 ảnh cho bạn"
-                            }
-
-                            TypeMessage.AUDIO -> {
-                                "$nameSender đã gửi 1 file ghi âm cho bạn"
-                            }
-                        },
+                        body = MessageReplyHelper.formatNotificationBody(appContext, message, baseBody),
                         senderId = userId,
                         groupId = null,
+                        messageTime = fcmReply.messageTime,
+                        replyPreviewText = fcmReply.replyPreviewText,
+                        replySenderName = fcmReply.replySenderName,
+                        replyType = fcmReply.replyType,
+                        replyPhotoUrl = fcmReply.replyPhotoUrl,
                     )
                 )
 
@@ -494,23 +486,11 @@ object FireBaseInstance {
         val conversationData = Conversation(
             friendId = conversation.friendId,
             friendImage = conversation.friendImage,
-            message = when (type) {
-                TypeMessage.MESSAGE -> {
-                    message.message
-                }
-
-                TypeMessage.PHOTOS -> {
-                    "Bạn đã gửi ảnh cho ${conversation.name}"
-                }
-
-                TypeMessage.SINGLE_PHOTO -> {
-                    "Bạn đã gửi 1 ảnh cho ${conversation.name}"
-                }
-
-                TypeMessage.AUDIO -> {
-                    "Bạn đã gửi 1 file ghi âm cho ${conversation.name}"
-                }
-            },
+            message = MessageReplyHelper.formatInboxPreview(
+                appContext,
+                message,
+                inboxMessagePreviewSender(type, message, conversation.name),
+            ),
             name = conversation.name,
             person = "Bạn",
             sender = userId,
@@ -525,23 +505,11 @@ object FireBaseInstance {
         //Create Data Conversation For Receiver
         val conversationFriend = Conversation(
             friendId = userId,
-            message = when (type) {
-                TypeMessage.MESSAGE -> {
-                    message.message
-                }
-
-                TypeMessage.PHOTOS -> {
-                    "$nameSender đã gửi ảnh cho bạn"
-                }
-
-                TypeMessage.SINGLE_PHOTO -> {
-                    "$nameSender đã gửi 1 ảnh cho bạn"
-                }
-
-                TypeMessage.AUDIO -> {
-                    "$nameSender đã gửi 1 file ghi âm cho bạn"
-                }
-            },
+            message = MessageReplyHelper.formatInboxPreview(
+                appContext,
+                message,
+                inboxMessagePreviewOthers(type, message, nameSender),
+            ),
             name = nameSender,
             person = nameSender,
             sender = userId,
@@ -618,14 +586,24 @@ object FireBaseInstance {
             groupId,
             success = { group ->
                 val memberIds = group.memberIds.distinct().filter { it.isNotBlank() }
-                val notifBody = notificationBodyForType(type, message, nameSender)
+                val appContext = MyApplication.appContext
+                val notifBody = MessageReplyHelper.formatNotificationBody(
+                    appContext,
+                    message,
+                    notificationBodyForType(type, message, nameSender),
+                )
+                val fcmReply = MessageReplyHelper.buildFcmReplyFields(appContext, message, time, nameSender)
+                val othersInboxPreview = MessageReplyHelper.formatInboxPreview(
+                    appContext,
+                    message,
+                    inboxMessagePreviewOthers(type, message, nameSender),
+                )
                 val mentionedTargets = MentionHelper.resolveMentionTargetUserIds(
                     mentions = message.mentions,
                     memberIds = memberIds,
                     senderId = userId,
                 )
                 val isAllMention = MentionHelper.hasAllMention(message.mentions)
-                val appContext = MyApplication.appContext
                 for (mid in memberIds) {
                     if (mid == userId) continue
                     getTokenMessage(
@@ -657,6 +635,11 @@ object FireBaseInstance {
                                             isAllMention -> "all"
                                             else -> "user"
                                         },
+                                        messageTime = fcmReply.messageTime,
+                                        replyPreviewText = fcmReply.replyPreviewText,
+                                        replySenderName = fcmReply.replySenderName,
+                                        replyType = fcmReply.replyType,
+                                        replyPhotoUrl = fcmReply.replyPhotoUrl,
                                     ),
                                 )
                             )
@@ -672,7 +655,11 @@ object FireBaseInstance {
                         val conv = Conversation(
                             friendId = groupId,
                             friendImage = conversation.friendImage,
-                            message = inboxMessagePreviewSender(type, message, conversation.name),
+                            message = MessageReplyHelper.formatInboxPreview(
+                                appContext,
+                                message,
+                                inboxMessagePreviewSender(type, message, conversation.name),
+                            ),
                             name = conversation.name,
                             person = "Bạn",
                             sender = userId,
@@ -688,7 +675,7 @@ object FireBaseInstance {
                             val conv = Conversation(
                                 friendId = groupId,
                                 friendImage = conversation.friendImage,
-                                message = inboxMessagePreviewOthers(type, message, nameSender),
+                                message = othersInboxPreview,
                                 name = conversation.name,
                                 person = nameSender,
                                 sender = userId,
@@ -703,7 +690,7 @@ object FireBaseInstance {
                             batch.update(
                                 ref,
                                 mapOf(
-                                    "message" to inboxMessagePreviewOthers(type, message, nameSender),
+                                    "message" to othersInboxPreview,
                                     "person" to nameSender,
                                     "sender" to userId,
                                     "time" to time,

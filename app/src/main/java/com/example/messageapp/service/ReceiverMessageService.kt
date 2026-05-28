@@ -46,6 +46,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
             val senderId = data["senderId"] ?: ""
             val groupId = data["groupId"]?.trim().orEmpty()
             val isMention = data["isMention"] == "1"
+            val replyMeta = parseReplyMeta(data)
 
             if (groupId.isNotEmpty()) {
                 FireBaseInstance.getGroup(
@@ -65,6 +66,8 @@ class ReceiverMessageService : FirebaseMessagingService() {
                             title = title,
                             messageBody = body,
                             conversation = conv,
+                            senderId = senderId,
+                            replyMeta = replyMeta,
                             isMention = isMention,
                         )
                     },
@@ -73,38 +76,37 @@ class ReceiverMessageService : FirebaseMessagingService() {
             } else {
                 FireBaseInstance.getInfoUser(senderId) { user ->
                     user.keyAuth = senderId
-                    sendNotification(title, body, senderId, user)
+                    sendNotification(title, body, senderId, user, replyMeta)
                 }
             }
         }
     }
 
     @SuppressLint("ServiceCast")
-    private fun sendNotification(title: String?, messageBody: String?, senderId: String, friend:User) {
+    private fun sendNotification(
+        title: String?,
+        messageBody: String?,
+        senderId: String,
+        friend: User,
+        replyMeta: ReplyNotificationMeta,
+    ) {
         val channelId = Random().nextInt()
         val intent = Intent(this, MainActivity::class.java)
         intent.putExtra(OBJECT_FRIEND, friend)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            channelId,
+            intent,
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
-        // for replies on notification
-        val remoteInput = RemoteInput.Builder(KEY_REPLY_TEXT)
-            .setLabel("Reply")
-            .build()
-
-        // Create a PendingIntent for the reply action
-        val replyIntent = Intent(this, NotificationReply::class.java)
-        replyIntent.putExtra(SENDER_ID, senderId)
-
-        val replyPendingIntent = PendingIntent.getBroadcast(this, 0, replyIntent, PendingIntent.FLAG_MUTABLE)
-
-        // Create a NotificationCompat.Action object for the reply action
-        val replyAction = NotificationCompat.Action.Builder(
-            R.drawable.ic_reply,
-            "Reply",
-            replyPendingIntent
-        ).addRemoteInput(remoteInput).build()
+        val replyAction = buildReplyAction(
+            requestCode = channelId,
+            senderId = senderId,
+            groupId = null,
+            replyMeta = replyMeta,
+        )
 
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, getString(R.string.title_app))
@@ -116,19 +118,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
             .setSound(defaultSoundUri)
             .setContentIntent(pendingIntent)
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                getString(R.string.title_app),
-                "Channel human readable title",
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        shared.saveChannelId(channelId)
-        notificationManager.notify(channelId, notificationBuilder.build())
+        showNotification(channelId, notificationBuilder)
     }
 
     @SuppressLint("ServiceCast")
@@ -136,6 +126,8 @@ class ReceiverMessageService : FirebaseMessagingService() {
         title: String?,
         messageBody: String?,
         conversation: Conversation,
+        senderId: String,
+        replyMeta: ReplyNotificationMeta,
         isMention: Boolean = false,
     ) {
         val channelId = Random().nextInt()
@@ -155,15 +147,62 @@ class ReceiverMessageService : FirebaseMessagingService() {
             title
         }
 
+        val replyAction = buildReplyAction(
+            requestCode = channelId + 1,
+            senderId = senderId,
+            groupId = conversation.friendId,
+            groupName = conversation.name,
+            replyMeta = replyMeta,
+        )
+
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, getString(R.string.title_app))
             .setSmallIcon(R.drawable.ic_message)
             .setContentTitle(contentTitle)
             .setContentText(messageBody)
             .setAutoCancel(true)
+            .addAction(replyAction)
             .setSound(defaultSoundUri)
             .setContentIntent(pendingIntent)
 
+        showNotification(channelId, notificationBuilder)
+    }
+
+    private fun buildReplyAction(
+        requestCode: Int,
+        senderId: String,
+        groupId: String?,
+        groupName: String? = null,
+        replyMeta: ReplyNotificationMeta,
+    ): NotificationCompat.Action {
+        val remoteInput = RemoteInput.Builder(KEY_REPLY_TEXT)
+            .setLabel(getString(R.string.reply))
+            .build()
+
+        val replyIntent = Intent(this, NotificationReply::class.java).apply {
+            putExtra(SENDER_ID, senderId)
+            if (!groupId.isNullOrBlank()) {
+                putExtra(GROUP_ID, groupId)
+                putExtra(GROUP_NAME, groupName.orEmpty())
+            }
+            attachReplyMeta(this, replyMeta)
+        }
+
+        val replyPendingIntent = PendingIntent.getBroadcast(
+            this,
+            requestCode,
+            replyIntent,
+            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
+        return NotificationCompat.Action.Builder(
+            R.drawable.ic_reply,
+            getString(R.string.reply),
+            replyPendingIntent,
+        ).addRemoteInput(remoteInput).build()
+    }
+
+    private fun showNotification(channelId: Int, notificationBuilder: NotificationCompat.Builder) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -179,10 +218,43 @@ class ReceiverMessageService : FirebaseMessagingService() {
         notificationManager.notify(channelId, notificationBuilder.build())
     }
 
+    private fun parseReplyMeta(data: Map<String, String>): ReplyNotificationMeta {
+        return ReplyNotificationMeta(
+            messageTime = data["messageTime"]?.takeIf { it.isNotBlank() },
+            replyPreviewText = data["replyPreviewText"]?.takeIf { it.isNotBlank() },
+            replySenderName = data["replySenderName"]?.takeIf { it.isNotBlank() },
+            replyType = data["replyType"]?.takeIf { it.isNotBlank() },
+            replyPhotoUrl = data["replyPhotoUrl"]?.takeIf { it.isNotBlank() },
+        )
+    }
+
+    private fun attachReplyMeta(intent: Intent, meta: ReplyNotificationMeta) {
+        meta.messageTime?.let { intent.putExtra(MESSAGE_TIME, it) }
+        meta.replyPreviewText?.let { intent.putExtra(REPLY_PREVIEW_TEXT, it) }
+        meta.replySenderName?.let { intent.putExtra(REPLY_SENDER_NAME, it) }
+        meta.replyType?.let { intent.putExtra(REPLY_TYPE, it) }
+        meta.replyPhotoUrl?.let { intent.putExtra(REPLY_PHOTO_URL, it) }
+    }
+
+    data class ReplyNotificationMeta(
+        val messageTime: String? = null,
+        val replyPreviewText: String? = null,
+        val replySenderName: String? = null,
+        val replyType: String? = null,
+        val replyPhotoUrl: String? = null,
+    )
+
     companion object {
         private const val TAG = "MyFirebaseMsgService"
         const val KEY_REPLY_TEXT = "KEY_REPLY_TEXT"
         const val SENDER_ID = "SENDER_ID"
+        const val GROUP_ID = "GROUP_ID"
+        const val GROUP_NAME = "GROUP_NAME"
+        const val MESSAGE_TIME = "MESSAGE_TIME"
+        const val REPLY_PREVIEW_TEXT = "REPLY_PREVIEW_TEXT"
+        const val REPLY_SENDER_NAME = "REPLY_SENDER_NAME"
+        const val REPLY_TYPE = "REPLY_TYPE"
+        const val REPLY_PHOTO_URL = "REPLY_PHOTO_URL"
         const val OBJECT_FRIEND = "OBJECT_FRIEND"
         const val OBJECT_GROUP_CONVERSATION = "OBJECT_GROUP_CONVERSATION"
     }

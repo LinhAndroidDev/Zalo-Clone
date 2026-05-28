@@ -116,6 +116,71 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/replyPreviewContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/white"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:visibility="gone">
+
+                <View
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="10dp"
+                    android:background="@color/back_common" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvReplySenderName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/back_common"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        tools:text="Nguyễn A" />
+
+                    <TextView
+                        android:id="@+id/tvReplyPreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/text_grey"
+                        android:textSize="13sp"
+                        tools:text="Nội dung tin nhắn" />
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/imgReplyThumb"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="8dp"
+                    android:importantForAccessibility="no"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone"
+                    tools:src="@drawable/bg_grey_equal" />
+
+                <ImageView
+                    android:id="@+id/btnCancelReply"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@string/delete"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_close"
+                    app:tint="@color/grey_2" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/white"

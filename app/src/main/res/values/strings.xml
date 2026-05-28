@@ -70,6 +70,12 @@
     <string name="log_out">Đăng xuất</string>
     <string name="interface_and_language">Giao diện và ngôn ngữ</string>
     <string name="reply">Trả lời</string>
+    <string name="reply_preview_format">Trả lời: %1$s</string>
+    <string name="reply_photo">Ảnh</string>
+    <string name="reply_video">Video</string>
+    <string name="reply_photos_count">%1$d ảnh</string>
+    <string name="reply_audio">Tin thoại</string>
+    <string name="reply_original_not_found">Tin nhắn gốc không còn</string>
     <string name="forward">Chuyển tiếp</string>
     <string name="copy">Sao chép</string>
     <string name="pin">Ghim</string>
