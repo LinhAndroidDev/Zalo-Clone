@@ -42,7 +42,7 @@ class NotificationReply : BroadcastReceiver() {
 
         val message = Message(
             message = repliedText,
-            receiver = if (groupId.isNotEmpty()) groupId else senderId,
+            receiver = groupId.ifEmpty { senderId },
             sender = userId,
             time = time,
             replyTo = replyTo,

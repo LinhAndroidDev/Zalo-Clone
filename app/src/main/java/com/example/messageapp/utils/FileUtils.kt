@@ -121,38 +121,6 @@ object FileUtils {
         }
     }
 
-    fun convertMp3UrlToByteArray(mp3Url: String): ByteArray? {
-        return try {
-            val client = OkHttpClient()
-            val request = Request.Builder().url(mp3Url).build()
-            val response = client.newCall(request).execute()
-
-            if (response.isSuccessful) {
-                response.body?.bytes()
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
-    suspend fun getOrDownloadAudioBytes(context: Context, audioUrl: String): ByteArray? {
-        if (audioUrl.isBlank()) return null
-
-        audioBytesMemoryCache.get(audioUrl)?.let { return it }
-
-        val cacheFile = getOrDownloadAudioFile(context, audioUrl) ?: return null
-        if (cacheFile.exists()) {
-            val bytes = withContext(Dispatchers.IO) { cacheFile.readBytes() }
-            audioBytesMemoryCache.put(audioUrl, bytes)
-            return bytes
-        }
-
-        return null
-    }
-
     suspend fun getOrDownloadAudioFile(context: Context, audioUrl: String): File? {
         if (audioUrl.isBlank()) return null
         val cacheFile = getAudioCacheFile(context, audioUrl)
