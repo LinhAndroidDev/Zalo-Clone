@@ -60,6 +60,7 @@ import kotlin.math.min
 import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.EmotionBurstEffect
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
@@ -371,34 +372,41 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         imgFavourite.setOnClickListener {
-            reactToMessage(message, EmotionType.FAVOURITE)
+            reactToMessage(message, EmotionType.FAVOURITE, anchor)
             popupWindow.dismiss()
         }
 
         imgLike.setOnClickListener {
-            reactToMessage(message, EmotionType.LIKE)
+            reactToMessage(message, EmotionType.LIKE, anchor)
             popupWindow.dismiss()
         }
 
         imgLaugh.setOnClickListener {
-            reactToMessage(message, EmotionType.LAUGH)
+            reactToMessage(message, EmotionType.LAUGH, anchor)
             popupWindow.dismiss()
         }
 
         imgCry.setOnClickListener {
-            reactToMessage(message, EmotionType.CRY)
+            reactToMessage(message, EmotionType.CRY, anchor)
             popupWindow.dismiss()
         }
 
         imgAngry.setOnClickListener {
-            reactToMessage(message, EmotionType.ANGRY)
+            reactToMessage(message, EmotionType.ANGRY, anchor)
             popupWindow.dismiss()
         }
     }
 
-    private fun reactToMessage(message: Message, type: EmotionType) {
+    private fun reactToMessage(message: Message, type: EmotionType, anchor: View) {
         val cvt = conversation ?: return
-        viewModel?.toggleMessageReaction(message.time, cvt, type)
+        viewModel?.toggleMessageReaction(message.time, cvt, type) { appliedType ->
+            playEmotionBurst(appliedType, anchor)
+        }
+    }
+
+    private fun playEmotionBurst(type: EmotionType, anchor: View) {
+        val activity = activity ?: return
+        EmotionBurstEffect.play(activity, anchor, type)
     }
 
     private fun bindPopupPreview(

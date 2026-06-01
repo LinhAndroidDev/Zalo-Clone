@@ -326,7 +326,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
-    fun toggleMessageReaction(time: String, conversation: Conversation, type: EmotionType) {
+    fun toggleMessageReaction(
+        time: String,
+        conversation: Conversation,
+        type: EmotionType,
+        onApplied: ((EmotionType) -> Unit)? = null,
+    ) {
         if (time.isBlank()) return
         val userId = shared.getAuth()
         val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, userId)
@@ -337,6 +342,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         val target = currentList[index]
         val previousEmotion = target.emotion
         val merged = (target.emotion ?: Emotion()).toggleUserReaction(userId, type)
+        val reactionApplied = merged.findUserReaction(userId) == type
         val updatedMessage = target.copy(
             emotion = merged.takeUnless { it.emotionEmpty() },
         )
@@ -344,6 +350,10 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         val optimisticList = ArrayList(currentList)
         optimisticList[index] = updatedMessage
         _messages.value = optimisticList
+
+        if (reactionApplied) {
+            onApplied?.invoke(type)
+        }
 
         FireBaseInstance.toggleMessageReaction(
             time = time,

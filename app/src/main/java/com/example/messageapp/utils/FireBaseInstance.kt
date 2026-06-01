@@ -1198,6 +1198,7 @@ object FireBaseInstance {
         idRoom: String,
         userId: String,
         type: EmotionType,
+        onSuccess: () -> Unit = {},
         onFailure: (String) -> Unit = {},
     ) {
         if (time.isBlank() || idRoom.isBlank() || userId.isBlank()) return
@@ -1215,6 +1216,8 @@ object FireBaseInstance {
                 transaction.update(messageRef, PATH_EMOTION, merged)
             }
             null
+        }.addOnSuccessListener {
+            onSuccess.invoke()
         }.addOnFailureListener { error ->
             Log.e("toggleMessageReaction", error.message.orEmpty())
             onFailure.invoke(error.message ?: "Không thể cập nhật cảm xúc")
