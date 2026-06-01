@@ -167,4 +167,12 @@ class CustomHeaderView @JvmOverloads constructor(
     fun setTitleChatView(title: String) {
         binding?.viewChat?.tvFriend?.text = title
     }
+
+    fun setFriendStatus(text: String) {
+        binding?.viewChat?.tvFriendStatus?.text = text
+    }
+
+    fun setFriendStatusVisible(visible: Boolean) {
+        binding?.viewChat?.tvFriendStatus?.isVisible = visible
+    }
 }

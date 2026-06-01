@@ -31,6 +31,9 @@
         tools:layout="@layout/fragment_home">
 
         <action
+            android:id="@+id/action_homeFragment_to_createGroupFragment"
+            app:destination="@id/createGroupFragment" />
+        <action
             android:id="@+id/action_homeFragment_to_chatFragment"
             app:destination="@id/chatFragment" />
         <action
@@ -44,6 +47,19 @@
             app:popEnterAnim="@anim/no_animation"
             app:popExitAnim="@anim/slide_down" />
     </fragment>
+
+    <fragment
+        android:id="@+id/createGroupFragment"
+        android:name="com.example.messageapp.fragment.CreateGroupFragment"
+        android:label="fragment_create_group"
+        tools:layout="@layout/fragment_create_group">
+        <action
+            android:id="@+id/action_createGroupFragment_to_chatFragment"
+            app:destination="@id/chatFragment"
+            app:popUpTo="@id/createGroupFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
     <fragment
         android:id="@+id/phoneBookFragment"
         android:name="com.example.messageapp.fragment.PhoneBookFragment"

@@ -28,6 +28,25 @@
             android:textColor="@color/text_common"
             android:textSize="14sp" />
 
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardPreviewSender"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/grey_bg"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:id="@+id/imgPreviewSender"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter"
+                android:src="@drawable/bg_grey_equal" />
+        </androidx.cardview.widget.CardView>
+
         <TextView
             android:id="@+id/tvTimeSender"
             android:layout_width="wrap_content"
@@ -57,6 +76,25 @@
             android:layout_height="wrap_content"
             android:textColor="@color/text_common"
             android:textSize="14sp" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardPreviewReceiver"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/grey_bg"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:id="@+id/imgPreviewReceiver"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter"
+                android:src="@drawable/bg_grey_equal" />
+        </androidx.cardview.widget.CardView>
 
         <TextView
             android:id="@+id/tvTimeReceiver"
@@ -131,6 +169,7 @@
             android:baselineAligned="false">
 
             <LinearLayout
+                android:id="@+id/btnReply"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

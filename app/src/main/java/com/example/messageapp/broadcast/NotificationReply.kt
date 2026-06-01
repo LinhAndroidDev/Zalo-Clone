@@ -9,9 +9,12 @@ import androidx.core.app.NotificationCompat
 import com.example.messageapp.R
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.MessageReply
+import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.service.ReceiverMessageService
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.MessageReplyHelper
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -22,40 +25,92 @@ class NotificationReply : BroadcastReceiver() {
     lateinit var shared: SharePreferenceRepository
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        val remoteInput = RemoteInput.getResultsFromIntent(intent)
-        if(remoteInput != null) {
-            val repliedText = remoteInput.getString(ReceiverMessageService.KEY_REPLY_TEXT)
-            val receiverId = intent?.getStringExtra(ReceiverMessageService.SENDER_ID)
-            val userId = shared.getAuth()
-            val time = DateUtils.getTimeCurrent()
-            val message = Message(
-                message = repliedText.toString(),
-                receiver = receiverId.toString(),
-                sender = userId,
-                time = time
-            )
+        if (context == null || intent == null) return
+        val remoteInput = RemoteInput.getResultsFromIntent(intent) ?: return
+        val repliedText = remoteInput.getCharSequence(ReceiverMessageService.KEY_REPLY_TEXT)
+            ?.toString()
+            ?.trim()
+            .orEmpty()
+        if (repliedText.isBlank()) return
 
-            FireBaseInstance.getInfoUser(userId = receiverId.toString()) { user ->
-                user.keyAuth = receiverId.toString()
-                FireBaseInstance.sendMessage(
-                    message = message,
-                    userId = userId,
-                    time = time,
-                    conversation = Conversation(user),
-                    shared.getNameUser(),
-                    sendFirst = false
-                ) {
-                    val notificationManager =
-                        context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    val repliedNotification =
-                        NotificationCompat
-                            .Builder(context, context.getString(R.string.title_app))
-                            .setSmallIcon(R.drawable.ic_message)
-                            .setContentText(String.format(context.getString(R.string.replied_to_message_of), user.name))
-                            .build()
-                    notificationManager.notify(shared.getChannelId(), repliedNotification)
-                }
+        val senderId = intent.getStringExtra(ReceiverMessageService.SENDER_ID).orEmpty()
+        val groupId = intent.getStringExtra(ReceiverMessageService.GROUP_ID)?.trim().orEmpty()
+        val groupName = intent.getStringExtra(ReceiverMessageService.GROUP_NAME).orEmpty()
+        val userId = shared.getAuth()
+        val time = DateUtils.getTimeCurrent()
+        val replyTo = buildReplyToFromIntent(intent, senderId)
+
+        val message = Message(
+            message = repliedText,
+            receiver = groupId.ifEmpty { senderId },
+            sender = userId,
+            time = time,
+            replyTo = replyTo,
+        )
+
+        if (groupId.isNotEmpty()) {
+            FireBaseInstance.sendMessage(
+                message = message,
+                userId = userId,
+                time = time,
+                conversation = Conversation(
+                    friendId = groupId,
+                    name = groupName,
+                    isGroup = true,
+                ),
+                nameSender = shared.getNameUser(),
+                sendFirst = false,
+            ) {
+                showRepliedNotification(context, groupName.ifBlank { groupId })
+            }
+            return
+        }
+
+        FireBaseInstance.getInfoUser(userId = senderId) { user ->
+            user.keyAuth = senderId
+            FireBaseInstance.sendMessage(
+                message = message,
+                userId = userId,
+                time = time,
+                conversation = Conversation(user),
+                nameSender = shared.getNameUser(),
+                sendFirst = false,
+            ) {
+                showRepliedNotification(context, user.name.orEmpty().ifBlank { senderId })
             }
         }
+    }
+
+    private fun buildReplyToFromIntent(intent: Intent, senderId: String): MessageReply? {
+        val messageTime = intent.getStringExtra(ReceiverMessageService.MESSAGE_TIME)?.trim().orEmpty()
+        if (messageTime.isBlank()) return null
+
+        val previewText = intent.getStringExtra(ReceiverMessageService.REPLY_PREVIEW_TEXT).orEmpty()
+        val senderName = intent.getStringExtra(ReceiverMessageService.REPLY_SENDER_NAME).orEmpty()
+        val type = intent.getStringExtra(ReceiverMessageService.REPLY_TYPE)?.toIntOrNull()
+            ?: TypeMessage.MESSAGE.rawValue
+        val photoUrl = intent.getStringExtra(ReceiverMessageService.REPLY_PHOTO_URL)
+
+        return MessageReplyHelper.buildMessageReplyFromFcmFields(
+            messageTime = messageTime,
+            senderId = senderId,
+            senderName = senderName,
+            previewText = previewText,
+            type = type,
+            photoUrl = photoUrl,
+        )
+    }
+
+    private fun showRepliedNotification(context: Context, targetName: String) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val repliedNotification =
+            NotificationCompat.Builder(context, context.getString(R.string.title_app))
+                .setSmallIcon(R.drawable.ic_message)
+                .setContentText(
+                    String.format(context.getString(R.string.replied_to_message_of), targetName),
+                )
+                .build()
+        notificationManager.notify(shared.getChannelId(), repliedNotification)
     }
 }

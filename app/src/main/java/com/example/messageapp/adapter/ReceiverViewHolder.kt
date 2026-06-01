@@ -15,6 +15,8 @@ import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.MentionHelper
+import com.example.messageapp.utils.MessageReplyHelper
 
 class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHolder(v.root),
     ViewTypeMessage {
@@ -72,12 +74,35 @@ class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHold
         v.viewMarginBottomMessage.isVisible = message.emotion?.emotionEmpty() == false
         context.calculatorViewMarginEmotion(R.dimen.margin_100)
         showViewMessage(TypeMessage.MESSAGE)
-        v.tvReceiver.text = message.message
+        v.tvReceiver.text = if (message.mentions.isNotEmpty()) {
+            MentionHelper.applyMentionSpans(context, message.message, message.mentions)
+        } else {
+            message.message
+        }
         v.tvTime.text = DateUtils.convertTimeToHour(message.time)
         v.viewMessage.setOnLongClickListener {
             longClick.invoke(it)
             true
         }
+    }
+
+    fun bindReplyQuote(
+        context: Context,
+        message: Message,
+        nameContext: MessageReplyHelper.ReplyNameContext,
+        onQuoteClick: ((String) -> Unit)?,
+    ) {
+        val quoteRoot = v.root.findViewById<View>(R.id.layoutReplyQuote) ?: return
+        MessageReplyHelper.bindReplyQuote(
+            context = context,
+            quoteRoot = quoteRoot,
+            tvQuoteSender = quoteRoot.findViewById(R.id.tvQuoteSender),
+            tvQuotePreview = quoteRoot.findViewById(R.id.tvQuotePreview),
+            imgQuoteThumb = quoteRoot.findViewById(R.id.imgQuoteThumb),
+            reply = message.replyTo,
+            nameContext = nameContext,
+            onQuoteClick = onQuoteClick,
+        )
     }
 
     // This function used to show view multi photo of receiver

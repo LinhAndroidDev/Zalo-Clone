@@ -9,6 +9,8 @@
     <color name="blue2">#2373ED</color>
     <color name="color_sender">#d0f2fe</color>
     <color name="blue_light">#daeaff</color>
+    <color name="reply_scroll_highlight">#664DA3FF</color>
+    <color name="reply_bubble_stroke_highlight">#068BFF</color>
     <color name="blue_dark">#0a4197</color>
     <color name="grey">#4C4C4C</color>
     <color name="grey_1">#9f9f9f</color>

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
@@ -22,14 +23,21 @@ class SplashFragment : BaseFragment<FragmentSplashBinding, SplashFragmentViewMod
     private var dataFromMainActivity: Conversation? = null
     companion object {
         const val DATA_FRIEND = "DATA_FRIEND"
+        const val DATA_GROUP_CONVERSATION = "DATA_GROUP_CONVERSATION"
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val groupConv: Conversation? = arguments?.getParcelable(DATA_GROUP_CONVERSATION)
         val friendData: User? = arguments?.getParcelable(DATA_FRIEND)
-        friendData?.let {
-            dataFromMainActivity = Conversation(friendData)
+        when {
+            groupConv != null -> {
+                dataFromMainActivity = groupConv
+            }
+            friendData != null -> {
+                dataFromMainActivity = Conversation(friendData)
+            }
         }
 
         runnable = Runnable {
@@ -47,8 +55,16 @@ class SplashFragment : BaseFragment<FragmentSplashBinding, SplashFragmentViewMod
     }
 
     private fun goToChatFragment(conversation: Conversation) {
-        val action = SplashFragmentDirections.actionSplashFragmentToChatFragment(conversation)
-        findNavController().navigate(action)
+        val navController = findNavController()
+        navController.navigate(
+            R.id.homeFragment,
+            null,
+            NavOptions.Builder()
+                .setPopUpTo(R.id.splashFragment, true)
+                .build()
+        )
+        val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(conversation)
+        navController.navigate(action)
     }
 
     override fun onResume() {

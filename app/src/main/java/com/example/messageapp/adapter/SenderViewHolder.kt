@@ -13,6 +13,10 @@ import com.example.messageapp.databinding.ItemChatSenderBinding
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.MentionHelper
+import com.example.messageapp.utils.MessageReplyHelper
 
 class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v.root),
     ViewTypeMessage {
@@ -41,12 +45,35 @@ class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
         showViewMessage(TypeMessage.MESSAGE)
-        v.tvSender.text = message.message
+        v.tvSender.text = if (message.mentions.isNotEmpty()) {
+            MentionHelper.applyMentionSpans(context, message.message, message.mentions)
+        } else {
+            message.message
+        }
         v.tvTime.text = DateUtils.convertTimeToHour(message.time)
         v.viewMessage.setOnLongClickListener {
             longClick.invoke(it)
             true
         }
+    }
+
+    fun bindReplyQuote(
+        context: Context,
+        message: Message,
+        nameContext: MessageReplyHelper.ReplyNameContext,
+        onQuoteClick: ((String) -> Unit)?,
+    ) {
+        val quoteRoot = v.root.findViewById<View>(R.id.layoutReplyQuote) ?: return
+        MessageReplyHelper.bindReplyQuote(
+            context = context,
+            quoteRoot = quoteRoot,
+            tvQuoteSender = quoteRoot.findViewById(R.id.tvQuoteSender),
+            tvQuotePreview = quoteRoot.findViewById(R.id.tvQuotePreview),
+            imgQuoteThumb = quoteRoot.findViewById(R.id.imgQuoteThumb),
+            reply = message.replyTo,
+            nameContext = nameContext,
+            onQuoteClick = onQuoteClick,
+        )
     }
 
     // This function used to show view multi photo of sender
@@ -92,8 +119,48 @@ class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v
 
     // This function used to show view seen or receive message of sender
     fun showSeen(seen: Boolean) {
+        v.layoutGroupSeenAvatars.isVisible = false
         this.v.avtSeen.isVisible = seen
         this.v.viewReceived.isVisible = !seen
+    }
+
+    fun hideGroupSeenAvatars() {
+        v.layoutGroupSeenAvatars.isVisible = false
+        v.avtSeen1.isVisible = false
+        v.avtSeen2.isVisible = false
+        v.avtSeen3.isVisible = false
+        v.avtSeen4.isVisible = false
+        v.tvSeenMore.isVisible = false
+        v.avtSeen.isVisible = false
+        v.viewReceived.isVisible = false
+    }
+
+    fun bindGroupSeenAvatars(context: Context, readerIds: List<String>, maxVisible: Int = 4) {
+        v.avtSeen.isVisible = false
+        v.viewReceived.isVisible = false
+        if (readerIds.isEmpty()) {
+            hideGroupSeenAvatars()
+            return
+        }
+        v.layoutGroupSeenAvatars.isVisible = true
+        val avatars = listOf(v.avtSeen1, v.avtSeen2, v.avtSeen3, v.avtSeen4)
+        avatars.forEach { it.isVisible = false }
+        v.tvSeenMore.isVisible = false
+
+        val visibleCount = minOf(readerIds.size, maxVisible)
+        for (i in 0 until visibleCount) {
+            val userId = readerIds[i]
+            val imageView = avatars[i]
+            imageView.isVisible = true
+            FireBaseInstance.getInfoUser(userId) { user ->
+                context.loadImg(user.avatar.toString(), imageView)
+            }
+        }
+        val remaining = readerIds.size - maxVisible
+        if (remaining > 0) {
+            v.tvSeenMore.isVisible = true
+            v.tvSeenMore.text = "+$remaining"
+        }
     }
 
 

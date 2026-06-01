@@ -1,5 +1,7 @@
 package com.example.messageapp.utils
 
+import com.example.messageapp.MyApplication
+import com.example.messageapp.R
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -117,6 +119,27 @@ object DateUtils {
                     }
                 }
             }
+        }
+    }
+
+    fun formatLastSeenStatus(online: Boolean, lastSeenMillis: Long): String {
+        if (online) {
+            return MyApplication.appContext.getString(R.string.presence_active)
+        }
+        if (lastSeenMillis <= 0L) {
+            return MyApplication.appContext.getString(R.string.presence_last_seen_unknown)
+        }
+        val now = System.currentTimeMillis()
+        val diffMs = (now - lastSeenMillis).coerceAtLeast(0L)
+        val diffMinutes = diffMs / 60_000L
+        val diffHours = diffMs / 3_600_000L
+        val diffDays = diffMs / 86_400_000L
+
+        return when {
+            diffMinutes < 1 -> MyApplication.appContext.getString(R.string.presence_last_seen_just_now)
+            diffMinutes < 60 -> MyApplication.appContext.getString(R.string.presence_last_seen_minutes, diffMinutes)
+            diffHours < 24 -> MyApplication.appContext.getString(R.string.presence_last_seen_hours, diffHours)
+            else -> MyApplication.appContext.getString(R.string.presence_last_seen_days, diffDays)
         }
     }
 }

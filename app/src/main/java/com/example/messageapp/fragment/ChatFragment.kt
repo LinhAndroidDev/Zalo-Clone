@@ -13,11 +13,13 @@ import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Rect
 import android.media.MediaPlayer
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
@@ -28,6 +30,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSmoothScroller
+import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.messageapp.PersonalActivity
@@ -35,6 +40,10 @@ import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.adapter.ClickPhotoModel
+import com.example.messageapp.adapter.LongClickPhotoModel
+import com.example.messageapp.adapter.MentionSuggestionAdapter
+import com.example.messageapp.adapter.ReceiverViewHolder
+import com.example.messageapp.adapter.SenderViewHolder
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
@@ -43,22 +52,36 @@ import com.example.messageapp.bottom_sheet.BottomSheetSticker
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.model.Conversation
-import com.example.messageapp.model.Emotion
+import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.MessageMention
+import android.view.inputmethod.InputMethodManager
 import com.example.messageapp.model.TypeMessage
+import kotlin.math.max
+import kotlin.math.min
+import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.EmotionBurstEffect
+import com.example.messageapp.utils.EmotionReactionDetector
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
+import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
+import com.example.messageapp.utils.MentionHelper
+import com.example.messageapp.utils.MessageReplyHelper
 import com.example.messageapp.utils.hideKeyboard
 import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import java.io.File
+import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() {
@@ -69,6 +92,18 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var stateScrollable = true
     private var isChatScreenActive = false
     private var isMessageEmpty = true
+    private var lastFriendPresence: UserPresence? = null
+    private var presenceRefreshJob: Job? = null
+    private var mentionSuggestionAdapter: MentionSuggestionAdapter? = null
+    private val pendingMentions = mutableListOf<MessageMention>()
+    private var activeMentionQuery: MentionHelper.MentionQuery? = null
+    private var groupMentionMembers: List<MentionHelper.MentionCandidate> = emptyList()
+    private var replyingToMessage: Message? = null
+    private var replyHighlightScrollListener: RecyclerView.OnScrollListener? = null
+    private var lastMessagesSnapshot: List<Message> = emptyList()
+    private val allMentionCandidate by lazy {
+        MentionHelper.allMentionCandidate(getString(R.string.mention_all_label))
+    }
 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
@@ -84,11 +119,22 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             showPopupOption(data.first, data.second, false)
         }
 
+        override fun onPhotoLongClick(data: LongClickPhotoModel) {
+            showPopupOption(
+                anchor = data.anchor,
+                message = data.message,
+                isItemSender = data.fromSender,
+                photoPreviewUrl = data.photoUrl,
+                photoIntrinsicWidth = data.intrinsicWidth,
+                photoIntrinsicHeight = data.intrinsicHeight,
+            )
+        }
+
         override fun onPhotoClick(data: ClickPhotoModel) {
             val url = data.photoData.getOrNull(data.indexOfPhoto) ?: return
             if (isLikelyVideoUrl(url)) {
                 val viewIntent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(Uri.parse(url), "video/*")
+                    setDataAndType(url.toUri(), "video/*")
                 }
                 try {
                     startActivity(Intent.createChooser(viewIntent, null))
@@ -97,8 +143,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 }
                 return
             }
-            val keyId = if (data.fromSender) viewModel?.shared?.getAuth()
-                .toString() else conversation?.friendId.toString()
+            val keyId = when {
+                data.fromSender -> viewModel?.shared?.getAuth().orEmpty()
+                conversation?.isGroupThread() == true -> conversation?.friendId.orEmpty()
+                else -> conversation?.friendId.orEmpty()
+            }
             val intent = Intent(requireActivity(), PreviewPhotoActivity::class.java)
             val previewPhotoArgument = PreviewPhotoArgument(
                 message = data.message,
@@ -151,6 +200,10 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             })
         }
 
+        override fun onReplyQuoteClick(messageTime: String) {
+            scrollToMessage(messageTime)
+        }
+
     }
 
     override fun initView() {
@@ -159,16 +212,40 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         FirebaseAnalyticsInstance.logChatScreen()
 
         conversation = ChatFragmentArgs.fromBundle(requireArguments()).conversation
-        conversation?.let {
-            chatAdapter = ChatAdapter(requireActivity(), conversation?.friendId ?: "")
+        conversation?.let { cvt ->
+            val uid = viewModel?.shared?.getAuth().orEmpty()
+            chatAdapter = ChatAdapter(
+                requireActivity(),
+                cvt.friendId,
+                cvt.isGroupThread(),
+                uid,
+                viewModel?.shared?.getNameUser().orEmpty(),
+                cvt.name,
+            )
+            chatAdapter?.updateReplyNameContext(
+                myName = viewModel?.shared?.getNameUser().orEmpty(),
+                peerDisplayName = cvt.name,
+                groupMembers = groupMentionMembers,
+            )
             chatAdapter?.setOnActionClickItem(mCallBackClickItem)
             binding?.rcvChat?.adapter = chatAdapter
-            binding?.header?.setTitleChatView(conversation?.name ?: "")
-            binding?.header?.showInfoFriend = {
-                val intent = Intent(requireActivity(), PersonalActivity::class.java)
-                intent.putExtra(PersonalActivity.FRIEND_ID_KEY, conversation?.friendId)
-                startActivity(intent)
-                activity?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            binding?.header?.setTitleChatView(cvt.name)
+            if (cvt.isGroupThread()) {
+                binding?.header?.setFriendStatusVisible(false)
+                setupMentionPicker()
+            } else {
+                binding?.header?.setFriendStatusVisible(true)
+                viewModel?.startObservingFriendPresence(cvt.friendId)
+            }
+            binding?.header?.showInfoFriend = if (cvt.isGroupThread()) {
+                null
+            } else {
+                {
+                    val intent = Intent(requireActivity(), PersonalActivity::class.java)
+                    intent.putExtra(PersonalActivity.FRIEND_ID_KEY, cvt.friendId)
+                    startActivity(intent)
+                    activity?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                }
             }
         }
         binding?.edtMessage?.doOnTextChanged { text, _, _, _ ->
@@ -178,12 +255,29 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             } else {
                 binding?.viewOptions?.isVisible = true
                 binding?.btnSend?.isVisible = false
+                pendingMentions.clear()
+                hideMentionPicker()
+            }
+            if (conversation?.isGroupThread() == true) {
+                val synced = MentionHelper.syncPendingMentions(text?.toString().orEmpty(), pendingMentions)
+                pendingMentions.clear()
+                pendingMentions.addAll(synced)
+                refreshInputMentionHighlight()
+                updateMentionPicker(text)
+            }
+        }
+
+        binding?.edtMessage?.setOnClickListener {
+            if (conversation?.isGroupThread() == true) {
+                updateMentionPicker(binding?.edtMessage?.text)
             }
         }
 
         binding?.edtMessage?.setOnFocusChangeListener { _, hasFocus ->
-            viewModel?.updateTyping(conversation?.friendId.toString(), hasFocus)
+            conversation?.let { viewModel?.updateTyping(it, hasFocus) }
         }
+
+        binding?.btnCancelReply?.setOnClickListener { clearReply() }
     }
 
     /**
@@ -194,13 +288,19 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
      * This is how to calculate so that the popup does not lose view when it is near the bottom of the screen.
      */
     @SuppressLint("MissingInflatedId", "InflateParams", "ClickableViewAccessibility")
-    private fun showPopupOption(anchor: View, message: Message, isItemSender: Boolean = true) {
+    private fun showPopupOption(
+        anchor: View,
+        message: Message,
+        isItemSender: Boolean = true,
+        photoPreviewUrl: String? = null,
+        photoIntrinsicWidth: Int = 0,
+        photoIntrinsicHeight: Int = 0,
+    ) {
         // Lấy LayoutInflater để inflate layout của PopupWindow
         val inflater = requireActivity().getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val popupView = inflater.inflate(R.layout.popup_option_chat, null)
-        val layoutSender: LinearLayout = popupView.findViewById(R.id.layoutSender)
-        val layoutReceiver: LinearLayout = popupView.findViewById(R.id.layoutReceiver)
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
+        val btnReply: LinearLayout = popupView.findViewById(R.id.btnReply)
         val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
         val layoutEmotion: LinearLayout = popupView.findViewById(R.id.layoutEmotion)
         val imgFavourite: ImageView = popupView.findViewById(R.id.imgFavourite)
@@ -214,17 +314,15 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         soundEmotion.start()
         AnimatorUtils.scaleEmotion(requireActivity(), layoutEmotion)
 
-        if (isItemSender) {
-            layoutSender.isVisible = true
-            popupView.findViewById<TextView>(R.id.tvSender).text = message.message
-            popupView.findViewById<TextView>(R.id.tvTimeSender).text =
-                DateUtils.convertTimeToHour(message.time)
-        } else {
-            layoutReceiver.isVisible = true
-            popupView.findViewById<TextView>(R.id.tvReceiver).text = message.message
-            popupView.findViewById<TextView>(R.id.tvTimeReceiver).text =
-                DateUtils.convertTimeToHour(message.time)
-        }
+        bindPopupPreview(
+            popupView = popupView,
+            message = message,
+            isItemSender = isItemSender,
+            photoPreviewUrl = photoPreviewUrl,
+            photoIntrinsicWidth = photoIntrinsicWidth,
+            photoIntrinsicHeight = photoIntrinsicHeight,
+        )
+        btnCopy.isVisible = photoPreviewUrl == null
 
         // Tạo PopupWindow với chiều rộng và chiều cao
         val popupWindow = PopupWindow(
@@ -265,6 +363,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             popupWindow.dismiss()
         }
 
+        btnReply.setOnClickListener {
+            startReply(message)
+            popupWindow.dismiss()
+        }
+
         btnRemoveMessage.setOnClickListener {
             conversation?.let {
                 viewModel?.removeMessage(it, message.time)
@@ -273,39 +376,191 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         imgFavourite.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(favourite = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            reactToMessage(message, EmotionType.FAVOURITE, anchor)
             popupWindow.dismiss()
         }
 
         imgLike.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(like = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            reactToMessage(message, EmotionType.LIKE, anchor)
             popupWindow.dismiss()
         }
 
         imgLaugh.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(laugh = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            reactToMessage(message, EmotionType.LAUGH, anchor)
             popupWindow.dismiss()
         }
 
         imgCry.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(cry = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            reactToMessage(message, EmotionType.CRY, anchor)
             popupWindow.dismiss()
         }
 
         imgAngry.setOnClickListener {
-            val data = mapOf(viewModel?.shared?.getAuth().toString() to 1)
-            val emotion = Emotion(angry = data)
-            viewModel?.releaseEmotion(message.time, conversation?.friendId.toString(), data = emotion)
+            reactToMessage(message, EmotionType.ANGRY, anchor)
             popupWindow.dismiss()
         }
+    }
+
+    private fun reactToMessage(message: Message, type: EmotionType, anchor: View) {
+        val cvt = conversation ?: return
+        viewModel?.toggleMessageReaction(message.time, cvt, type) { appliedType ->
+            playEmotionBurst(appliedType, anchor)
+        }
+    }
+
+    private fun playEmotionBurst(type: EmotionType, anchor: View) {
+        val activity = activity ?: return
+        EmotionBurstEffect.play(activity, anchor, type)
+    }
+
+    private fun playRemoteEmotionBurst(messageTime: String, type: EmotionType) {
+        if (!isChatScreenActive) return
+        val activity = activity ?: return
+        val anchor = findEmotionBurstAnchor(messageTime) ?: return
+        EmotionBurstEffect.play(activity, anchor, type)
+    }
+
+    private fun findEmotionBurstAnchor(messageTime: String): View? {
+        val recyclerView = binding?.rcvChat ?: return null
+        val index = chatAdapter?.indexOfMessageTime(messageTime) ?: return null
+        val holder = recyclerView.findViewHolderForAdapterPosition(index) ?: return null
+        return when (holder) {
+            is SenderViewHolder -> if (holder.v.viewReleaseEmotion.isVisible) {
+                holder.v.viewReleaseEmotion
+            } else {
+                holder.v.viewEmotion
+            }
+            is ReceiverViewHolder -> if (holder.v.viewReleaseEmotion.isVisible) {
+                holder.v.viewReleaseEmotion
+            } else {
+                holder.v.viewEmotion
+            }
+            else -> holder.itemView
+        }
+    }
+
+    private fun bindPopupPreview(
+        popupView: View,
+        message: Message,
+        isItemSender: Boolean,
+        photoPreviewUrl: String?,
+        photoIntrinsicWidth: Int,
+        photoIntrinsicHeight: Int,
+    ) {
+        val timeText = DateUtils.convertTimeToHour(message.time)
+        if (isItemSender) {
+            val layoutSender = popupView.findViewById<LinearLayout>(R.id.layoutSender)
+            val tvTimeSender = popupView.findViewById<TextView>(R.id.tvTimeSender)
+            layoutSender.isVisible = true
+            popupView.findViewById<LinearLayout>(R.id.layoutReceiver).isVisible = false
+            val tvSender = popupView.findViewById<TextView>(R.id.tvSender)
+            val cardPreview = popupView.findViewById<View>(R.id.cardPreviewSender)
+            val imgPreview = popupView.findViewById<ImageView>(R.id.imgPreviewSender)
+            if (photoPreviewUrl.isNullOrBlank()) {
+                applyTextBubblePreviewHeader(layoutSender, tvTimeSender, isSender = true)
+                tvTimeSender.text = timeText
+                tvSender.isVisible = true
+                tvSender.text = message.message
+                cardPreview.isVisible = false
+            } else {
+                applyPhotoPreviewHeader(layoutSender, tvTimeSender)
+                tvSender.isVisible = false
+                bindPhotoPreviewImage(
+                    imgPreview = imgPreview,
+                    cardPreview = cardPreview,
+                    photoUrl = photoPreviewUrl,
+                    intrinsicWidth = photoIntrinsicWidth,
+                    intrinsicHeight = photoIntrinsicHeight,
+                )
+            }
+            return
+        }
+
+        val layoutReceiver = popupView.findViewById<LinearLayout>(R.id.layoutReceiver)
+        val tvTimeReceiver = popupView.findViewById<TextView>(R.id.tvTimeReceiver)
+        layoutReceiver.isVisible = true
+        popupView.findViewById<LinearLayout>(R.id.layoutSender).isVisible = false
+        val tvReceiver = popupView.findViewById<TextView>(R.id.tvReceiver)
+        val cardPreview = popupView.findViewById<View>(R.id.cardPreviewReceiver)
+        val imgPreview = popupView.findViewById<ImageView>(R.id.imgPreviewReceiver)
+        if (photoPreviewUrl.isNullOrBlank()) {
+            applyTextBubblePreviewHeader(layoutReceiver, tvTimeReceiver, isSender = false)
+            tvTimeReceiver.text = timeText
+            tvReceiver.isVisible = true
+            tvReceiver.text = message.message
+            cardPreview.isVisible = false
+        } else {
+            applyPhotoPreviewHeader(layoutReceiver, tvTimeReceiver)
+            tvReceiver.isVisible = false
+            bindPhotoPreviewImage(
+                imgPreview = imgPreview,
+                cardPreview = cardPreview,
+                photoUrl = photoPreviewUrl,
+                intrinsicWidth = photoIntrinsicWidth,
+                intrinsicHeight = photoIntrinsicHeight,
+            )
+        }
+    }
+
+    private fun applyTextBubblePreviewHeader(
+        container: LinearLayout,
+        tvTime: TextView,
+        isSender: Boolean,
+    ) {
+        container.setBackgroundResource(
+            if (isSender) R.drawable.bg_sender else R.drawable.bg_receiver,
+        )
+        val density = resources.displayMetrics.density
+        val horizontalPad = (15 * density).toInt()
+        val verticalPad = (7 * density).toInt()
+        container.setPadding(horizontalPad, verticalPad, horizontalPad, verticalPad)
+        tvTime.isVisible = true
+    }
+
+    private fun applyPhotoPreviewHeader(container: LinearLayout, tvTime: TextView) {
+        container.background = null
+        container.setPadding(0, 0, 0, 0)
+        tvTime.isVisible = false
+    }
+
+    private fun bindPhotoPreviewImage(
+        imgPreview: ImageView,
+        cardPreview: View,
+        photoUrl: String,
+        intrinsicWidth: Int,
+        intrinsicHeight: Int,
+    ) {
+        val (displayW, displayH) = popupPreviewDisplaySize(intrinsicWidth, intrinsicHeight)
+        val layoutParams = (imgPreview.layoutParams as? FrameLayout.LayoutParams)
+            ?: FrameLayout.LayoutParams(displayW, displayH)
+        layoutParams.width = displayW
+        layoutParams.height = displayH
+        imgPreview.layoutParams = layoutParams
+        imgPreview.scaleType = ImageView.ScaleType.FIT_CENTER
+        cardPreview.isVisible = true
+        requireContext().loadImg(
+            photoUrl,
+            imgPreview,
+            R.drawable.bg_grey_equal,
+        )
+    }
+
+    private fun popupPreviewDisplaySize(intrinsicW: Int, intrinsicH: Int): Pair<Int, Int> {
+        val density = resources.displayMetrics.density
+        val endMargin = (15 * density).toInt()
+        val maxW = resources.getDimensionPixelSize(R.dimen.width_popup_options) - endMargin
+        val maxH = min((screenHeight * 0.48f).toInt(), (300 * density).toInt())
+
+        var w = intrinsicW
+        var h = intrinsicH
+        if (w <= 0 || h <= 0) {
+            w = maxW
+            h = (maxW * 0.75f).toInt()
+            return w to h
+        }
+
+        val scale = min(maxW / w.toFloat(), maxH / h.toFloat())
+        return maxOf(1, (w * scale).toInt()) to maxOf(1, (h * scale).toInt())
     }
 
     @Deprecated("Deprecated in Java")
@@ -345,14 +600,48 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         super.bindData()
 
         conversation?.let { cvt ->
-            viewModel?.getMessage(friendId = cvt.friendId)
-            viewModel?.checkShowTyping(friendId = cvt.friendId)
+            viewModel?.getMessage(cvt)
+            viewModel?.observeTyping(cvt)
+            if (cvt.isGroupThread()) {
+                viewModel?.startGroupReadTracking(cvt.friendId)
+            }
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel?.mentionCandidates?.collect { members ->
+                        groupMentionMembers = members
+                        chatAdapter?.updateReplyNameContext(
+                            myName = viewModel?.shared?.getNameUser().orEmpty(),
+                            peerDisplayName = cvt.name,
+                            groupMembers = members,
+                        )
+                        updateMentionPicker(binding?.edtMessage?.text)
+                    }
+                }
+            }
 
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
+                            val previousMessages = lastMessagesSnapshot
                             chatAdapter?.updateDiffList(msg)
+                            if (isChatScreenActive && previousMessages.isNotEmpty()) {
+                                val myUserId = viewModel?.shared?.getAuth().orEmpty()
+                                val remoteChanges = EmotionReactionDetector.detectRemoteReactionChanges(
+                                    previous = previousMessages,
+                                    current = msg,
+                                    myUserId = myUserId,
+                                )
+                                if (remoteChanges.isNotEmpty()) {
+                                    binding?.rcvChat?.post {
+                                        remoteChanges.forEach { change ->
+                                            playRemoteEmotionBurst(change.messageTime, change.type)
+                                        }
+                                    }
+                                }
+                            }
+                            lastMessagesSnapshot = ArrayList(msg)
                             if (stateScrollable) {
                                 binding?.rcvChat?.scrollToPosition(
                                     chatAdapter?.itemCount?.minus(1) ?: 0
@@ -376,6 +665,23 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel?.friendPresence?.collect { presence ->
+                    lastFriendPresence = presence
+                    updateFriendStatusHeader(presence)
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel?.groupLastMessageReaders?.collect { readerIds ->
+                    chatAdapter?.updateGroupReaders(readerIds)
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel?.cloudUploadProgress?.collect { pct ->
                     val b = binding ?: return@collect
@@ -391,6 +697,18 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
     }
 
+    private fun updateFriendStatusHeader(presence: UserPresence?) {
+        if (conversation?.isGroupThread() == true) {
+            binding?.header?.setFriendStatusVisible(false)
+            return
+        }
+        binding?.header?.setFriendStatusVisible(true)
+        val currentPresence = presence ?: return
+        binding?.header?.setFriendStatus(
+            DateUtils.formatLastSeenStatus(currentPresence.online, currentPresence.lastSeen),
+        )
+    }
+
     /**
      * This function update seen message from friend of user:
      * + Show avatar friend seen when item last message is from user
@@ -398,11 +716,19 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
      */
     private fun updateSeenMessage(msg: ArrayList<Message>) {
         val userId = viewModel?.shared?.getAuth() ?: ""
+        val cvt = conversation ?: return
+        if (cvt.isGroupThread()) {
+            if (msg.isNotEmpty()) {
+                chatAdapter?.notifyItemChanged(msg.lastIndex)
+            }
+            conversation?.let { viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
+            return
+        }
         FireBaseInstance.getConversationRlt(
             friendId = conversation?.friendId ?: "",
             userId = userId,
-            success = { cvt ->
-                if (cvt.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
+            success = { conv ->
+                if (conv.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
                     chatAdapter?.seen = true
                     chatAdapter?.notifyItemChanged(msg.lastIndex)
                 } else {
@@ -428,20 +754,42 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
         binding?.btnSend?.setOnClickListener {
             conversation?.let { cvt ->
-                val msg = binding?.edtMessage?.text.toString()
+                val rawText = binding?.edtMessage?.text.toString()
+                val mentions = if (cvt.isGroupThread()) {
+                    MentionHelper.syncPendingMentions(rawText, pendingMentions)
+                } else {
+                    emptyList()
+                }
                 val receiver = cvt.friendId
                 val sender = viewModel?.shared?.getAuth().toString()
                 val time = DateUtils.getTimeCurrent()
-                val message = Message(msg, receiver, sender, time)
+                val message = Message(
+                    message = rawText,
+                    receiver = receiver,
+                    sender = sender,
+                    time = time,
+                    mentions = mentions,
+                    replyTo = replyingToMessage?.let {
+                        MessageReplyHelper.buildMessageReply(
+                            requireContext(),
+                            it,
+                            resolveSenderNameForMessage(it.sender),
+                        )
+                    },
+                )
                 // log event: send_message
-                FirebaseAnalyticsInstance.logSendMessage(messageType = msg, messageLength = msg.length, receiverId = receiver)
+                FirebaseAnalyticsInstance.logSendMessage(messageType = rawText, messageLength = rawText.length, receiverId = receiver)
                 viewModel?.sendMessage(message = message, time = time, conversation = cvt, sendFirst = isMessageEmpty)
                 binding?.edtMessage?.setText("")
+                pendingMentions.clear()
+                hideMentionPicker()
+                clearReply()
             }
             stateScrollable = true
         }
 
         binding?.btnSelectImage?.setOnClickListener {
+            clearReply()
             val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                 type = "*/*"
                 putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
@@ -455,12 +803,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         binding?.btnMicro?.setOnClickListener {
+            clearReply()
             val bottomSheetRecord = BottomSheetRecord()
             bottomSheetRecord.onRecordListener = { path ->
                 conversation?.let { cvt ->
                     val file = File(path)
                     viewModel?.uploadAudio(
-                        friendId = cvt.friendId,
                         uriAudio = Uri.fromFile(file),
                         time = DateUtils.getTimeCurrent(),
                         conversation = cvt,
@@ -482,20 +830,296 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         isChatScreenActive = true
         val notificationManager = context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancelAll()
+        presenceRefreshJob = lifecycleScope.launch {
+            while (isActive) {
+                delay(60_000L)
+                lastFriendPresence?.let { updateFriendStatusHeader(it) }
+            }
+        }
     }
 
     override fun onPause() {
         isChatScreenActive = false
+        presenceRefreshJob?.cancel()
+        presenceRefreshJob = null
         super.onPause()
+    }
+
+    override fun onDestroyView() {
+        viewModel?.stopObservingFriendPresence()
+        viewModel?.stopGroupReadTracking()
+        pendingMentions.clear()
+        hideMentionPicker()
+        clearReply()
+        replyHighlightScrollListener?.let { binding?.rcvChat?.removeOnScrollListener(it) }
+        replyHighlightScrollListener = null
+        chatAdapter?.clearReplyHighlight()
+        lastMessagesSnapshot = emptyList()
+        super.onDestroyView()
+    }
+
+    private fun resolveSenderNameForMessage(senderId: String): String {
+        MessageReplyHelper.cachedUserDisplayName(senderId)?.let { return it }
+        val cvt = conversation ?: return ""
+        val myUserId = viewModel?.shared?.getAuth().orEmpty()
+        return MessageReplyHelper.resolveSenderName(
+            senderId = senderId,
+            myUserId = myUserId,
+            myName = viewModel?.shared?.getNameUser().orEmpty(),
+            groupMembers = groupMentionMembers,
+            peerUserId = if (!cvt.isGroupThread()) cvt.friendId else "",
+            peerDisplayName = if (!cvt.isGroupThread()) cvt.name else "",
+        )
+    }
+
+    private fun bindReplySenderName(senderId: String) {
+        val syncName = resolveSenderNameForMessage(senderId)
+        if (syncName.isNotBlank()) {
+            binding?.tvReplySenderName?.text = syncName
+            binding?.tvReplySenderName?.isVisible = true
+            return
+        }
+        binding?.tvReplySenderName?.isVisible = false
+        MessageReplyHelper.fetchUserDisplayName(senderId) { fetchedName ->
+            if (replyingToMessage?.sender != senderId) return@fetchUserDisplayName
+            if (fetchedName.isBlank()) return@fetchUserDisplayName
+            binding?.tvReplySenderName?.text = fetchedName
+            binding?.tvReplySenderName?.isVisible = true
+        }
+    }
+
+    private fun startReply(message: Message) {
+        replyingToMessage = message
+        bindReplyBar(message)
+        binding?.replyPreviewContainer?.isVisible = true
+        binding?.edtMessage?.requestFocus()
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(binding?.edtMessage, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun bindReplyBar(message: Message) {
+        val ctx = requireContext()
+        bindReplySenderName(message.sender)
+        binding?.tvReplyPreview?.text = MessageReplyHelper.buildPreviewText(ctx, message)
+        binding?.tvReplyPreview?.maxLines = 1
+        binding?.tvReplyPreview?.ellipsize = android.text.TextUtils.TruncateAt.END
+        val photoUrl = MessageReplyHelper.firstPhotoUrl(message)
+        val imgReplyThumb = binding?.imgReplyThumb
+        if (photoUrl != null && MessageReplyHelper.resolveMessageType(message) != TypeMessage.AUDIO) {
+            imgReplyThumb?.isVisible = true
+            ctx.loadImg(photoUrl, imgReplyThumb!!)
+        } else {
+            imgReplyThumb?.isVisible = false
+        }
+    }
+
+    private fun clearReply() {
+        replyingToMessage = null
+        binding?.replyPreviewContainer?.isVisible = false
+        binding?.imgReplyThumb?.isVisible = false
+    }
+
+    private fun scrollToMessage(messageTime: String) {
+        val index = chatAdapter?.indexOfMessageTime(messageTime) ?: -1
+        if (index < 0) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.reply_original_not_found),
+                Toast.LENGTH_SHORT,
+            ).show()
+            return
+        }
+        val recyclerView = binding?.rcvChat ?: return
+
+        replyHighlightScrollListener?.let { recyclerView.removeOnScrollListener(it) }
+        replyHighlightScrollListener = null
+
+        val scrollToken = Any()
+        var scrollHighlightToken: Any? = scrollToken
+
+        fun finishScrollAndHighlight() {
+            if (scrollHighlightToken !== scrollToken) return
+            scrollHighlightToken = null
+            replyHighlightScrollListener?.let { recyclerView.removeOnScrollListener(it) }
+            replyHighlightScrollListener = null
+            nudgeToReplyScrollOffset(recyclerView, index) {
+                chatAdapter?.flashReplyHighlight(messageTime)
+            }
+        }
+
+        val listener = object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                if (newState != RecyclerView.SCROLL_STATE_IDLE) return
+                finishScrollAndHighlight()
+            }
+        }
+        replyHighlightScrollListener = listener
+        recyclerView.addOnScrollListener(listener)
+
+        recyclerView.post { smoothScrollToMessageWithOffset(recyclerView, index) }
+
+        // Item đã ở đúng vùng nhìn — smoothScroll có thể không chạy.
+        recyclerView.postDelayed({
+            if (scrollHighlightToken !== scrollToken) return@postDelayed
+            if (recyclerView.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
+                finishScrollAndHighlight()
+            }
+        }, 700L)
+    }
+
+    private fun smoothScrollToMessageWithOffset(recyclerView: RecyclerView, index: Int) {
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: run {
+            recyclerView.smoothScrollToPosition(index)
+            return
+        }
+        val scroller = object : LinearSmoothScroller(recyclerView.context) {
+            override fun getVerticalSnapPreference(): Int = SNAP_TO_START
+
+            override fun calculateDyToMakeVisible(view: View, snapPreference: Int): Int {
+                val topOffsetPx = replyScrollTopOffsetPx(recyclerView, index, view.height)
+                return layoutManager.getDecoratedTop(view) - layoutManager.paddingTop - topOffsetPx
+            }
+        }
+        scroller.targetPosition = index
+        layoutManager.startSmoothScroll(scroller)
+    }
+
+    /** Chỉnh nhẹ vị trí sau smooth scroll để khớp offset (vẫn có animation). */
+    private fun nudgeToReplyScrollOffset(
+        recyclerView: RecyclerView,
+        index: Int,
+        onComplete: () -> Unit,
+    ) {
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: run {
+            onComplete()
+            return
+        }
+        val targetView = layoutManager.findViewByPosition(index)
+        if (targetView == null) {
+            layoutManager.scrollToPositionWithOffset(
+                index,
+                replyScrollTopOffsetPx(recyclerView, index),
+            )
+            recyclerView.post(onComplete)
+            return
+        }
+        val topOffsetPx = replyScrollTopOffsetPx(recyclerView, index, targetView.height)
+        val dy = layoutManager.getDecoratedTop(targetView) - layoutManager.paddingTop - topOffsetPx
+        if (kotlin.math.abs(dy) <= 2) {
+            onComplete()
+            return
+        }
+        recyclerView.smoothScrollBy(0, dy)
+        val tuneListener = object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                if (newState != RecyclerView.SCROLL_STATE_IDLE) return
+                rv.removeOnScrollListener(this)
+                onComplete()
+            }
+        }
+        recyclerView.addOnScrollListener(tuneListener)
+    }
+
+    /**
+     * Offset từ mép trên RecyclerView tới item đích.
+     * Dùng vùng nhìn thấy trên màn hình (không dùng recyclerView.height vì layout wrap_content).
+     */
+    private fun replyScrollTopOffsetPx(
+        recyclerView: RecyclerView,
+        index: Int,
+        itemHeightPx: Int? = null,
+    ): Int {
+        val density = recyclerView.resources.displayMetrics.density
+        // ~2 dòng tin dưới header.
+        val minOffsetPx = (120 * density).toInt()
+        val visibleHeight = visibleChatListHeightPx(recyclerView)
+        if (visibleHeight <= 0) return minOffsetPx
+
+        val heightForCenter = itemHeightPx
+            ?: chatAdapter?.estimateScrollItemHeightPx(index)
+            ?: (64 * density).toInt()
+        val centeredOffsetPx = (visibleHeight - heightForCenter) / 2
+        return max(minOffsetPx, centeredOffsetPx)
+    }
+
+    private fun visibleChatListHeightPx(recyclerView: RecyclerView): Int {
+        val visibleRect = Rect()
+        if (recyclerView.getGlobalVisibleRect(visibleRect) && visibleRect.height() > 0) {
+            return visibleRect.height()
+        }
+        val density = recyclerView.resources.displayMetrics.density
+        val headerHeight = binding?.header?.height ?: (56 * density).toInt()
+        val bottomBarHeight = (130 * density).toInt()
+        return (screenHeight - headerHeight - bottomBarHeight).coerceAtLeast((200 * density).toInt())
+    }
+
+    private fun setupMentionPicker() {
+        mentionSuggestionAdapter = MentionSuggestionAdapter { candidate ->
+            onMentionCandidateSelected(candidate)
+        }
+        binding?.rcvMentionSuggestions?.adapter = mentionSuggestionAdapter
+    }
+
+    private fun updateMentionPicker(text: CharSequence?) {
+        if (conversation?.isGroupThread() != true) {
+            hideMentionPicker()
+            return
+        }
+        val cursor = binding?.edtMessage?.selectionStart ?: 0
+        val query = MentionHelper.detectActiveMentionQuery(text ?: "", cursor)
+        activeMentionQuery = query
+        if (query == null) {
+            hideMentionPicker()
+            return
+        }
+        val filtered = MentionHelper.filterCandidates(
+            query = query.query,
+            members = groupMentionMembers,
+            allCandidate = allMentionCandidate,
+        )
+        if (filtered.isEmpty()) {
+            hideMentionPicker()
+            return
+        }
+        binding?.mentionPickerContainer?.isVisible = true
+        mentionSuggestionAdapter?.submitList(filtered)
+    }
+
+    private fun hideMentionPicker() {
+        activeMentionQuery = null
+        binding?.mentionPickerContainer?.isVisible = false
+        mentionSuggestionAdapter?.submitList(emptyList())
+    }
+
+    private fun onMentionCandidateSelected(candidate: MentionHelper.MentionCandidate) {
+        val query = activeMentionQuery ?: return
+        val editable = binding?.edtMessage?.text ?: return
+        val insertText = MentionHelper.insertTextForCandidate(candidate)
+        val newCursor = MentionHelper.insertMentionToken(editable, query, insertText)
+        binding?.edtMessage?.setSelection(newCursor)
+        pendingMentions.removeAll { it.userId == candidate.userId }
+        pendingMentions.add(MentionHelper.toMessageMention(candidate))
+        refreshInputMentionHighlight()
+        hideMentionPicker()
+    }
+
+    private fun refreshInputMentionHighlight() {
+        if (conversation?.isGroupThread() != true) return
+        val editable = binding?.edtMessage?.text ?: return
+        MentionHelper.applyMentionSpansToEditable(
+            requireContext(),
+            editable,
+            pendingMentions,
+        )
     }
 
     override fun onStop() {
         super.onStop()
-        viewModel?.updateTyping(conversation?.friendId.toString(), false)
+        conversation?.let { viewModel?.updateTyping(it, false) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        viewModel?.updateTyping(conversation?.friendId.toString(), false)
+        conversation?.let { viewModel?.updateTyping(it, false) }
     }
 }

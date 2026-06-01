@@ -9,9 +9,12 @@ import com.example.messageapp.library.swipe.SwipeRevealLayout
 import com.example.messageapp.library.swipe.ViewBinderHelper
 import com.example.messageapp.databinding.ItemListChatBinding
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.GroupAvatarLoader
+import com.google.firebase.firestore.ListenerRegistration
 
 class ListChatAdapter(private val userId: String) :
     BaseAdapter<Conversation, ItemListChatBinding>() {
@@ -20,6 +23,7 @@ class ListChatAdapter(private val userId: String) :
     var onClickView: ((Conversation) -> Unit)? = null
     var showOptionConversation: (() -> Unit)? = null
     var indexOpenSwipe: Int? = null
+    private var presenceMap: Map<String, UserPresence> = emptyMap()
 
     override fun getLayout(): Int = R.layout.item_list_chat
 
@@ -30,28 +34,54 @@ class ListChatAdapter(private val userId: String) :
         holder.initView(position)
     }
 
+    override fun onViewRecycled(holder: BaseViewHolder<ItemListChatBinding>) {
+        holder.clearGroupTypingListener()
+        GroupAvatarLoader.cancel(holder.v.groupAvatar.tag as? String)
+        holder.v.groupAvatar.reset()
+        super.onViewRecycled(holder)
+    }
+
     fun updateDiffConversation(conversations : ArrayList<Conversation>) {
         updateDiffList(conversations,
-            compareItem = { old, new -> old.time == new.time },
+            compareItem = { old, new ->
+                old.friendId == new.friendId && old.isGroupThread() == new.isGroupThread()
+            },
             compareContent = { old, new -> old == new }
         )
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun updatePresenceMap(map: Map<String, UserPresence>) {
+        if (presenceMap == map) return
+        presenceMap = map
+        notifyDataSetChanged()
     }
 
     @SuppressLint("SetTextI18n", "NotifyDataSetChanged")
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
         v.tvNameFriend.text = conversation.name
-        FireBaseInstance.getConversationRlt(conversation.friendId, userId) { cvt ->
-            v.typingView.isVisible = cvt.typing
-            v.tvMessage.isVisible = !cvt.typing
+        clearGroupTypingListener()
+        if (conversation.isGroupThread()) {
+            val registration = FireBaseInstance.observeGroupTyping(
+                groupId = conversation.friendId,
+                myUserId = userId,
+            ) { isTyping ->
+                v.typingView.isVisible = isTyping
+                v.tvMessage.isVisible = !isTyping
+            }
+            itemView.setTag(R.id.tag_group_typing_listener, registration)
+        } else {
+            FireBaseInstance.getConversationRlt(conversation.friendId, userId) { cvt ->
+                v.typingView.isVisible = cvt.typing
+                v.tvMessage.isVisible = !cvt.typing
+            }
         }
         v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         v.tvTime.text = DateUtils.formatTime(conversation.time)
+        bindOnlineIndicator(conversation)
         this.handleWhenConversationIsChanged(conversation)
-        FireBaseInstance.getInfoUser(conversation.friendId) { user ->
-            itemView.context.loadImg(user.avatar.toString(), v.avatarFriend)
-            itemView.context.loadImg(user.avatar.toString(), v.avtSeen)
-        }
+        bindAvatar(conversation)
         v.itemChat.setOnClickListener {
             onClickView?.invoke(conversation)
         }
@@ -79,10 +109,81 @@ class ListChatAdapter(private val userId: String) :
         })
     }
 
+    private fun BaseViewHolder<ItemListChatBinding>.bindAvatar(conversation: Conversation) {
+        val friendId = conversation.friendId
+
+        if (conversation.isGroupThread()) {
+            v.avatarFriend.isVisible = false
+            v.groupAvatar.isVisible = true
+            v.groupAvatar.tag = friendId
+
+            if (conversation.friendImage.isNotBlank()) {
+                v.groupAvatar.showSinglePhoto(conversation.friendImage)
+            } else {
+                v.groupAvatar.showPlaceholder()
+                GroupAvatarLoader.load(
+                    groupId = friendId,
+                    onReady = { data ->
+                        if (v.groupAvatar.tag != friendId) return@load
+                        v.groupAvatar.bindMemberAvatars(data.avatarUrls, data.totalCount)
+                    },
+                    onError = {
+                        if (v.groupAvatar.tag != friendId) return@load
+                        v.groupAvatar.showPlaceholder()
+                    },
+                )
+            }
+            return
+        }
+
+        v.groupAvatar.isVisible = false
+        v.groupAvatar.reset()
+        v.avatarFriend.isVisible = true
+        v.avatarFriend.tag = friendId
+
+        FireBaseInstance.getInfoUser(friendId) { user ->
+            if (v.avatarFriend.tag != friendId) return@getInfoUser
+            val avatarUrl = user.avatar.orEmpty()
+            itemView.context.loadImg(avatarUrl, v.avatarFriend)
+            itemView.context.loadImg(avatarUrl, v.avtSeen)
+        }
+    }
+
+    private fun BaseViewHolder<ItemListChatBinding>.clearGroupTypingListener() {
+        (itemView.getTag(R.id.tag_group_typing_listener) as? ListenerRegistration)?.remove()
+        itemView.setTag(R.id.tag_group_typing_listener, null)
+    }
+
+    private fun BaseViewHolder<ItemListChatBinding>.bindOnlineIndicator(conversation: Conversation) {
+        if (conversation.isGroupThread()) {
+            v.onlineIndicator.isVisible = false
+            return
+        }
+        v.onlineIndicator.isVisible = presenceMap[conversation.friendId]?.online == true
+    }
+
     /**
      * This function is used to handle the change in the conversation
      */
     private fun BaseViewHolder<ItemListChatBinding>.handleWhenConversationIsChanged(conversation: Conversation) {
+        if (conversation.isGroupThread()) {
+            if (conversation.numberUnSeen > 0) {
+                v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
+                v.tvTime.setTextColor(itemView.context.getColor(R.color.text_common))
+            } else {
+                v.tvMessage.setTextColor(itemView.context.getColor(R.color.grey_1))
+                v.tvTime.setTextColor(itemView.context.getColor(R.color.grey_1))
+            }
+            if (conversation.numberUnSeen > 0) {
+                v.newMessage.isVisible = true
+                showMultiMessage(conversation.numberUnSeen > 1)
+                v.tvMultiMessage.text = conversation.numberUnSeen.toString()
+            } else {
+                hideNewMessage()
+            }
+            v.avtSeen.isVisible = false
+            return
+        }
         if (conversation.numberUnSeen > 0) {
             v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
             v.tvTime.setTextColor(itemView.context.getColor(R.color.text_common))

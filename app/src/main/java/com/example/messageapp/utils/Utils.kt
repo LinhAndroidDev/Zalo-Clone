@@ -125,7 +125,10 @@ fun getVideoDimensions(context: Context, videoUri: Uri): Pair<Int, Int>? {
 }
 
 fun removeAccent(input: String): String {
-    val normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
+    val withoutDStroke = input
+        .replace('đ', 'd')
+        .replace('Đ', 'D')
+    val normalized = Normalizer.normalize(withoutDStroke, Normalizer.Form.NFD)
     val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
     return pattern.matcher(normalized).replaceAll("")
 }

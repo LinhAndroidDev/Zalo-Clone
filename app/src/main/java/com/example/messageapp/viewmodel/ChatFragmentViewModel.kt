@@ -7,14 +7,20 @@ import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Emotion
+import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
+import com.example.messageapp.model.UserPresence
+import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isVideoUri
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.PresenceManager
 import com.example.messageapp.utils.SharePreferenceRepository
+import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.getImageDimensions
 import com.example.messageapp.utils.getVideoDimensions
+import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,15 +39,36 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
 
+    @Inject
+    lateinit var presenceManager: PresenceManager
+
+    private var typingListener: ListenerRegistration? = null
+    private var messageListener: ListenerRegistration? = null
+    private var presenceUnsubscriber: (() -> Unit)? = null
+    private var groupMemberReadListener: ListenerRegistration? = null
+    private var groupMemberIds: List<String> = emptyList()
+
     private val _messages: MutableStateFlow<ArrayList<Message>?> = MutableStateFlow(null)
     val messages = _messages.asStateFlow()
+
+    private val _groupMemberReadMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    val groupMemberReadMap = _groupMemberReadMap.asStateFlow()
+
+    private val _groupLastMessageReaders = MutableStateFlow<List<String>>(emptyList())
+    val groupLastMessageReaders = _groupLastMessageReaders.asStateFlow()
 
     private val _typing: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val typing = _typing.asStateFlow()
 
+    private val _friendPresence: MutableStateFlow<UserPresence?> = MutableStateFlow(null)
+    val friendPresence = _friendPresence.asStateFlow()
+
     /** null = ẩn; 0f..100f = tiến độ upload Cloudinary (ảnh/video/ghi âm). */
     private val _cloudUploadProgress = MutableStateFlow<Float?>(null)
     val cloudUploadProgress = _cloudUploadProgress.asStateFlow()
+
+    private val _mentionCandidates = MutableStateFlow<List<MentionHelper.MentionCandidate>>(emptyList())
+    val mentionCandidates = _mentionCandidates.asStateFlow()
 
     /**
      * This function used to send message to FireStore
@@ -65,35 +92,48 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         ) {}
     }
 
-    /** This function used to get message from FireStore
-     * @param friendId key auth of friend
-     */
-    fun getMessage(friendId: String) = viewModelScope.launch {
-        val idRoom = listOf(friendId, shared.getAuth()).sorted()
-        FireBaseInstance.getMessage(idRoom.toString(),
+    fun roomIdListForCloudinary(conversation: Conversation): List<String> =
+        if (conversation.isGroupThread()) listOf(conversation.friendId)
+        else listOf(conversation.friendId, shared.getAuth()).sorted()
+
+    fun messageReceiverId(conversation: Conversation): String = conversation.friendId
+
+    /** Load messages for 1-1 or group chat. */
+    fun getMessage(conversation: Conversation) = viewModelScope.launch {
+        stopMessageListener()
+        val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, shared.getAuth())
+        messageListener = FireBaseInstance.getMessage(
+            idRoom,
             success = { result ->
                 val messageData = arrayListOf<Message>()
                 result?.forEach { document ->
-                    val raw = document.toObject(Message::class.java) ?: return@forEach
-                    if (!isOfThisConversation(raw, friendId)) return@forEach
+                    val raw = document.toObject(Message::class.java)
+                    if (!isMessageInConversation(raw, conversation)) return@forEach
                     val timeResolved = raw.time.ifBlank { document.id }
                     messageData.add(raw.copy(time = timeResolved))
                 }
                 _messages.value = messageData
+                if (conversation.isGroupThread()) {
+                    recomputeGroupReaders(messageData)
+                }
             },
             failure = { error ->
                 showError(error)
-            })
+            },
+        )
     }
 
-    /**
-     * This function used to check if the message is from this conversation
-     * @param message data receive from FireStore
-     * @param friendId key auth of friend
-     */
-    private fun isOfThisConversation(message: Message, friendId: String): Boolean {
-        return message.sender == shared.getAuth() && message.receiver == friendId
-                || message.receiver == shared.getAuth() && message.sender == friendId
+    private fun stopMessageListener() {
+        messageListener?.remove()
+        messageListener = null
+    }
+
+    private fun isMessageInConversation(message: Message, conversation: Conversation): Boolean {
+        if (conversation.isGroupThread()) {
+            return message.receiver == conversation.friendId
+        }
+        return message.sender == shared.getAuth() && message.receiver == conversation.friendId
+            || message.receiver == shared.getAuth() && message.sender == conversation.friendId
     }
 
     /**
@@ -102,6 +142,16 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
      * @param conversation data friend
      */
     fun updateSeenMessage(msg: Message, conversation: Conversation) = viewModelScope.launch {
+        if (conversation.isGroupThread()) {
+            if (msg.time.isNotBlank()) {
+                FireBaseInstance.markGroupMessageRead(
+                    userId = shared.getAuth(),
+                    groupId = conversation.friendId,
+                    lastReadTime = msg.time,
+                )
+            }
+            return@launch
+        }
         if (msg.sender != shared.getAuth()) {
             FireBaseInstance.getConversation(
                 friendId = shared.getAuth(),
@@ -110,10 +160,10 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                     if (!cvt.isSeenMessage() && cvt.sender == conversation.friendId) {
                         FireBaseInstance.seenMessage(
                             shared.getAuth(),
-                            friendId = conversation.friendId
+                            friendId = conversation.friendId,
                         )
                     }
-                }
+                },
             )
         }
     }
@@ -132,7 +182,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         time: String,
         sendFirst: Boolean
     ) {
-        val idRoom = listOf(conversation.friendId, shared.getAuth()).sorted()
+        val idRoom = roomIdListForCloudinary(conversation)
         val intrinsicByIndex = ArrayList<Pair<Int, Int>?>(uris.size)
         for (uri in uris) {
             val dim = if (context.isVideoUri(uri)) {
@@ -159,7 +209,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                 if (uploadedUrls.size == 1) {
                     val (w, h) = intrinsicByIndex.getOrNull(0) ?: (0 to 0)
                     val message = Message(
-                        receiver = conversation.friendId,
+                        receiver = messageReceiverId(conversation),
                         sender = shared.getAuth(),
                         time = time,
                         photos = arrayListOf(),
@@ -190,7 +240,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                     }
 
                     val message = Message(
-                        receiver = conversation.friendId,
+                        receiver = messageReceiverId(conversation),
                         sender = shared.getAuth(),
                         time = time,
                         photos = uploadedUrls,
@@ -221,13 +271,12 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun uploadAudio(
-        friendId: String,
         uriAudio: Uri,
         time: String,
         conversation: Conversation,
         sendFirst: Boolean
     ) {
-        val idRoom = listOf(friendId, shared.getAuth()).sorted()
+        val idRoom = roomIdListForCloudinary(conversation)
         setCloudUploadProgress(0f)
         FireBaseInstance.uploadAudio(
             roomId = idRoom,
@@ -235,7 +284,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             success = { audioUrl ->
                 try {
                     val message = Message(
-                        receiver = friendId,
+                        receiver = messageReceiverId(conversation),
                         sender = shared.getAuth(),
                         time = time,
                         audio = audioUrl,
@@ -277,18 +326,49 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         )
     }
 
-    /**
-     * This function used to release emotion
-     * @param time time message sent
-     * @param friendId key auth of friend
-     * @param data data emotion
-     */
-    fun releaseEmotion(time: String, friendId: String, data: Emotion) {
-        val idRoom = listOf(friendId, shared.getAuth()).sorted().toString()
-        FireBaseInstance.releaseEmotion(
+    fun toggleMessageReaction(
+        time: String,
+        conversation: Conversation,
+        type: EmotionType,
+        onApplied: ((EmotionType) -> Unit)? = null,
+    ) {
+        if (time.isBlank()) return
+        val userId = shared.getAuth()
+        val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, userId)
+        val currentList = _messages.value ?: return
+        val index = currentList.indexOfFirst { it.time == time }
+        if (index < 0) return
+
+        val target = currentList[index]
+        val previousEmotion = target.emotion
+        val merged = (target.emotion ?: Emotion()).toggleUserReaction(userId, type)
+        val reactionApplied = merged.findUserReaction(userId) == type
+        val updatedMessage = target.copy(
+            emotion = merged.takeUnless { it.emotionEmpty() },
+        )
+
+        val optimisticList = ArrayList(currentList)
+        optimisticList[index] = updatedMessage
+        _messages.value = optimisticList
+
+        if (reactionApplied) {
+            onApplied?.invoke(type)
+        }
+
+        FireBaseInstance.toggleMessageReaction(
             time = time,
             idRoom = idRoom,
-            data = data,
+            userId = userId,
+            type = type,
+            onFailure = { error ->
+                val rollbackList = ArrayList(_messages.value.orEmpty())
+                val rollbackIndex = rollbackList.indexOfFirst { it.time == time }
+                if (rollbackIndex >= 0) {
+                    rollbackList[rollbackIndex] = rollbackList[rollbackIndex].copy(emotion = previousEmotion)
+                    _messages.value = rollbackList
+                }
+                showError(error)
+            },
         )
     }
 
@@ -319,17 +399,131 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
-    fun updateTyping(friendId: String, typing: Boolean) {
-        FireBaseInstance.updateTypingMessage(
-            friendId = friendId,
-            userId = shared.getAuth(),
-            typing = typing
+    fun updateTyping(conversation: Conversation, typing: Boolean) {
+        if (conversation.isGroupThread()) {
+            FireBaseInstance.updateGroupTyping(conversation.friendId, shared.getAuth(), typing)
+        } else {
+            FireBaseInstance.updateTypingMessage(
+                userId = shared.getAuth(),
+                friendId = conversation.friendId,
+                typing = typing,
+            )
+        }
+    }
+
+    fun observeTyping(conversation: Conversation) {
+        typingListener?.remove()
+        typingListener = null
+        if (conversation.isGroupThread()) {
+            typingListener = FireBaseInstance.observeGroupTyping(
+                conversation.friendId,
+                shared.getAuth(),
+            ) { show -> _typing.value = show }
+        } else {
+            FireBaseInstance.getConversationRlt(conversation.friendId, shared.getAuth()) { cvt ->
+                _typing.value = cvt.typing
+            }
+        }
+    }
+
+    fun startObservingFriendPresence(friendId: String) {
+        stopObservingFriendPresence()
+        if (friendId.isBlank()) return
+        presenceUnsubscriber = presenceManager.observePresence(friendId) { presence ->
+            _friendPresence.value = presence
+        }
+    }
+
+    fun stopObservingFriendPresence() {
+        presenceUnsubscriber?.invoke()
+        presenceUnsubscriber = null
+        _friendPresence.value = null
+    }
+
+    fun startGroupReadTracking(groupId: String) {
+        if (groupId.isBlank()) return
+        stopGroupReadTracking()
+        loadGroupMentionMembers(groupId)
+        FireBaseInstance.getGroupMemberIds(
+            groupId = groupId,
+            success = { memberIds ->
+                groupMemberIds = memberIds
+                recomputeGroupReaders(_messages.value.orEmpty())
+            },
+        )
+        groupMemberReadListener = FireBaseInstance.observeGroupMemberRead(groupId) { readMap ->
+            _groupMemberReadMap.value = readMap
+            recomputeGroupReaders(_messages.value.orEmpty())
+        }
+    }
+
+    fun stopGroupReadTracking() {
+        groupMemberReadListener?.remove()
+        groupMemberReadListener = null
+        groupMemberIds = emptyList()
+        _groupMemberReadMap.value = emptyMap()
+        _groupLastMessageReaders.value = emptyList()
+        _mentionCandidates.value = emptyList()
+    }
+
+    fun loadGroupMentionMembers(groupId: String) {
+        if (groupId.isBlank()) {
+            _mentionCandidates.value = emptyList()
+            return
+        }
+        FireBaseInstance.getGroupMemberIds(
+            groupId = groupId,
+            success = { memberIds ->
+                if (memberIds.isEmpty()) {
+                    _mentionCandidates.value = emptyList()
+                    return@getGroupMemberIds
+                }
+                val users = ArrayList<com.example.messageapp.model.User>(memberIds.size)
+                var remaining = memberIds.size
+                memberIds.forEach { memberId ->
+                    FireBaseInstance.getInfoUser(memberId) { user ->
+                        users.add(
+                            user.copy(keyAuth = user.keyAuth?.takeIf { it.isNotBlank() } ?: memberId),
+                        )
+                        remaining -= 1
+                        if (remaining == 0) {
+                            _mentionCandidates.value = MentionHelper.buildMentionCandidates(users)
+                        }
+                    }
+                }
+            },
+            failure = { _mentionCandidates.value = emptyList() },
         )
     }
 
-    fun checkShowTyping(friendId: String) {
-        FireBaseInstance.getConversationRlt(friendId, shared.getAuth()) { cvt ->
-            _typing.value = cvt.typing
+    private fun recomputeGroupReaders(messages: List<Message>) {
+        if (groupMemberIds.isEmpty() || messages.isEmpty()) {
+            _groupLastMessageReaders.value = emptyList()
+            return
         }
+        val lastMsg = messages.last()
+        if (lastMsg.sender != shared.getAuth()) {
+            _groupLastMessageReaders.value = emptyList()
+            return
+        }
+        val lastMsgMillis = DateUtils.parseChatMessageTimeMillis(lastMsg.time) ?: run {
+            _groupLastMessageReaders.value = emptyList()
+            return
+        }
+        val readMap = _groupMemberReadMap.value
+        val readers = groupMemberIds
+            .filter { memberId ->
+                memberId != shared.getAuth() &&
+                    (DateUtils.parseChatMessageTimeMillis(readMap[memberId].orEmpty()) ?: 0L) >= lastMsgMillis
+            }
+        _groupLastMessageReaders.value = readers
+    }
+
+    override fun onCleared() {
+        typingListener?.remove()
+        stopMessageListener()
+        stopObservingFriendPresence()
+        stopGroupReadTracking()
+        super.onCleared()
     }
 }

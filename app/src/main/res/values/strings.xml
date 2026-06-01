@@ -70,6 +70,12 @@
     <string name="log_out">Đăng xuất</string>
     <string name="interface_and_language">Giao diện và ngôn ngữ</string>
     <string name="reply">Trả lời</string>
+    <string name="reply_preview_format">Trả lời: %1$s</string>
+    <string name="reply_photo">Ảnh</string>
+    <string name="reply_video">Video</string>
+    <string name="reply_photos_count">%1$d ảnh</string>
+    <string name="reply_audio">Tin thoại</string>
+    <string name="reply_original_not_found">Tin nhắn gốc không còn</string>
     <string name="forward">Chuyển tiếp</string>
     <string name="copy">Sao chép</string>
     <string name="pin">Ghim</string>
@@ -207,4 +213,26 @@
     <string name="status_post_updated">Đã cập nhật bài đăng</string>
     <string name="chat_upload_sending">Đang gửi</string>
     <string name="chat_upload_progress">Đang tải lên %d%%</string>
+
+    <!-- Group chat -->
+    <string name="create_group_title">Tạo nhóm</string>
+    <string name="group_name_hint">Tên nhóm</string>
+    <string name="select_group_members">Chọn thành viên (tối thiểu 1)</string>
+    <string name="create_group_button">Tạo và mở chat</string>
+    <string name="group_welcome_inbox_person">Thông báo</string>
+    <string name="group_welcome_message">Chào mừng bạn đến với nhóm \"%1$s\"! Hãy gửi tin nhắn đầu tiên cùng mọi người.</string>
+    <string name="mention_all_label">Tất cả</string>
+    <string name="mention_picker_hint">Nhắc tới thành viên</string>
+    <string name="notification_mention_title">[Nhắc bạn] %1$s</string>
+    <string name="notification_mention_body">%1$s đã nhắc bạn: %2$s</string>
+    <string name="notification_mention_all_body">%1$s đã nhắc @All trong %2$s: %3$s</string>
+    <string name="cd_back">Quay lại</string>
+
+    <!-- User presence -->
+    <string name="presence_active">Đang hoạt động</string>
+    <string name="presence_last_seen_unknown">Chưa truy cập</string>
+    <string name="presence_last_seen_just_now">Truy cập vừa xong</string>
+    <string name="presence_last_seen_minutes">Truy cập %1$d phút trước</string>
+    <string name="presence_last_seen_hours">Truy cập %1$d giờ trước</string>
+    <string name="presence_last_seen_days">Truy cập %1$d ngày trước</string>
 </resources>

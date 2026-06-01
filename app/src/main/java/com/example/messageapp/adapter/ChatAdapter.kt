@@ -1,7 +1,14 @@
 package com.example.messageapp.adapter
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.Gravity
 import android.view.View
@@ -11,6 +18,8 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.DiffUtil
@@ -26,9 +35,10 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.MessageReplyHelper
+import com.example.messageapp.utils.MentionHelper
 import kotlin.math.ceil
-import kotlin.math.max
-import kotlin.math.min
+import androidx.core.graphics.drawable.toDrawable
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
@@ -41,22 +51,82 @@ data class ClickPhotoModel(
     val imageView: ImageView
 )
 
+data class LongClickPhotoModel(
+    val anchor: View,
+    val message: Message,
+    val photoUrl: String,
+    val fromSender: Boolean,
+    val photoIndex: Int = 0,
+    val intrinsicWidth: Int = 0,
+    val intrinsicHeight: Int = 0,
+)
+
 class ChatAdapter(
     private val context: Context,
     private val friendId: String,
+    private val isGroup: Boolean = false,
+    private val myUserId: String,
+    private var myName: String = "",
+    private var peerDisplayName: String = "",
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
     private val audioPlaybackStateMap = hashMapOf<String, AudioPlaybackState>()
     var seen: Boolean = false
+    private var groupReaderIds: List<String> = emptyList()
+    private var groupMembers: List<MentionHelper.MentionCandidate> = emptyList()
     private var mCallBack: CallBackClickItem? = null
 
     companion object {
         /** Khoảng tối đa giữa hai tin cùng người gửi để gộp nhóm (kiểu Zalo / iMessage). */
         private const val MESSAGE_GROUP_GAP_MS = 3 * 60 * 1000L
+        private const val PAYLOAD_REPLY_HIGHLIGHT = "reply_highlight"
+        private const val REPLY_HIGHLIGHT_HOLD_MS = 2400L
+        private const val REPLY_HIGHLIGHT_FADE_MS = 1200L
+        private const val REPLY_HIGHLIGHT_FADE_DELAY_MS = 800L
+        private const val BUBBLE_NORMAL_STROKE_DP = 0.8f
+        private const val BUBBLE_HIGHLIGHT_STROKE_DP = 2f
+        private val HIGHLIGHT_ANIMATOR_TAG = "chat_reply_highlight_anim".hashCode()
+        private val HIGHLIGHT_STATE_TAG = "chat_reply_highlight_state".hashCode()
     }
+
+    private data class ReplyHighlightState(
+        val bubbleView: View?,
+        val bubbleDrawableRes: Int = 0,
+        val normalStrokeColor: Int = 0,
+        val foregroundCornerRadiusPx: Float = 0f,
+    )
+
+    private var highlightedMessageTime: String? = null
+    private val highlightHandler = Handler(Looper.getMainLooper())
+    private var clearHighlightRunnable: Runnable? = null
 
     init {
         setHasStableIds(true)
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateReplyNameContext(
+        myName: String,
+        peerDisplayName: String,
+        groupMembers: List<MentionHelper.MentionCandidate>,
+    ) {
+        this.myName = myName
+        this.peerDisplayName = peerDisplayName
+        this.groupMembers = groupMembers
+        if (messages.any { it.replyTo != null }) {
+            notifyDataSetChanged()
+        }
+    }
+
+    private fun replyNameContext(): MessageReplyHelper.ReplyNameContext {
+        return MessageReplyHelper.ReplyNameContext(
+            myUserId = myUserId,
+            myName = myName,
+            peerUserId = friendId,
+            peerDisplayName = peerDisplayName,
+            isGroup = isGroup,
+            groupMembers = groupMembers,
+        )
     }
 
     /**
@@ -67,18 +137,39 @@ class ChatAdapter(
         this.mCallBack = callBackClickItem
     }
 
+    fun updateGroupReaders(readerIds: List<String>) {
+        if (groupReaderIds == readerIds) return
+        groupReaderIds = readerIds
+        if (!isGroup || messages.isEmpty()) return
+        val lastIndex = messages.lastIndex
+        if (messages[lastIndex].sender == myUserId) {
+            notifyItemChanged(lastIndex)
+        }
+    }
+
     /**
      * This function used to update data message
      */
     @SuppressLint("NotifyDataSetChanged")
     fun updateDiffList(newList: List<Message>) {
-        val diffResult = DiffUtil.calculateDiff(BaseDiffUtil(messages, newList,
-            areContentsTheSame = { old, new -> old.time == new.time },
-            areItemsTheSame = { old, new -> old == new }
+        val oldList = ArrayList(messages)
+        val oldSize = oldList.size
+        val diffResult = DiffUtil.calculateDiff(BaseDiffUtil(
+            messages, newList,
+            areItemsTheSame = { old, new -> old.time == new.time },
+            areContentsTheSame = { old, new -> old == new },
         ))
         messages.clear()
         messages.addAll(newList)
+        val newSize = messages.size
         diffResult.dispatchUpdatesTo(this)
+        // Khi chỉ nối thêm ở cuối, Diff thường không rebind hàng "cuối cũ" → viewBottom + cluster vẫn như lúc là last.
+        val appendedAtEnd = oldSize in 1..<newSize &&
+            newList.size >= oldSize &&
+            (0 until oldSize).all { i -> oldList[i] == newList[i] }
+        if (appendedAtEnd) {
+            notifyItemChanged(oldSize - 1)
+        }
     }
 
     /**
@@ -115,6 +206,87 @@ class ChatAdapter(
      */
     override fun getItemCount(): Int = messages.size
 
+    fun indexOfMessageTime(time: String): Int {
+        val normalized = time.trim()
+        if (normalized.isBlank()) return -1
+        return messages.indexOfFirst { it.time.trim() == normalized }
+    }
+
+    /** Ước lượng chiều cao item để căn giữa khi cuộn tới tin ảnh/audio/text. */
+    fun estimateScrollItemHeightPx(index: Int): Int {
+        val message = messages.getOrNull(index) ?: return defaultScrollItemHeightPx()
+        val density = context.resources.displayMetrics.density
+        val cardExtraPx = (13 * density).toInt()
+        return when (MessageReplyHelper.resolveMessageType(message)) {
+            TypeMessage.MESSAGE -> defaultScrollItemHeightPx()
+            TypeMessage.AUDIO -> (58 * density).toInt() + cardExtraPx
+            TypeMessage.SINGLE_PHOTO -> estimateSinglePhotoScrollHeightPx(message) + cardExtraPx
+            TypeMessage.PHOTOS -> estimateMultiPhotoScrollHeightPx(message) + cardExtraPx
+        }
+    }
+
+    private fun defaultScrollItemHeightPx(): Int {
+        return (72 * context.resources.displayMetrics.density).toInt()
+    }
+
+    private fun estimateSinglePhotoScrollHeightPx(message: Message): Int {
+        val width = message.singlePhoto.getOrNull(1)?.toIntOrNull() ?: 0
+        val height = message.singlePhoto.getOrNull(2)?.toIntOrNull() ?: 0
+        if (width <= 0 || height <= 0) return screenWidth / 2
+        return bubbleDisplaySizeForPositive(width, height).second
+    }
+
+    private fun estimateMultiPhotoScrollHeightPx(message: Message): Int {
+        val rowCount = ceil(message.photos.size / 3f).toInt().coerceAtLeast(1)
+        val cellSize = screenWidth / 4 - 40
+        val rowGap = 8
+        return rowCount * cellSize + (rowCount - 1).coerceAtLeast(0) * rowGap
+    }
+
+    fun flashReplyHighlight(messageTime: String) {
+        val index = indexOfMessageTime(messageTime)
+        if (index < 0) return
+
+        val previous = highlightedMessageTime
+        highlightedMessageTime = messageTime
+
+        if (previous != null && previous != messageTime) {
+            val prevIndex = indexOfMessageTime(previous)
+            if (prevIndex >= 0) notifyItemChanged(prevIndex, PAYLOAD_REPLY_HIGHLIGHT)
+        }
+        notifyItemChanged(index, PAYLOAD_REPLY_HIGHLIGHT)
+
+        clearHighlightRunnable?.let { highlightHandler.removeCallbacks(it) }
+        clearHighlightRunnable = Runnable {
+            if (highlightedMessageTime != messageTime) return@Runnable
+            highlightedMessageTime = null
+            val currentIndex = indexOfMessageTime(messageTime)
+            if (currentIndex >= 0) notifyItemChanged(currentIndex, PAYLOAD_REPLY_HIGHLIGHT)
+        }
+        highlightHandler.postDelayed(clearHighlightRunnable!!, REPLY_HIGHLIGHT_HOLD_MS)
+    }
+
+    fun clearReplyHighlight() {
+        clearHighlightRunnable?.let { highlightHandler.removeCallbacks(it) }
+        clearHighlightRunnable = null
+        val time = highlightedMessageTime ?: return
+        highlightedMessageTime = null
+        val index = indexOfMessageTime(time)
+        if (index >= 0) notifyItemChanged(index, PAYLOAD_REPLY_HIGHLIGHT)
+    }
+
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+        payloads: MutableList<Any>,
+    ) {
+        if (payloads.isNotEmpty() && payloads.all { it == PAYLOAD_REPLY_HIGHLIGHT }) {
+            applyReplyScrollHighlight(holder, messages[position], position)
+            return
+        }
+        onBindViewHolder(holder, position)
+    }
+
     /**
      * This function used to bind view holder for chat adapter
      */
@@ -130,6 +302,12 @@ class ChatAdapter(
                         holder.initViewMessage(context, message) {
                             mCallBack?.onSenderLongClick(it to message)
                         }
+                        holder.bindReplyQuote(
+                            context,
+                            message,
+                            replyNameContext(),
+                            mCallBack?.let { cb -> { time -> cb.onReplyQuoteClick(time) } },
+                        )
                     }
 
                     TypeMessage.PHOTOS -> {
@@ -164,13 +342,20 @@ class ChatAdapter(
                 holder as ReceiverViewHolder
                 holder.checkShowEmotion(message)
                 if (!isGroupedWithPrevious(position)) {
-                    holder.showAvatarReceiver(context, friendId)
+                    val avatarId = if (isGroup) message.sender else friendId
+                    holder.showAvatarReceiver(context, avatarId)
                 }
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
                         holder.initViewMessage(context, message) {
                             mCallBack?.onReceiverLongClick(it to message)
                         }
+                        holder.bindReplyQuote(
+                            context,
+                            message,
+                            replyNameContext(),
+                            mCallBack?.let { cb -> { time -> cb.onReplyQuoteClick(time) } },
+                        )
                     }
 
                     TypeMessage.PHOTOS -> {
@@ -200,6 +385,192 @@ class ChatAdapter(
                 applyMessageClusterUi(holder, position, message)
             }
         }
+        applyReplyScrollHighlight(holder, message, position)
+    }
+
+    private fun applyReplyScrollHighlight(
+        holder: RecyclerView.ViewHolder,
+        message: Message,
+        position: Int,
+    ) {
+        val row = holder.itemView
+        if (message.time != highlightedMessageTime) {
+            cancelReplyHighlightAnimation(row)
+            return
+        }
+        if (row.getTag(HIGHLIGHT_ANIMATOR_TAG) != null) return
+
+        val highlightState = buildReplyHighlightState(holder, message, position)
+        row.setTag(HIGHLIGHT_STATE_TAG, highlightState)
+
+        val rowDrawable = ContextCompat.getColor(context, R.color.reply_scroll_highlight).toDrawable()
+        row.background = rowDrawable
+
+        highlightState.bubbleView?.let { bubble ->
+            applyBubbleStrokeHighlight(bubble, highlightState, 255)
+        }
+
+        val animator = ValueAnimator.ofInt(255, 0).apply {
+            duration = REPLY_HIGHLIGHT_FADE_MS
+            startDelay = REPLY_HIGHLIGHT_FADE_DELAY_MS
+            addUpdateListener { animation ->
+                val alpha = animation.animatedValue as Int
+                rowDrawable.alpha = alpha
+                highlightState.bubbleView?.let { bubble ->
+                    applyBubbleStrokeHighlight(bubble, highlightState, alpha)
+                }
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    restoreReplyHighlightVisuals(row)
+                }
+
+                override fun onAnimationCancel(animation: Animator) {
+                    restoreReplyHighlightVisuals(row)
+                }
+            })
+            start()
+        }
+        row.setTag(HIGHLIGHT_ANIMATOR_TAG, animator)
+    }
+
+    private fun buildReplyHighlightState(
+        holder: RecyclerView.ViewHolder,
+        message: Message,
+        position: Int,
+    ): ReplyHighlightState {
+        val density = context.resources.displayMetrics.density
+        val photoCornerRadiusPx = 5f * density
+        return when (holder) {
+            is SenderViewHolder -> when (MessageReplyHelper.resolveMessageType(message)) {
+                TypeMessage.MESSAGE -> ReplyHighlightState(
+                    bubbleView = holder.v.viewMessage,
+                    bubbleDrawableRes = senderGroupedTextBubbleDrawable(position),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
+                )
+                TypeMessage.SINGLE_PHOTO, TypeMessage.PHOTOS -> ReplyHighlightState(
+                    bubbleView = photoHighlightTarget(holder.v.layoutPhoto),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                    foregroundCornerRadiusPx = photoCornerRadiusPx,
+                )
+                TypeMessage.AUDIO -> ReplyHighlightState(
+                    bubbleView = holder.v.viewRecordWave.findViewById(R.id.viewRecord),
+                    bubbleDrawableRes = R.drawable.bg_sender,
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
+                )
+            }
+            is ReceiverViewHolder -> when (MessageReplyHelper.resolveMessageType(message)) {
+                TypeMessage.MESSAGE -> ReplyHighlightState(
+                    bubbleView = holder.v.viewMessage,
+                    bubbleDrawableRes = receiverGroupedTextBubbleDrawable(position),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                )
+                TypeMessage.SINGLE_PHOTO, TypeMessage.PHOTOS -> ReplyHighlightState(
+                    bubbleView = photoHighlightTarget(holder.v.layoutPhoto),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                    foregroundCornerRadiusPx = photoCornerRadiusPx,
+                )
+                TypeMessage.AUDIO -> ReplyHighlightState(
+                    bubbleView = holder.v.viewRecordWave.findViewById(R.id.viewRecord),
+                    bubbleDrawableRes = R.drawable.bg_receiver,
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                )
+            }
+            else -> ReplyHighlightState(bubbleView = null)
+        }
+    }
+
+    private fun photoHighlightTarget(layoutPhoto: LinearLayout): View? {
+        if (!layoutPhoto.isVisible) return null
+        for (i in 0 until layoutPhoto.childCount) {
+            val child = layoutPhoto.getChildAt(i)
+            if (child is CardView && child.id != R.id.optionMenuPhoto) {
+                return child
+            }
+        }
+        return layoutPhoto
+    }
+
+    private fun applyBubbleStrokeHighlight(
+        bubble: View,
+        state: ReplyHighlightState,
+        alpha: Int,
+    ) {
+        if (state.foregroundCornerRadiusPx > 0f) {
+            applyForegroundStrokeHighlight(bubble, state, alpha)
+            return
+        }
+        if (state.bubbleDrawableRes == 0) return
+        val drawable = ((bubble.background as? GradientDrawable)?.mutate() as? GradientDrawable)
+            ?: (ContextCompat.getDrawable(context, state.bubbleDrawableRes)?.mutate() as? GradientDrawable)
+            ?: return
+
+        val ratio = alpha / 255f
+        val density = context.resources.displayMetrics.density
+        val normalStrokePx = (BUBBLE_NORMAL_STROKE_DP * density).toInt().coerceAtLeast(1)
+        val highlightStrokePx = (BUBBLE_HIGHLIGHT_STROKE_DP * density).toInt()
+            .coerceAtLeast(normalStrokePx + 1)
+        val strokeWidth = (normalStrokePx + (highlightStrokePx - normalStrokePx) * ratio).toInt()
+            .coerceAtLeast(normalStrokePx)
+        val highlightStrokeColor = ContextCompat.getColor(context, R.color.reply_bubble_stroke_highlight)
+        val strokeColor = blendColors(state.normalStrokeColor, highlightStrokeColor, ratio)
+        drawable.setStroke(strokeWidth, strokeColor)
+        bubble.background = drawable
+    }
+
+    private fun applyForegroundStrokeHighlight(
+        bubble: View,
+        state: ReplyHighlightState,
+        alpha: Int,
+    ) {
+        val ratio = alpha / 255f
+        val density = context.resources.displayMetrics.density
+        val normalStrokePx = (BUBBLE_NORMAL_STROKE_DP * density).toInt().coerceAtLeast(1)
+        val highlightStrokePx = (BUBBLE_HIGHLIGHT_STROKE_DP * density).toInt()
+            .coerceAtLeast(normalStrokePx + 1)
+        val strokeWidth = (normalStrokePx + (highlightStrokePx - normalStrokePx) * ratio).toInt()
+            .coerceAtLeast(normalStrokePx)
+        val highlightStrokeColor = ContextCompat.getColor(context, R.color.reply_bubble_stroke_highlight)
+        val strokeColor = blendColors(state.normalStrokeColor, highlightStrokeColor, ratio)
+
+        val overlay = (bubble.foreground as? GradientDrawable)?.mutate() as? GradientDrawable
+            ?: GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
+                cornerRadius = state.foregroundCornerRadiusPx
+            }
+        overlay.cornerRadius = state.foregroundCornerRadiusPx
+        overlay.setStroke(strokeWidth, strokeColor)
+        bubble.foreground = overlay
+    }
+
+    private fun restoreReplyHighlightVisuals(row: View) {
+        row.background = null
+        row.setTag(HIGHLIGHT_ANIMATOR_TAG, null)
+        val state = row.getTag(HIGHLIGHT_STATE_TAG) as? ReplyHighlightState
+        val bubble = state?.bubbleView
+        if (bubble != null) {
+            if (state.foregroundCornerRadiusPx > 0f) {
+                bubble.foreground = null
+            } else if (state.bubbleDrawableRes != 0) {
+                bubble.setBackgroundResource(state.bubbleDrawableRes)
+            }
+        }
+        row.setTag(HIGHLIGHT_STATE_TAG, null)
+    }
+
+    private fun cancelReplyHighlightAnimation(row: View) {
+        (row.getTag(HIGHLIGHT_ANIMATOR_TAG) as? ValueAnimator)?.cancel()
+        restoreReplyHighlightVisuals(row)
+    }
+
+    private fun blendColors(from: Int, to: Int, ratio: Float): Int {
+        val inverse = 1f - ratio
+        return Color.argb(
+            (Color.alpha(from) * inverse + Color.alpha(to) * ratio).toInt().coerceIn(0, 255),
+            (Color.red(from) * inverse + Color.red(to) * ratio).toInt().coerceIn(0, 255),
+            (Color.green(from) * inverse + Color.green(to) * ratio).toInt().coerceIn(0, 255),
+            (Color.blue(from) * inverse + Color.blue(to) * ratio).toInt().coerceIn(0, 255),
+        )
     }
 
     private fun messageTimeMillis(msg: Message): Long? =
@@ -214,7 +585,7 @@ class ChatAdapter(
         val tPrev = messageTimeMillis(prev) ?: return false
         val tCurr = messageTimeMillis(curr) ?: return false
         val delta = tCurr - tPrev
-        return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
+        return delta in 0..MESSAGE_GROUP_GAP_MS
     }
 
     /** Tin liền sau cùng người gửi và trong [MESSAGE_GROUP_GAP_MS]. */
@@ -226,7 +597,7 @@ class ChatAdapter(
         val tCurr = messageTimeMillis(curr) ?: return false
         val tNext = messageTimeMillis(next) ?: return false
         val delta = tNext - tCurr
-        return delta >= 0 && delta <= MESSAGE_GROUP_GAP_MS
+        return delta in 0..MESSAGE_GROUP_GAP_MS
     }
 
     /**
@@ -303,6 +674,18 @@ class ChatAdapter(
      * @param position position of message
      */
     private fun checkShowSeenMessage(holder: SenderViewHolder, position: Int) {
+        if (isGroup) {
+            holder.v.avtSeen.isVisible = false
+            holder.v.viewReceived.isVisible = false
+            if (position == messages.lastIndex &&
+                messages[position].sender == myUserId
+            ) {
+                holder.bindGroupSeenAvatars(context, groupReaderIds)
+            } else {
+                holder.hideGroupSeenAvatars()
+            }
+            return
+        }
         if (position == messages.lastIndex) {
             if (seen) {
                 FireBaseInstance.getInfoUser(friendId) { user ->
@@ -344,15 +727,6 @@ class ChatAdapter(
     }
 
     /**
-     * Thu nhỏ media vào ô vuông tối đa [maxSide] nhưng giữ tỉ lệ (dùng trong lưới nhiều ảnh/video).
-     */
-    private fun gridCellDisplaySize(intrinsicW: Int, intrinsicH: Int, maxSide: Int): Pair<Int, Int> {
-        if (intrinsicW <= 0 || intrinsicH <= 0) return maxSide to maxSide
-        val scale = min(maxSide / intrinsicW.toFloat(), maxSide / intrinsicH.toFloat())
-        return max(1, (intrinsicW * scale).toInt()) to max(1, (intrinsicH * scale).toInt())
-    }
-
-    /**
      * This function is used to calculate the size of a single photo based on the size returned from the server
      * + Then scale it according to the width and height of the device.
      * + If the width is greater than the height, the width is 3/4 of the screen width - 120
@@ -391,6 +765,15 @@ class ChatAdapter(
                 )
             )
         }
+        attachPhotoLongClickListener(
+            anchor = imageView,
+            message = message,
+            photoUrl = photo,
+            fromSender = fromSender,
+            photoIndex = 0,
+            intrinsicWidth = width,
+            intrinsicHeight = height,
+        )
         if (isLikelyVideoUrl(photo)) {
             val frame = FrameLayout(context)
             frame.layoutParams = ViewGroup.LayoutParams(w, h)
@@ -407,6 +790,15 @@ class ChatAdapter(
                 isClickable = false
             }
             frame.addView(play)
+            attachPhotoLongClickListener(
+                anchor = frame,
+                message = message,
+                photoUrl = photo,
+                fromSender = fromSender,
+                photoIndex = 0,
+                intrinsicWidth = width,
+                intrinsicHeight = height,
+            )
             viewPhoto.addView(frame)
         } else {
             viewPhoto.addView(imageView)
@@ -430,31 +822,20 @@ class ChatAdapter(
     private fun drawViewMultiPhoto(viewPhotos: LinearLayout, message: Message, fromSender: Boolean = true) {
         val photos = message.photos
         viewPhotos.removeAllViews()
-        if (photos.isEmpty()) return
-
         val row = ceil(photos.size / 3f).toInt()
-        val cellMax = screenWidth / 4 - 40
         for (i in 0 until row) {
             val layoutRow = LinearLayout(context)
             layoutRow.layoutParams =
                 ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
             layoutRow.orientation = LinearLayout.HORIZONTAL
-            layoutRow.gravity = Gravity.BOTTOM
             for (j in 3 * i until 3 * i + 3) {
                 if (j >= photos.size) break
-                val (iw, ih) = parsePhotoSizeToken(message.photoSizes, j)
-                val (fw, fh) = gridCellDisplaySize(iw, ih, cellMax)
-                val frame = FrameLayout(context)
-                frame.layoutParams =
-                    MarginLayoutParams(fw, fh).apply {
+                val imgPhoto = ImageView(context)
+                imgPhoto.layoutParams =
+                    MarginLayoutParams(screenWidth / 4 - 40, screenWidth / 4 - 40).apply {
                         bottomMargin = if (i == row - 1) 0 else 8
                         rightMargin = if (j == 3 * i + 2) 0 else 8
                     }
-                val imgPhoto = ImageView(context)
-                imgPhoto.layoutParams = FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
                 imgPhoto.transitionName = message.time
                 imgPhoto.setOnClickListener {
                     mCallBack?.onPhotoClick(
@@ -467,20 +848,19 @@ class ChatAdapter(
                         )
                     )
                 }
+                val (intrinsicW, intrinsicH) = parsePhotoSizeToken(message.photoSizes, j)
+                attachPhotoLongClickListener(
+                    anchor = imgPhoto,
+                    message = message,
+                    photoUrl = photos[j],
+                    fromSender = fromSender,
+                    photoIndex = j,
+                    intrinsicWidth = intrinsicW,
+                    intrinsicHeight = intrinsicH,
+                )
                 imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
                 context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
-                frame.addView(imgPhoto)
-                if (isLikelyVideoUrl(photos[j])) {
-                    val playSize = (28 * context.resources.displayMetrics.density).toInt()
-                    val play = ImageView(context).apply {
-                        layoutParams = FrameLayout.LayoutParams(playSize, playSize, Gravity.CENTER)
-                        setImageResource(R.drawable.ic_play)
-                        scaleType = ImageView.ScaleType.FIT_CENTER
-                        isClickable = false
-                    }
-                    frame.addView(play)
-                }
-                layoutRow.addView(frame)
+                layoutRow.addView(imgPhoto)
             }
             viewPhotos.addView(layoutRow)
         }
@@ -490,7 +870,12 @@ class ChatAdapter(
      * This function used to get view type of chat adapter
      */
     override fun getItemViewType(position: Int): Int {
-        return if (messages[position].sender != friendId) VIEW_SENDER else VIEW_RECEIVER
+        val msg = messages[position]
+        return if (!isGroup) {
+            if (msg.sender != friendId) VIEW_SENDER else VIEW_RECEIVER
+        } else {
+            if (msg.sender == myUserId) VIEW_SENDER else VIEW_RECEIVER
+        }
     }
 
     override fun getItemId(position: Int): Long {
@@ -515,6 +900,31 @@ class ChatAdapter(
 
     private fun buildAudioKey(message: Message): String = "${message.time}_${message.audio.orEmpty()}"
 
+    private fun attachPhotoLongClickListener(
+        anchor: View,
+        message: Message,
+        photoUrl: String,
+        fromSender: Boolean,
+        photoIndex: Int,
+        intrinsicWidth: Int,
+        intrinsicHeight: Int,
+    ) {
+        anchor.setOnLongClickListener {
+            mCallBack?.onPhotoLongClick(
+                LongClickPhotoModel(
+                    anchor = it,
+                    message = message,
+                    photoUrl = photoUrl,
+                    fromSender = fromSender,
+                    photoIndex = photoIndex,
+                    intrinsicWidth = intrinsicWidth,
+                    intrinsicHeight = intrinsicHeight,
+                )
+            )
+            true
+        }
+    }
+
     /**
      * This interface used to handle click item in chat adapter
      */
@@ -522,7 +932,9 @@ class ChatAdapter(
         fun onSenderLongClick(data: (Pair<View, Message>))
         fun onReceiverLongClick(data: (Pair<View, Message>))
         fun onPhotoClick(data: ClickPhotoModel)
+        fun onPhotoLongClick(data: LongClickPhotoModel)
         fun onOptionMenuClick(msg: Message)
+        fun onReplyQuoteClick(messageTime: String)
     }
 
     /**

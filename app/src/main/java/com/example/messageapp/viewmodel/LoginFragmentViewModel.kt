@@ -3,9 +3,9 @@ package com.example.messageapp.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.utils.FireBaseInstance
+import com.example.messageapp.utils.PresenceManager
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.google.firebase.firestore.QuerySnapshot
-import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +16,9 @@ import javax.inject.Inject
 class LoginFragmentViewModel @Inject constructor() : BaseViewModel() {
     @Inject
     lateinit var shared: SharePreferenceRepository
+
+    @Inject
+    lateinit var presenceManager: PresenceManager
 
     private val _loginSuccessful = MutableStateFlow(false)
     var loginSuccessful: StateFlow<Boolean> = _loginSuccessful
@@ -55,6 +58,7 @@ class LoginFragmentViewModel @Inject constructor() : BaseViewModel() {
                 shared.saveAuth(document.id)
                 shared.saveNameUser(data["name"].toString())
                 shared.saveStatusLoggedIn(true)
+                presenceManager.connect(document.id)
                 _loginSuccessful.value = true
             }
         }
