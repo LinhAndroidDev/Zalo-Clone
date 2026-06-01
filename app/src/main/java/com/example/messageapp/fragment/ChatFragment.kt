@@ -42,6 +42,8 @@ import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.adapter.ClickPhotoModel
 import com.example.messageapp.adapter.LongClickPhotoModel
 import com.example.messageapp.adapter.MentionSuggestionAdapter
+import com.example.messageapp.adapter.ReceiverViewHolder
+import com.example.messageapp.adapter.SenderViewHolder
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
@@ -61,6 +63,7 @@ import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.EmotionBurstEffect
+import com.example.messageapp.utils.EmotionReactionDetector
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
@@ -97,6 +100,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var groupMentionMembers: List<MentionHelper.MentionCandidate> = emptyList()
     private var replyingToMessage: Message? = null
     private var replyHighlightScrollListener: RecyclerView.OnScrollListener? = null
+    private var lastMessagesSnapshot: List<Message> = emptyList()
     private val allMentionCandidate by lazy {
         MentionHelper.allMentionCandidate(getString(R.string.mention_all_label))
     }
@@ -409,6 +413,32 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         EmotionBurstEffect.play(activity, anchor, type)
     }
 
+    private fun playRemoteEmotionBurst(messageTime: String, type: EmotionType) {
+        if (!isChatScreenActive) return
+        val activity = activity ?: return
+        val anchor = findEmotionBurstAnchor(messageTime) ?: return
+        EmotionBurstEffect.play(activity, anchor, type)
+    }
+
+    private fun findEmotionBurstAnchor(messageTime: String): View? {
+        val recyclerView = binding?.rcvChat ?: return null
+        val index = chatAdapter?.indexOfMessageTime(messageTime) ?: return null
+        val holder = recyclerView.findViewHolderForAdapterPosition(index) ?: return null
+        return when (holder) {
+            is SenderViewHolder -> if (holder.v.viewReleaseEmotion.isVisible) {
+                holder.v.viewReleaseEmotion
+            } else {
+                holder.v.viewEmotion
+            }
+            is ReceiverViewHolder -> if (holder.v.viewReleaseEmotion.isVisible) {
+                holder.v.viewReleaseEmotion
+            } else {
+                holder.v.viewEmotion
+            }
+            else -> holder.itemView
+        }
+    }
+
     private fun bindPopupPreview(
         popupView: View,
         message: Message,
@@ -594,7 +624,24 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel?.messages?.collect { messages ->
                         messages?.let { msg ->
+                            val previousMessages = lastMessagesSnapshot
                             chatAdapter?.updateDiffList(msg)
+                            if (isChatScreenActive && previousMessages.isNotEmpty()) {
+                                val myUserId = viewModel?.shared?.getAuth().orEmpty()
+                                val remoteChanges = EmotionReactionDetector.detectRemoteReactionChanges(
+                                    previous = previousMessages,
+                                    current = msg,
+                                    myUserId = myUserId,
+                                )
+                                if (remoteChanges.isNotEmpty()) {
+                                    binding?.rcvChat?.post {
+                                        remoteChanges.forEach { change ->
+                                            playRemoteEmotionBurst(change.messageTime, change.type)
+                                        }
+                                    }
+                                }
+                            }
+                            lastMessagesSnapshot = ArrayList(msg)
                             if (stateScrollable) {
                                 binding?.rcvChat?.scrollToPosition(
                                     chatAdapter?.itemCount?.minus(1) ?: 0
@@ -807,6 +854,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         replyHighlightScrollListener?.let { binding?.rcvChat?.removeOnScrollListener(it) }
         replyHighlightScrollListener = null
         chatAdapter?.clearReplyHighlight()
+        lastMessagesSnapshot = emptyList()
         super.onDestroyView()
     }
 

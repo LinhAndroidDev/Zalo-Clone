@@ -14,11 +14,12 @@ import kotlin.random.Random
 
 object EmotionBurstEffect {
 
-    private const val PARTICLE_COUNT = 28
+    private const val PARTICLE_COUNT = 22
     private const val DURATION_MS = 1200L
     private const val POP_DURATION_MS = 180L
     private const val MIN_DISTANCE_DP = 72
     private const val MAX_DISTANCE_EXTRA_DP = 96
+    private const val ICON_SIZE_DP = 26
 
     fun play(activity: Activity, anchor: View, type: EmotionType) {
         if (!anchor.isShown || anchor.width == 0 || anchor.height == 0) return
@@ -42,7 +43,7 @@ object EmotionBurstEffect {
         val centerY = anchorLoc[1] - rootLoc[1] + anchor.height / 2f
 
         val density = activity.resources.displayMetrics.density
-        val iconSizePx = (18 * density).toInt().coerceAtLeast(1)
+        val iconSizePx = (ICON_SIZE_DP * density).toInt().coerceAtLeast(1)
         val drawableRes = emotionDrawable(type)
         val random = Random(System.nanoTime())
 
