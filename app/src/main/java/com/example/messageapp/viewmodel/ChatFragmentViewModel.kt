@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.data.legacy.DateUtils
 import com.example.messageapp.domain.repository.SessionRepository
+import com.example.messageapp.domain.repository.UserRepository
 import com.example.messageapp.domain.usecase.inbox.GetConversationUseCase
 import com.example.messageapp.domain.usecase.chat.LoadGroupMembersUseCase
 import com.example.messageapp.domain.usecase.chat.MarkMessageReadUseCase
@@ -59,6 +60,7 @@ class ChatFragmentViewModel @Inject constructor(
     private val observeGroupReadStatusUseCase: ObserveGroupReadStatusUseCase,
     private val loadGroupMembersUseCase: LoadGroupMembersUseCase,
     private val uploadChatMediaUseCase: UploadChatMediaUseCase,
+    private val userRepository: UserRepository,
 ) : BaseViewModel() {
 
     /** Session access for fragments/adapters during migration from SharePreferenceRepository. */
@@ -377,6 +379,10 @@ class ChatFragmentViewModel @Inject constructor(
                 (DateUtils.parseChatMessageTimeMillis(readMap[memberId].orEmpty()) ?: 0L) >= lastMsgMillis
         }
         _groupLastMessageReaders.value = readers
+    }
+
+    fun loadUserAvatar(userId: String, onResult: (String) -> Unit) {
+        userRepository.getInfoUser(userId, onSuccess = { onResult(it.avatar) })
     }
 
     override fun onCleared() {

@@ -1,7 +1,6 @@
 package com.example.messageapp.data.legacy
 
 import com.example.messageapp.data.firestore.Message
-import com.example.messageapp.data.firestore.MessageReply
 import com.example.messageapp.data.firestore.TypeMessage
 
 object ReplyNotificationHelper {
@@ -61,20 +60,4 @@ object ReplyNotificationHelper {
         if (trimmed.length <= PREVIEW_MAX_LENGTH) return trimmed
         return trimmed.take(PREVIEW_MAX_LENGTH) + "…"
     }
-
-    fun buildMessageReplyFromFcmFields(
-        messageTime: String,
-        senderId: String,
-        senderName: String,
-        previewText: String,
-        type: Int,
-        photoUrl: String?,
-    ): MessageReply = MessageReply(
-        messageTime = messageTime,
-        senderId = senderId,
-        senderName = senderName,
-        previewText = previewText,
-        type = type,
-        photoUrl = photoUrl,
-    )
 }

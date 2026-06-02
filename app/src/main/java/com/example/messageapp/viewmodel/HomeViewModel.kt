@@ -2,9 +2,11 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.domain.repository.GroupChatRepository
 import com.example.messageapp.domain.repository.PresenceRepository
 import com.example.messageapp.domain.repository.SessionRepository
 import com.example.messageapp.domain.repository.UserRepository
+import com.example.messageapp.domain.usecase.inbox.GetConversationUseCase
 import com.example.messageapp.domain.usecase.inbox.GetUnreadCountUseCase
 import com.example.messageapp.domain.usecase.inbox.ObserveInboxUseCase
 import com.example.messageapp.mapper.ChatUiMapper
@@ -27,6 +29,8 @@ class HomeViewModel @Inject constructor(
     private val getUnreadCountUseCase: GetUnreadCountUseCase,
     private val userRepository: UserRepository,
     private val presenceRepository: PresenceRepository,
+    private val groupChatRepository: GroupChatRepository,
+    private val getConversationUseCase: GetConversationUseCase,
 ) : BaseViewModel() {
 
     /** Session access for fragments/adapters during migration from SharePreferenceRepository. */
@@ -35,6 +39,8 @@ class HomeViewModel @Inject constructor(
 
     private var inboxJob: Job? = null
     private val presenceJobs = mutableMapOf<String, Job>()
+    private val typingJobs = mutableMapOf<String, Job>()
+    private val avatarRequestedIds = mutableSetOf<String>()
 
     private val _conversation = MutableStateFlow<ArrayList<Conversation>?>(null)
     val conversation = _conversation.asStateFlow()
@@ -44,10 +50,19 @@ class HomeViewModel @Inject constructor(
     private val _presenceMap = MutableStateFlow<Map<String, UserPresence>>(emptyMap())
     val presenceMap = _presenceMap.asStateFlow()
 
+    private val _typingMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val typingMap = _typingMap.asStateFlow()
+
+    private val _avatarMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    val avatarMap = _avatarMap.asStateFlow()
+
     init {
         viewModelScope.launch {
             conversation.collect { conversations ->
-                syncPresenceListeners(conversations.orEmpty())
+                val list = conversations.orEmpty()
+                syncPresenceListeners(list)
+                syncTypingListeners(list)
+                syncAvatarUrls(list)
             }
         }
     }
@@ -99,10 +114,61 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun syncTypingListeners(conversations: List<Conversation>) {
+        val keys = conversations
+            .map { it.friendId }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toSet()
+
+        val removedIds = typingJobs.keys - keys
+        removedIds.forEach { id ->
+            typingJobs.remove(id)?.cancel()
+        }
+        if (removedIds.isNotEmpty()) {
+            _typingMap.update { current -> current.filterKeys { it in keys } }
+        }
+
+        val userId = sessionRepository.getAuth()
+        conversations.forEach { conv ->
+            val id = conv.friendId
+            if (id.isBlank() || id in typingJobs) return@forEach
+            typingJobs[id] = viewModelScope.launch {
+                if (conv.isGroupThread()) {
+                    groupChatRepository.observeGroupTyping(id, userId).collect { typing ->
+                        _typingMap.update { it + (id to typing) }
+                    }
+                } else {
+                    getConversationUseCase.observe(id, userId).collect { conversation ->
+                        _typingMap.update { it + (id to conversation.typing) }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun syncAvatarUrls(conversations: List<Conversation>) {
+        conversations
+            .filter { !it.isGroupThread() }
+            .map { it.friendId }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .forEach { friendId ->
+                if (friendId in avatarRequestedIds) return@forEach
+                avatarRequestedIds.add(friendId)
+                userRepository.getInfoUser(friendId, onSuccess = { user ->
+                    _avatarMap.update { it + (friendId to user.avatar) }
+                })
+            }
+    }
+
     override fun onCleared() {
         inboxJob?.cancel()
         presenceJobs.values.forEach { it.cancel() }
         presenceJobs.clear()
+        typingJobs.values.forEach { it.cancel() }
+        typingJobs.clear()
+        avatarRequestedIds.clear()
         super.onCleared()
     }
 }

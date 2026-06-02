@@ -34,7 +34,6 @@ import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.MessageReplyHelper
 import com.example.messageapp.utils.MentionHelper
 import kotlin.math.ceil
@@ -68,6 +67,7 @@ class ChatAdapter(
     private val myUserId: String,
     private var myName: String = "",
     private var peerDisplayName: String = "",
+    private val loadUserAvatar: (userId: String, onAvatarUrl: (String) -> Unit) -> Unit = { _, _ -> },
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var messages = arrayListOf<Message>()
     private val audioPlaybackStateMap = hashMapOf<String, AudioPlaybackState>()
@@ -343,7 +343,7 @@ class ChatAdapter(
                 holder.checkShowEmotion(message)
                 if (!isGroupedWithPrevious(position)) {
                     val avatarId = if (isGroup) message.sender else friendId
-                    holder.showAvatarReceiver(context, avatarId)
+                    holder.showAvatarReceiver(context, avatarId, loadUserAvatar)
                 }
                 when (TypeMessage.of(message.type)) {
                     TypeMessage.MESSAGE -> {
@@ -680,7 +680,7 @@ class ChatAdapter(
             if (position == messages.lastIndex &&
                 messages[position].sender == myUserId
             ) {
-                holder.bindGroupSeenAvatars(context, groupReaderIds)
+                holder.bindGroupSeenAvatars(context, groupReaderIds, loadUserAvatar)
             } else {
                 holder.hideGroupSeenAvatars()
             }
@@ -688,11 +688,8 @@ class ChatAdapter(
         }
         if (position == messages.lastIndex) {
             if (seen) {
-                FireBaseInstance.getInfoUser(friendId) { user ->
-                    context.loadImg(
-                        user.avatar.toString(),
-                        holder.v.avtSeen
-                    )
+                loadUserAvatar(friendId) { avatarUrl ->
+                    context.loadImg(avatarUrl, holder.v.avtSeen)
                 }
                 holder.showSeen(true)
             } else {

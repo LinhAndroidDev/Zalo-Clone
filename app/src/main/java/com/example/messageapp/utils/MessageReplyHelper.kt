@@ -140,57 +140,6 @@ object MessageReplyHelper {
         )
     }
 
-    fun formatInboxPreview(context: Context, message: Message, basePreview: String): String {
-        val reply = message.replyTo ?: return basePreview
-        val quoted = reply.previewText.ifBlank { basePreview }
-        return context.getString(R.string.reply_preview_format, quoted)
-    }
-
-    fun formatNotificationBody(context: Context, message: Message, baseBody: String): String {
-        return formatInboxPreview(context, message, baseBody)
-    }
-
-    fun buildFcmReplyFields(
-        context: Context,
-        message: Message,
-        messageTime: String,
-        senderName: String,
-    ): FcmReplyFields {
-        return FcmReplyFields(
-            messageTime = messageTime,
-            replyPreviewText = buildPreviewText(context, message),
-            replySenderName = senderName,
-            replyType = resolveMessageType(message).rawValue.toString(),
-            replyPhotoUrl = firstPhotoUrl(message),
-        )
-    }
-
-    data class FcmReplyFields(
-        val messageTime: String,
-        val replyPreviewText: String,
-        val replySenderName: String,
-        val replyType: String,
-        val replyPhotoUrl: String?,
-    )
-
-    fun buildMessageReplyFromFcmFields(
-        messageTime: String,
-        senderId: String,
-        senderName: String,
-        previewText: String,
-        type: Int,
-        photoUrl: String?,
-    ): MessageReply {
-        return MessageReply(
-            messageTime = messageTime,
-            senderId = senderId,
-            senderName = senderName,
-            previewText = previewText,
-            type = type,
-            photoUrl = photoUrl,
-        )
-    }
-
     fun bindReplyQuote(
         context: Context,
         quoteRoot: View,

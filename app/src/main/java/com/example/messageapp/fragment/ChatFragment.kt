@@ -220,6 +220,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 uid,
                 viewModel?.shared?.getNameUser().orEmpty(),
                 cvt.name,
+                loadUserAvatar = { userId, onResult ->
+                    viewModel?.loadUserAvatar(userId, onResult)
+                },
             )
             chatAdapter?.updateReplyNameContext(
                 myName = viewModel?.shared?.getNameUser().orEmpty(),

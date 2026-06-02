@@ -16,7 +16,6 @@ import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.service.ReceiverMessageService
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.MessageReplyHelper
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -95,7 +94,7 @@ class NotificationReply : BroadcastReceiver() {
             ?: TypeMessage.MESSAGE.rawValue
         val photoUrl = intent.getStringExtra(ReceiverMessageService.REPLY_PHOTO_URL)
 
-        return MessageReplyHelper.buildMessageReplyFromFcmFields(
+        return MessageReply(
             messageTime = messageTime,
             senderId = senderId,
             senderName = senderName,

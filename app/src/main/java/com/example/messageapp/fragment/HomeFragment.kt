@@ -41,7 +41,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        listChatAdapter = ListChatAdapter(viewModel?.shared?.getAuth() ?: "")
+        listChatAdapter = ListChatAdapter()
         listChatAdapter?.onClickView = { conversation ->
             goToChatFragment(conversation)
         }
@@ -132,6 +132,18 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.presenceMap?.collect { presenceMap ->
                 listChatAdapter?.updatePresenceMap(presenceMap)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.typingMap?.collect { typingMap ->
+                listChatAdapter?.updateTypingMap(typingMap)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.avatarMap?.collect { avatarMap ->
+                listChatAdapter?.updateAvatarMap(avatarMap)
             }
         }
 
