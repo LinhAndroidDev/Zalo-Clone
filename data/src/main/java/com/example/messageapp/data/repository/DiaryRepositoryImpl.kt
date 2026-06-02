@@ -1,8 +1,6 @@
 package com.example.messageapp.data.repository
 
-import android.net.Uri
 import com.example.messageapp.data.DataContextHolder
-import com.example.messageapp.data.firestore.DiaryLinkPreview as FsDiaryLinkPreview
 import com.example.messageapp.data.legacy.FireBaseInstance
 import com.example.messageapp.data.mapper.EntityMapper
 import com.example.messageapp.domain.model.DiaryLinkPreview
@@ -14,6 +12,7 @@ import com.example.messageapp.domain.repository.StickerRepository
 import com.example.messageapp.data.firestore.Sticker as FsSticker
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.net.toUri
 
 @Singleton
 class DiaryRepositoryImpl @Inject constructor() : DiaryRepository {
@@ -53,7 +52,7 @@ class DiaryRepositoryImpl @Inject constructor() : DiaryRepository {
             authorName = authorName,
             authorAvatarUrl = authorAvatarUrl,
             content = content,
-            localImageUris = localImageUriStrings.map { Uri.parse(it) },
+            localImageUris = localImageUriStrings.map { it.toUri() },
             linkPreview = linkPreview?.let { EntityMapper.toFirestore(it) },
             success = onSuccess,
             failure = onFailure,
@@ -75,7 +74,7 @@ class DiaryRepositoryImpl @Inject constructor() : DiaryRepository {
             postId = postId,
             editorUserId = editorUserId,
             content = content,
-            imageUris = localImageUriStrings.map { Uri.parse(it) },
+            imageUris = localImageUriStrings.map { it.toUri() },
             linkPreview = linkPreview?.let { EntityMapper.toFirestore(it) },
             success = onSuccess,
             failure = onFailure,

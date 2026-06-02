@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.data.legacy.DateUtils
-import com.example.messageapp.domain.chat.MentionParser
 import com.example.messageapp.domain.repository.SessionRepository
 import com.example.messageapp.domain.usecase.inbox.GetConversationUseCase
 import com.example.messageapp.domain.usecase.chat.LoadGroupMembersUseCase

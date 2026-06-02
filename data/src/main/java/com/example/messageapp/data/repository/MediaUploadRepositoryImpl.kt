@@ -1,12 +1,11 @@
 package com.example.messageapp.data.repository
 
-import android.net.Uri
 import com.example.messageapp.data.DataContextHolder
 import com.example.messageapp.data.legacy.FireBaseInstance
-import com.example.messageapp.data.legacy.MediaFileUtils
 import com.example.messageapp.domain.repository.MediaUploadRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.net.toUri
 
 @Singleton
 class MediaUploadRepositoryImpl @Inject constructor() : MediaUploadRepository {
@@ -19,7 +18,7 @@ class MediaUploadRepositoryImpl @Inject constructor() : MediaUploadRepository {
         onFailure: (Throwable) -> Unit,
     ) {
         val context = DataContextHolder.appContext
-        val uris = ArrayList(uriStrings.map { Uri.parse(it) })
+        val uris = ArrayList(uriStrings.map { it.toUri() })
         FireBaseInstance.uploadListPhoto(
             context = context,
             uris = uris,
@@ -39,7 +38,7 @@ class MediaUploadRepositoryImpl @Inject constructor() : MediaUploadRepository {
     ) {
         FireBaseInstance.uploadAudio(
             roomId = roomId,
-            uriAudio = Uri.parse(uriString),
+            uriAudio = uriString.toUri(),
             success = onSuccess,
             process = { p -> onProgress(p.toInt()) },
             failure = onFailure,

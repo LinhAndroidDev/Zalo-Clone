@@ -131,9 +131,9 @@ object DateUtils {
 
         return when {
             diffMinutes < 1 -> "Truy cập vừa xong"
-            diffMinutes < 60 -> "Truy cập ${diffMinutes} phút trước"
-            diffHours < 24 -> "Truy cập ${diffHours} giờ trước"
-            else -> "Truy cập ${diffDays} ngày trước"
+            diffMinutes < 60 -> "Truy cập $diffMinutes phút trước"
+            diffHours < 24 -> "Truy cập $diffHours giờ trước"
+            else -> "Truy cập $diffDays ngày trước"
         }
     }
 }

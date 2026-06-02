@@ -2,7 +2,6 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
-import com.example.messageapp.domain.repository.SessionRepository
 import com.example.messageapp.domain.usecase.social.GetCurrentUserUseCase
 import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.model.User

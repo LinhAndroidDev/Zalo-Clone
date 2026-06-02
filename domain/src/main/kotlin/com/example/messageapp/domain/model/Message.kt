@@ -30,13 +30,12 @@ data class Message(
     val replyTo: MessageReply? = null,
 )
 
-enum class EmotionType(val firestoreKey: String) {
-    FAVOURITE("favourite"),
-    LIKE("like"),
-    LAUGH("laugh"),
-    CRY("cry"),
-    ANGRY("angry"),
-    ;
+enum class EmotionType() {
+    FAVOURITE,
+    LIKE,
+    LAUGH,
+    CRY,
+    ANGRY;
 
     fun reactions(emotion: Emotion): Map<String, Int> = when (this) {
         FAVOURITE -> emotion.favourite
@@ -64,9 +63,6 @@ data class Emotion(
 ) {
     fun emotionEmpty(): Boolean =
         favourite.isEmpty() && like.isEmpty() && laugh.isEmpty() && cry.isEmpty() && angry.isEmpty()
-
-    fun totalQuantityEmotion(): Int =
-        favourite.size + like.size + laugh.size + cry.size + angry.size
 
     fun findUserReaction(userId: String): EmotionType? {
         if (userId.isBlank()) return null

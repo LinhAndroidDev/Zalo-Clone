@@ -56,7 +56,4 @@ data class Conversation(
         return seen == "1"
     }
 
-    fun isMessageFromFriend(): Boolean {
-        return sender == friendId
-    }
 }

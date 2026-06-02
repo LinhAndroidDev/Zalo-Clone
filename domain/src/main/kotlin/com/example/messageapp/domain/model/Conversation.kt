@@ -23,7 +23,4 @@ data class Conversation(
 
     fun isGroupThread(): Boolean = isGroup || looksLikeGroupRoomId(friendId)
 
-    fun isSeenMessage(): Boolean = seen == "1"
-
-    fun isMessageFromFriend(): Boolean = sender == friendId
 }

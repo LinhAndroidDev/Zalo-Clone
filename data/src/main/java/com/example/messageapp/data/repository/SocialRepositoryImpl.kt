@@ -1,7 +1,5 @@
 package com.example.messageapp.data.repository
 
-import com.example.messageapp.data.firestore.FriendRequest as FsFriendRequest
-import android.net.Uri
 import com.example.messageapp.data.DataContextHolder
 import com.example.messageapp.data.firestore.User as FsUser
 import com.example.messageapp.data.legacy.FireBaseInstance
@@ -14,6 +12,7 @@ import com.example.messageapp.domain.repository.FriendRepository
 import com.example.messageapp.domain.repository.UserRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.net.toUri
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor() : AuthRepository {
@@ -93,7 +92,7 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
         val context = DataContextHolder.appContext
         FireBaseInstance.uploadImage(
             context = context,
-            uriPhoto = Uri.parse(uriString),
+            uriPhoto = uriString.toUri(),
             success = { url ->
                 if (isAvatar) {
                     updateAvatar(userId, url)

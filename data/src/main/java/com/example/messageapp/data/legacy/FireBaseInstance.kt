@@ -3,7 +3,6 @@ package com.example.messageapp.data.legacy
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.example.messageapp.data.DataContextHolder
 
 import com.example.messageapp.data.firestore.Conversation
 import com.example.messageapp.data.firestore.Emotion
@@ -47,7 +46,6 @@ import java.util.HashMap
 import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 object FireBaseInstance {
     private val db by lazy { Firebase.firestore }
@@ -455,7 +453,6 @@ object FireBaseInstance {
     ) {
 
         //Get token of receiver to send notification message to receiver
-        val appContext = DataContextHolder.appContext
         val fcmReply = ReplyNotificationHelper.buildFcmReplyFields(message, time, nameSender)
         getTokenMessage(
             conversation.friendId,
@@ -585,7 +582,6 @@ object FireBaseInstance {
             groupId,
             success = { group ->
                 val memberIds = group.memberIds.distinct().filter { it.isNotBlank() }
-                val appContext = DataContextHolder.appContext
                 val notifBody = ReplyNotificationHelper.formatNotificationBody(
                     message,
                     notificationBodyForType(type, message, nameSender),
@@ -595,14 +591,14 @@ object FireBaseInstance {
                     message,
                     inboxMessagePreviewOthers(type, message, nameSender),
                 )
-                val mentionedTargets = com.example.messageapp.domain.chat.MentionParser.resolveMentionTargetUserIds(
+                val mentionedTargets = MentionParser.resolveMentionTargetUserIds(
                     mentions = message.mentions.map {
                         com.example.messageapp.domain.model.MessageMention(it.userId, it.token, it.displayName)
                     },
                     memberIds = memberIds,
                     senderId = userId,
                 )
-                val isAllMention = com.example.messageapp.domain.chat.MentionParser.hasAllMention(
+                val isAllMention = MentionParser.hasAllMention(
                     message.mentions.map {
                         com.example.messageapp.domain.model.MessageMention(it.userId, it.token, it.displayName)
                     },
@@ -614,7 +610,7 @@ object FireBaseInstance {
                         success = { token ->
                             val isMentioned = mid in mentionedTargets
                             val body = if (isMentioned) {
-                                com.example.messageapp.domain.chat.MentionParser.mentionNotificationBody(
+                                MentionParser.mentionNotificationBody(
                                     senderName = nameSender,
                                     groupName = conversation.name,
                                     messageText = message.message,
