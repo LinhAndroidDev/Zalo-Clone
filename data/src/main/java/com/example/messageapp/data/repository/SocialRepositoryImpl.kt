@@ -1,6 +1,8 @@
 package com.example.messageapp.data.repository
 
 import com.example.messageapp.data.firestore.FriendRequest as FsFriendRequest
+import android.net.Uri
+import com.example.messageapp.data.DataContextHolder
 import com.example.messageapp.data.firestore.User as FsUser
 import com.example.messageapp.data.legacy.FireBaseInstance
 import com.example.messageapp.data.mapper.EntityMapper
@@ -45,6 +47,18 @@ class AuthRepositoryImpl @Inject constructor() : AuthRepository {
         )
         FireBaseInstance.addUser(map, success = { onSuccess() }, failure = onFailure)
     }
+
+    override fun isEmailRegistered(email: String, onResult: (Boolean) -> Unit, onFailure: (String) -> Unit) {
+        FireBaseInstance.getUsers(
+            success = { snapshot ->
+                val exists = snapshot.documents.any { doc ->
+                    doc.getString("email") == email
+                }
+                onResult(exists)
+            },
+            failure = onFailure,
+        )
+    }
 }
 
 @Singleton
@@ -67,6 +81,29 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
 
     override fun saveFcmToken(userId: String, token: String) {
         FireBaseInstance.saveTokenMessage(userId, hashMapOf("token" to token))
+    }
+
+    override fun uploadProfileImage(
+        uriString: String,
+        userId: String,
+        isAvatar: Boolean,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        val context = DataContextHolder.appContext
+        FireBaseInstance.uploadImage(
+            context = context,
+            uriPhoto = Uri.parse(uriString),
+            success = { url ->
+                if (isAvatar) {
+                    updateAvatar(userId, url)
+                } else {
+                    updateImageCover(userId, url)
+                }
+                onSuccess()
+            },
+            failure = { onFailure(it) },
+        )
     }
 }
 
@@ -126,13 +163,7 @@ class FriendRepositoryImpl @Inject constructor() : FriendRepository {
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit,
     ) {
-        val fsRequest = FsFriendRequest(
-            requestId = request.id,
-            fromId = request.fromId,
-            toId = request.toId,
-            status = request.status,
-            createdAt = request.createdAt,
-        )
+        val fsRequest = EntityMapper.toFirestore(request)
         FireBaseInstance.acceptFriendRequest(fsRequest, myName, myAvatar, onSuccess, onFailure)
     }
 

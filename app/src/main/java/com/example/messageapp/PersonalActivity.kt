@@ -43,7 +43,7 @@ class PersonalActivity : AppCompatActivity() {
         // Callback is invoked after the user selects a media item or closes the
         // photo picker.
         if (uri != null) {
-            viewModel.uploadPhoto(this, uri, updateAvatar)
+            viewModel.uploadPhoto(uri, updateAvatar)
         } else {
             Log.d("PhotoPicker", "No media selected")
         }
@@ -205,7 +205,7 @@ class PersonalActivity : AppCompatActivity() {
 
         if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             data?.data?.let { uri ->
-                viewModel.uploadPhoto(this, uri, updateAvatar)
+                viewModel.uploadPhoto(uri, updateAvatar)
             }
         }
     }

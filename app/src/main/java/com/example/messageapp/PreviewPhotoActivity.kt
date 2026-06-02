@@ -56,7 +56,7 @@ class PreviewPhotoActivity : AppCompatActivity() {
             }
             binding.photoPager.adapter = adapter
             binding.photoPager.setCurrentItem(arg.indexOfPhoto, false)
-            viewModel.getInfo(arg.message, arg.keyId)
+            viewModel.getInfo(arg.keyId)
         }
 
         lifecycleScope.launch(Dispatchers.Main) {

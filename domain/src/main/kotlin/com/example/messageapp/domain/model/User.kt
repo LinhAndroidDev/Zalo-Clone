@@ -38,6 +38,10 @@ data class FriendRequest(
     val id: String = "",
     val fromId: String = "",
     val toId: String = "",
+    val fromName: String = "",
+    val fromAvatar: String = "",
+    val toName: String = "",
+    val toAvatar: String = "",
     val status: String = "",
     val createdAt: Long = 0L,
 )

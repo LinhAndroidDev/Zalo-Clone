@@ -7,19 +7,18 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.os.bundleOf
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryCommentAdapter
 import com.example.messageapp.databinding.BottomSheetDiaryCommentsBinding
-import com.example.messageapp.mapper.DiaryUiMapper
-import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.SharePreferenceRepository
+import com.example.messageapp.viewmodel.BottomSheetDiaryCommentsViewModel
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class BottomSheetDiaryComments : BottomSheetDialogFragment() {
@@ -27,12 +26,10 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
     private var _binding: BottomSheetDiaryCommentsBinding? = null
     private val binding get() = _binding!!
 
-    @Inject
-    lateinit var shared: SharePreferenceRepository
+    private val viewModel by viewModels<BottomSheetDiaryCommentsViewModel>()
 
     private val postId: String by lazy { requireArguments().getString(ARG_POST_ID).orEmpty() }
     private val adapter = DiaryCommentAdapter()
-    private var commentsReg: ListenerRegistration? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -67,11 +64,10 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
         binding.rvComments.layoutManager = LinearLayoutManager(requireContext())
         binding.rvComments.adapter = adapter
 
-        commentsReg = FireBaseInstance.observeDiaryComments(
-            postId = postId,
-            onUpdate = { comments -> adapter.submitList(comments.map { DiaryUiMapper.toUi(it) }) },
-            onError = { Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show() }
-        )
+        viewModel.startComments(postId)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.comments.collect { adapter.submitList(it) }
+        }
 
         binding.btnSendComment.setOnClickListener { sendComment() }
     }
@@ -86,7 +82,7 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
             ).show()
             return
         }
-        val uid = shared.getAuth().ifBlank {
+        if (viewModel.currentUserId().isBlank()) {
             Toast.makeText(
                 requireContext(),
                 getString(R.string.diary_not_logged_in),
@@ -94,36 +90,14 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
             ).show()
             return
         }
-        FireBaseInstance.getUserById(
-            userId = uid,
-            success = { user ->
-                FireBaseInstance.addDiaryComment(
-                    postId = postId,
-                    authorId = uid,
-                    authorName = user.name.orEmpty().ifBlank { shared.getNameUser() },
-                    authorAvatarUrl = user.avatar.orEmpty(),
-                    text = text,
-                    success = {
-                        requireActivity().runOnUiThread {
-                            binding.edtComment.setText("")
-                        }
-                    },
-                    failure = { msg ->
-                        requireActivity().runOnUiThread {
-                            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-            },
-            failure = { msg ->
-                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+        viewModel.sendComment(postId, text) {
+            requireActivity().runOnUiThread {
+                binding.edtComment.setText("")
             }
-        )
+        }
     }
 
     override fun onDestroyView() {
-        commentsReg?.remove()
-        commentsReg = null
         _binding = null
         super.onDestroyView()
     }

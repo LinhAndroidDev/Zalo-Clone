@@ -30,7 +30,7 @@ class IntroFragment : BaseFragment<FragmentIntroBinding, IntroFragmentViewModel>
     override fun initView() {
         super.initView()
 
-        viewModel?.shared?.getLanguageSelected()
+        viewModel?.sessionRepository?.getLanguageSelected()
             ?.let { language -> setLanguage(SessionLanguageMapper.toUiLanguage(language)) }
 
         binding?.let { binding ->

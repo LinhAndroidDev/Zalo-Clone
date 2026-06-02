@@ -17,14 +17,11 @@ import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiaryBinding
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
-import com.example.messageapp.utils.SharePreferenceRepository
 import com.example.messageapp.viewmodel.DiaryFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 enum class TypeNews {
     Camera, Video, Edit
@@ -33,9 +30,6 @@ enum class TypeNews {
 @AndroidEntryPoint
 class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_diary
-
-    @Inject
-    lateinit var shared: SharePreferenceRepository
 
     private val diaryPostAdapter by lazy { DiaryPostAdapter() }
 
@@ -54,7 +48,7 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
             BottomSheetDiaryComments.newInstance(post.id)
                 .show(childFragmentManager, "BottomSheetDiaryComments")
         }
-        diaryPostAdapter.currentUserId = shared.getAuth()
+        diaryPostAdapter.currentUserId = viewModel?.currentUserId().orEmpty()
         diaryPostAdapter.onEditPost = { post ->
             findNavController().navigate(
                 R.id.action_diaryFragment_to_statusFragment,
@@ -65,7 +59,7 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
         diaryPostAdapter.onOpenAuthorProfile = { authorId ->
             if (authorId.isNotBlank()) {
                 val intent = Intent(requireActivity(), PersonalActivity::class.java)
-                if (authorId != shared.getAuth()) {
+                if (authorId != viewModel?.currentUserId()) {
                     intent.putExtra(PersonalActivity.FRIEND_ID_KEY, authorId)
                 }
                 startActivity(intent)
@@ -119,13 +113,7 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
             .setMessage(R.string.diary_post_delete_message)
             .setNegativeButton(R.string.diary_post_delete_cancel, null)
             .setPositiveButton(R.string.diary_post_delete_confirm) { _, _ ->
-                val uid = shared.getAuth()
-                FireBaseInstance.deleteDiaryPost(
-                    postId = post.id,
-                    editorUserId = uid,
-                    success = {},
-                    failure = { msg -> viewModel?.showError(msg) }
-                )
+                viewModel?.deleteDiaryPost(post.id) {}
             }
             .show()
     }

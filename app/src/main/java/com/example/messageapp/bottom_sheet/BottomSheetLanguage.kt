@@ -30,17 +30,17 @@ class BottomSheetLanguage : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.shared.getLanguageSelected()
+        viewModel.sessionRepository.getLanguageSelected()
             .let { language -> setViewLanguage(SessionLanguageMapper.toUiLanguage(language)) }
 
         binding.vietnamese.setOnClickListener {
-            viewModel.shared.saveLanguageSelected(SessionLanguageMapper.toAppLanguage(Language.VIETNAMESE))
+            viewModel.sessionRepository.saveLanguageSelected(SessionLanguageMapper.toAppLanguage(Language.VIETNAMESE))
             onSelectLanguage?.invoke(Language.VIETNAMESE)
             dismiss()
         }
 
         binding.english.setOnClickListener {
-            viewModel.shared.saveLanguageSelected(SessionLanguageMapper.toAppLanguage(Language.ENGLISH))
+            viewModel.sessionRepository.saveLanguageSelected(SessionLanguageMapper.toAppLanguage(Language.ENGLISH))
             onSelectLanguage?.invoke(Language.ENGLISH)
             dismiss()
         }

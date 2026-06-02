@@ -12,6 +12,7 @@ interface AuthRepository {
         onFailure: (String) -> Unit,
     )
     fun registerUser(user: User, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit)
+    fun isEmailRegistered(email: String, onResult: (Boolean) -> Unit, onFailure: (String) -> Unit)
 }
 
 interface UserRepository {
@@ -20,6 +21,13 @@ interface UserRepository {
     fun updateAvatar(userId: String, avatarUrl: String)
     fun updateImageCover(userId: String, imageCoverUrl: String)
     fun saveFcmToken(userId: String, token: String)
+    fun uploadProfileImage(
+        uriString: String,
+        userId: String,
+        isAvatar: Boolean,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    )
 }
 
 interface FriendRepository {

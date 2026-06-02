@@ -9,6 +9,7 @@ import com.example.messageapp.data.repository.FriendRepositoryImpl
 import com.example.messageapp.data.repository.GroupChatRepositoryImpl
 import com.example.messageapp.data.repository.MediaUploadRepositoryImpl
 import com.example.messageapp.data.repository.NotificationRepositoryImpl
+import com.example.messageapp.data.repository.StickerRepositoryImpl
 import com.example.messageapp.data.repository.PresenceRepositoryImpl
 import com.example.messageapp.data.repository.UserRepositoryImpl
 import com.example.messageapp.data.session.SessionRepositoryImpl
@@ -22,6 +23,7 @@ import com.example.messageapp.domain.repository.MediaUploadRepository
 import com.example.messageapp.domain.repository.NotificationRepository
 import com.example.messageapp.domain.repository.PresenceRepository
 import com.example.messageapp.domain.repository.SessionRepository
+import com.example.messageapp.domain.repository.StickerRepository
 import com.example.messageapp.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
@@ -45,6 +47,7 @@ abstract class RepositoryModule {
     @Binds @Singleton abstract fun bindFriendRepository(impl: FriendRepositoryImpl): FriendRepository
     @Binds @Singleton abstract fun bindDiaryRepository(impl: DiaryRepositoryImpl): DiaryRepository
     @Binds @Singleton abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
+    @Binds @Singleton abstract fun bindStickerRepository(impl: StickerRepositoryImpl): StickerRepository
 }
 
 @Module

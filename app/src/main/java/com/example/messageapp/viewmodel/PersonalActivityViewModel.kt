@@ -1,62 +1,52 @@
 package com.example.messageapp.viewmodel
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
-import com.example.messageapp.model.User
+import com.example.messageapp.domain.repository.SessionRepository
+import com.example.messageapp.domain.usecase.social.GetUserInfoUseCase
+import com.example.messageapp.domain.usecase.social.UploadProfileImageUseCase
 import com.example.messageapp.mapper.SocialUiMapper
-import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.SharePreferenceRepository
+import com.example.messageapp.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class PersonalActivityViewModel @Inject constructor() : BaseViewModel() {
+class PersonalActivityViewModel @Inject constructor(
+    private val sessionRepository: SessionRepository,
+    private val getUserInfoUseCase: GetUserInfoUseCase,
+    private val uploadProfileImageUseCase: UploadProfileImageUseCase,
+) : BaseViewModel() {
 
-    @Inject
-    lateinit var shared: SharePreferenceRepository
-
-    private val _user: MutableStateFlow<User?> = MutableStateFlow(null)
+    private val _user = MutableStateFlow<User?>(null)
     val user = _user.asStateFlow()
-    private val _isInfoUser: MutableStateFlow<Boolean> = MutableStateFlow(true)
+    private val _isInfoUser = MutableStateFlow(true)
     val isInfoUser = _isInfoUser.asStateFlow()
 
-    /** This function is used to get information of user */
     fun getInfoUser(arg: String?) = viewModelScope.launch {
         _isInfoUser.value = arg == null
         if (isInfoUser.value) {
-            // Get information of user
-            FireBaseInstance.getInfoUser(
-                shared.getAuth(),
-                success = { user ->
-                    _user.value = SocialUiMapper.toUi(user)
-                }
+            getUserInfoUseCase(
+                userId = sessionRepository.getAuth(),
+                onSuccess = { user -> _user.value = SocialUiMapper.toUi(user) },
             )
         } else {
-            // Get information of friend
-            FireBaseInstance.getInfoUser(arg.toString()) { user ->
-                _user.value = SocialUiMapper.toUi(user)
-            }
+            getUserInfoUseCase(
+                userId = arg.orEmpty(),
+                onSuccess = { user -> _user.value = SocialUiMapper.toUi(user) },
+            )
         }
     }
 
-    /** This function is used to upload photo to firebase*/
-    fun uploadPhoto(context: Context, uri: Uri, isAvatar: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        FireBaseInstance.uploadImage(
-            context,
-            uriPhoto = uri,
-            success = {
-                if (isAvatar) {
-                    FireBaseInstance.updateAvatarUser(avatar = it, userId = shared.getAuth())
-                } else {
-                    FireBaseInstance.updateImageCover(imageCover = it, userId = shared.getAuth())
-                }
-            }
+    fun uploadPhoto(uri: Uri, isAvatar: Boolean) = viewModelScope.launch {
+        uploadProfileImageUseCase(
+            uriString = uri.toString(),
+            isAvatar = isAvatar,
+            onSuccess = {},
+            onFailure = { showError(it) },
         )
     }
 }

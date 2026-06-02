@@ -1,12 +1,11 @@
 package com.example.messageapp.viewmodel
 
 import com.example.messageapp.base.BaseViewModel
-import com.example.messageapp.utils.SharePreferenceRepository
+import com.example.messageapp.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class BottomSheetLanguageViewModel @Inject constructor() : BaseViewModel() {
-    @Inject
-    lateinit var shared: SharePreferenceRepository
-}
+class BottomSheetLanguageViewModel @Inject constructor(
+    val sessionRepository: SessionRepository,
+) : BaseViewModel()
