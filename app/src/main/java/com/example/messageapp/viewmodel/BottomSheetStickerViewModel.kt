@@ -10,6 +10,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import javax.inject.Inject
@@ -53,7 +54,7 @@ class BottomSheetStickerViewModel @Inject constructor(
     }
 
     private suspend fun fetchSticker(type: Sticker): List<String> =
-        suspendCoroutine { continuation ->
+        suspendCancellableCoroutine { continuation ->
             getStickerUrlsUseCase(typeName = type.name, onSuccess = { result ->
                 continuation.resume(result)
             })

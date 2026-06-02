@@ -15,11 +15,6 @@ data class UserPresence(
     val lastSeen: Long = 0L,
 )
 
-data class MemberReadCursor(
-    val userId: String = "",
-    val lastReadTime: String = "",
-)
-
 data class User(
     val name: String = "",
     val email: String = "",

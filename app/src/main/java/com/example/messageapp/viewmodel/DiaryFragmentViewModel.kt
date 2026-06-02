@@ -36,14 +36,14 @@ class DiaryFragmentViewModel @Inject constructor(
     fun currentUserId(): String = sessionRepository.getAuth()
 
     fun getInfoUser() {
-        val uid = sessionRepository.getAuth().ifBlank { return }
+        sessionRepository.getAuth().ifBlank { return }
         getDiaryAuthorUseCase(onSuccess = { u ->
             _user.value = SocialUiMapper.toUi(u)
         })
     }
 
     fun startDiaryFeed() {
-        val uid = sessionRepository.getAuth().ifBlank { return }
+        sessionRepository.getAuth().ifBlank { return }
         stopFeed?.invoke()
         stopFeed = observeDiaryFeedUseCase(
             onPosts = { list -> _diaryPosts.value = DiaryUiMapper.toUiPosts(list) },

@@ -1,8 +1,5 @@
 package com.example.messageapp.data.legacy
 
-import android.content.ContentResolver
-import android.content.Context
-import android.net.Uri
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -11,8 +8,6 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
 import org.json.JSONObject
-import java.io.File
-import java.io.InputStream
 import kotlin.math.min
 
 object CloudinaryManager {
@@ -119,38 +114,4 @@ object CloudinaryManager {
         }
     }
 
-    fun uploadFileFromUri(
-        context: Context,
-        uri: Uri,
-        fileName: String,
-        mimeType: String? = null,
-        folder: String? = null,
-        onSuccess: (String) -> Unit,
-        onFailure: (Throwable) -> Unit,
-        onUploadProgress: ((Float) -> Unit)? = null,
-    ) {
-        val bytes = readBytesFromUri(context.contentResolver, uri)
-        uploadBytes(
-            fileBytes = bytes,
-            fileName = fileName,
-            mimeType = mimeType,
-            folder = folder,
-            onSuccess = onSuccess,
-            onFailure = onFailure,
-            onUploadProgress = onUploadProgress,
-        )
-    }
-
-    private fun readBytesFromUri(contentResolver: ContentResolver, uri: Uri): ByteArray {
-        // If it's file://... we can read from filesystem without resolver permission.
-        if ("file".equals(uri.scheme, ignoreCase = true) && !uri.path.isNullOrBlank()) {
-            return File(requireNotNull(uri.path)).readBytes()
-        }
-
-        val inputStream: InputStream = contentResolver.openInputStream(uri)
-            ?: throw IllegalArgumentException("Cannot open input stream for uri=$uri")
-        inputStream.use { stream ->
-            return stream.readBytes()
-        }
-    }
 }

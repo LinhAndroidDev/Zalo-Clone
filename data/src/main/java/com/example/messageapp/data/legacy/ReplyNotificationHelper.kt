@@ -45,7 +45,6 @@ object ReplyNotificationHelper {
             TypeMessage.PHOTOS -> "${message.photos.size} ảnh"
             TypeMessage.SINGLE_PHOTO -> "Ảnh"
             TypeMessage.AUDIO -> "Tin thoại"
-            else -> message.message
         }
         return truncate(base)
     }

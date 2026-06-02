@@ -74,10 +74,6 @@ data class Emotion(
         return favourite.isEmpty() && like.isEmpty() && laugh.isEmpty() && cry.isEmpty() && angry.isEmpty()
     }
 
-    fun totalQuantityEmotion(): Int {
-        return favourite.size + like.size + laugh.size + cry.size + angry.size
-    }
-
     fun findUserReaction(userId: String): EmotionType? {
         if (userId.isBlank()) return null
         return EmotionType.entries.firstOrNull { type -> userId in type.reactions(this) }
