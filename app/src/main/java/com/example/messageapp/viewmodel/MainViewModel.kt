@@ -3,6 +3,7 @@ package com.example.messageapp.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.FriendRequest
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,7 +38,7 @@ class MainViewModel @Inject constructor() : BaseViewModel() {
         _lastSeenAt.value = shared.getLastSeenFriendRequestAt()
         FireBaseInstance.getIncomingFriendRequests(
             userId = shared.getAuth(),
-            success = { _latestRequests.value = it },
+            success = { _latestRequests.value = SocialUiMapper.toUiRequests(it) },
             failure = {}
         )
     }

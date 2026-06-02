@@ -3,6 +3,7 @@ package com.example.messageapp.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.User
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,7 +41,7 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
             if (keySearch != currentQuery) return@searchFriend
 
             val myId = shared.getAuth()
-            val others = results.filter { it.keyAuth != myId }
+            val others = results.map { SocialUiMapper.toUi(it) }.filter { it.keyAuth != myId }
             if (others.isEmpty()) {
                 if (keySearch == currentQuery) _users.value = emptyList()
                 return@searchFriend
@@ -100,7 +101,7 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
     fun getSearchHistory() = viewModelScope.launch {
         FireBaseInstance.getSearchHistory(
             myId = shared.getAuth(),
-            success = { _history.value = it },
+            success = { _history.value = SocialUiMapper.toUiUsers(it) },
             failure = { showError(it) }
         )
     }
@@ -108,7 +109,7 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
     fun saveSearchHistory(user: User) = viewModelScope.launch {
         FireBaseInstance.saveSearchHistory(
             myId = shared.getAuth(),
-            user = user,
+            user = SocialUiMapper.toFirestore(user),
             failure = { showError(it) }
         )
     }

@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.example.messageapp.R
+import com.example.messageapp.data.mapper.EntityMapper
+import com.example.messageapp.mapper.ChatUiMapper
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.MessageReply
@@ -49,15 +51,16 @@ class NotificationReply : BroadcastReceiver() {
         )
 
         if (groupId.isNotEmpty()) {
+            val uiConversation = Conversation(
+                friendId = groupId,
+                name = groupName,
+                isGroup = true,
+            )
             FireBaseInstance.sendMessage(
-                message = message,
+                message = EntityMapper.toFirestore(ChatUiMapper.toDomain(message)),
                 userId = userId,
                 time = time,
-                conversation = Conversation(
-                    friendId = groupId,
-                    name = groupName,
-                    isGroup = true,
-                ),
+                conversation = EntityMapper.toFirestore(ChatUiMapper.toDomain(uiConversation)),
                 nameSender = shared.getNameUser(),
                 sendFirst = false,
             ) {
@@ -66,17 +69,18 @@ class NotificationReply : BroadcastReceiver() {
             return
         }
 
-        FireBaseInstance.getInfoUser(userId = senderId) { user ->
-            user.keyAuth = senderId
+        FireBaseInstance.getInfoUser(userId = senderId) { fsUser ->
+            fsUser.keyAuth = senderId
+            val uiUser = ChatUiMapper.toUi(EntityMapper.toDomain(fsUser))
             FireBaseInstance.sendMessage(
-                message = message,
+                message = EntityMapper.toFirestore(ChatUiMapper.toDomain(message)),
                 userId = userId,
                 time = time,
-                conversation = Conversation(user),
+                conversation = EntityMapper.toFirestore(ChatUiMapper.toDomain(Conversation(uiUser))),
                 nameSender = shared.getNameUser(),
                 sendFirst = false,
             ) {
-                showRepliedNotification(context, user.name.orEmpty().ifBlank { senderId })
+                showRepliedNotification(context, uiUser.name.orEmpty().ifBlank { senderId })
             }
         }
     }

@@ -4,6 +4,8 @@ import android.os.SystemClock
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.model.User
+import com.example.messageapp.mapper.DiaryUiMapper
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,7 +30,7 @@ class DiaryFragmentViewModel @Inject constructor(
     fun getInfoUser() {
         val uid = shared.getAuth().ifBlank { return }
         FireBaseInstance.getInfoUser(uid) { u ->
-            _user.value = u
+            _user.value = SocialUiMapper.toUi(u)
         }
     }
 
@@ -37,7 +39,7 @@ class DiaryFragmentViewModel @Inject constructor(
         stopFeed?.invoke()
         stopFeed = FireBaseInstance.observeDiaryFeed(
             userId = uid,
-            onPosts = { list -> _diaryPosts.value = list },
+            onPosts = { list -> _diaryPosts.value = DiaryUiMapper.toUiPosts(list) },
             onError = { msg ->
                 // Tránh spam khi listener Firestore báo lỗi lặp (mạng / quyền / v.v.)
                 val now = SystemClock.elapsedRealtime()

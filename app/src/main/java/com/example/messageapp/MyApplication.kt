@@ -6,10 +6,11 @@ import android.os.StrictMode
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.example.messageapp.data.DataContextHolder
+import com.example.messageapp.data.legacy.PresenceManager
+import com.example.messageapp.domain.repository.SessionRepository
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.helper.screenWidth
-import com.example.messageapp.utils.PresenceManager
-import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -20,7 +21,7 @@ class MyApplication : Application() {
     lateinit var presenceManager: PresenceManager
 
     @Inject
-    lateinit var shared: SharePreferenceRepository
+    lateinit var sessionRepository: SessionRepository
 
     companion object {
         lateinit var appContext: Context
@@ -30,6 +31,7 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         appContext = applicationContext
+        DataContextHolder.init(this)
         setUpScreenSize()
         registerPresenceLifecycle()
 
@@ -40,14 +42,14 @@ class MyApplication : Application() {
     private fun registerPresenceLifecycle() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
-                if (shared.getStatusLoggedIn()) {
-                    presenceManager.connect(shared.getAuth())
+                if (sessionRepository.getStatusLoggedIn()) {
+                    presenceManager.connect(sessionRepository.getAuth())
                 }
             }
 
             override fun onStop(owner: LifecycleOwner) {
-                val userId = shared.getAuth()
-                if (shared.getStatusLoggedIn() && userId.isNotBlank()) {
+                val userId = sessionRepository.getAuth()
+                if (sessionRepository.getStatusLoggedIn() && userId.isNotBlank()) {
                     presenceManager.disconnect(userId)
                 }
             }

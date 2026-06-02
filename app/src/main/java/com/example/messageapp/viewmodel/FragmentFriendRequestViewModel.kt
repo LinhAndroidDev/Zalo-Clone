@@ -3,6 +3,7 @@ package com.example.messageapp.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.FriendRequest
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +27,7 @@ class FragmentFriendRequestViewModel @Inject constructor() : BaseViewModel() {
     fun getIncomingFriendRequests() = viewModelScope.launch {
         FireBaseInstance.getIncomingFriendRequests(
             userId = shared.getAuth(),
-            success = { _receivedRequests.value = it },
+            success = { _receivedRequests.value = SocialUiMapper.toUiRequests(it) },
             failure = { showError(it) }
         )
     }
@@ -34,7 +35,7 @@ class FragmentFriendRequestViewModel @Inject constructor() : BaseViewModel() {
     fun getOutgoingFriendRequests() = viewModelScope.launch {
         FireBaseInstance.getOutgoingFriendRequests(
             userId = shared.getAuth(),
-            success = { _sentRequests.value = it },
+            success = { _sentRequests.value = SocialUiMapper.toUiRequests(it) },
             failure = { showError(it) }
         )
     }
@@ -46,7 +47,7 @@ class FragmentFriendRequestViewModel @Inject constructor() : BaseViewModel() {
             userId = shared.getAuth(),
             success = { me ->
                 FireBaseInstance.acceptFriendRequest(
-                    request = request,
+                    request = SocialUiMapper.toFirestore(request),
                     myName = me.name.orEmpty(),
                     myAvatar = me.avatar.orEmpty(),
                     success = { showMessage("Đã chấp nhận lời mời kết bạn") },

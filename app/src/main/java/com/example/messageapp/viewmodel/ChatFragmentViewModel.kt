@@ -5,25 +5,36 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.data.legacy.DateUtils
+import com.example.messageapp.domain.chat.MentionParser
+import com.example.messageapp.domain.repository.SessionRepository
+import com.example.messageapp.domain.usecase.inbox.GetConversationUseCase
+import com.example.messageapp.domain.usecase.chat.LoadGroupMembersUseCase
+import com.example.messageapp.domain.usecase.chat.MarkMessageReadUseCase
+import com.example.messageapp.domain.usecase.chat.ObserveGroupReadStatusUseCase
+import com.example.messageapp.domain.usecase.chat.ObserveMessagesUseCase
+import com.example.messageapp.domain.usecase.chat.ObservePresenceUseCase
+import com.example.messageapp.domain.usecase.chat.ObserveTypingUseCase
+import com.example.messageapp.domain.usecase.chat.RemoveMessageUseCase
+import com.example.messageapp.domain.usecase.chat.SendMessageUseCase
+import com.example.messageapp.domain.usecase.chat.ToggleMessageReactionUseCase
+import com.example.messageapp.domain.usecase.chat.UpdateTypingUseCase
+import com.example.messageapp.domain.usecase.chat.UploadChatMediaUseCase
+import com.example.messageapp.mapper.ChatUiMapper
 import com.example.messageapp.model.Conversation
-import com.example.messageapp.model.Emotion
 import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.UserPresence
-import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isVideoUri
-import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.PresenceManager
-import com.example.messageapp.utils.SharePreferenceRepository
-import com.example.messageapp.utils.DateUtils
+import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.getImageDimensions
 import com.example.messageapp.utils.getVideoDimensions
-import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -35,20 +46,34 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
-class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
-    @Inject
-    lateinit var shared: SharePreferenceRepository
+class ChatFragmentViewModel @Inject constructor(
+    private val sessionRepository: SessionRepository,
+    private val getConversationUseCase: GetConversationUseCase,
+    private val observeMessagesUseCase: ObserveMessagesUseCase,
+    private val sendMessageUseCase: SendMessageUseCase,
+    private val toggleMessageReactionUseCase: ToggleMessageReactionUseCase,
+    private val observeTypingUseCase: ObserveTypingUseCase,
+    private val updateTypingUseCase: UpdateTypingUseCase,
+    private val markMessageReadUseCase: MarkMessageReadUseCase,
+    private val removeMessageUseCase: RemoveMessageUseCase,
+    private val observePresenceUseCase: ObservePresenceUseCase,
+    private val observeGroupReadStatusUseCase: ObserveGroupReadStatusUseCase,
+    private val loadGroupMembersUseCase: LoadGroupMembersUseCase,
+    private val uploadChatMediaUseCase: UploadChatMediaUseCase,
+) : BaseViewModel() {
 
-    @Inject
-    lateinit var presenceManager: PresenceManager
+    /** Session access for fragments/adapters during migration from SharePreferenceRepository. */
+    val shared: SessionRepository
+        get() = sessionRepository
 
-    private var typingListener: ListenerRegistration? = null
-    private var messageListener: ListenerRegistration? = null
-    private var presenceUnsubscriber: (() -> Unit)? = null
-    private var groupMemberReadListener: ListenerRegistration? = null
+    private var messagesJob: Job? = null
+    private var typingJob: Job? = null
+    private var presenceJob: Job? = null
+    private var groupReadJob: Job? = null
+    private var peerConversationJob: Job? = null
     private var groupMemberIds: List<String> = emptyList()
 
-    private val _messages: MutableStateFlow<ArrayList<Message>?> = MutableStateFlow(null)
+    private val _messages = MutableStateFlow<ArrayList<Message>?>(null)
     val messages = _messages.asStateFlow()
 
     private val _groupMemberReadMap = MutableStateFlow<Map<String, String>>(emptyMap())
@@ -57,212 +82,106 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     private val _groupLastMessageReaders = MutableStateFlow<List<String>>(emptyList())
     val groupLastMessageReaders = _groupLastMessageReaders.asStateFlow()
 
-    private val _typing: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    private val _typing = MutableStateFlow(false)
     val typing = _typing.asStateFlow()
 
-    private val _friendPresence: MutableStateFlow<UserPresence?> = MutableStateFlow(null)
+    private val _friendPresence = MutableStateFlow<UserPresence?>(null)
     val friendPresence = _friendPresence.asStateFlow()
 
-    /** null = ẩn; 0f..100f = tiến độ upload Cloudinary (ảnh/video/ghi âm). */
     private val _cloudUploadProgress = MutableStateFlow<Float?>(null)
     val cloudUploadProgress = _cloudUploadProgress.asStateFlow()
 
     private val _mentionCandidates = MutableStateFlow<List<MentionHelper.MentionCandidate>>(emptyList())
     val mentionCandidates = _mentionCandidates.asStateFlow()
 
-    /**
-     * This function used to send message to FireStore
-     * @param message data message
-     * @param time time message sent
-     * @param conversation data friend
-     */
-    fun sendMessage(
-        message: Message,
-        time: String,
-        conversation: Conversation,
-        sendFirst: Boolean
-    ) = viewModelScope.launch {
-        FireBaseInstance.sendMessage(
-            message = message,
-            userId = shared.getAuth(),
-            time = time,
-            conversation = conversation,
-            nameSender = shared.getNameUser(),
-            sendFirst = sendFirst
-        ) {}
+    private val _peerConversation = MutableStateFlow<Conversation?>(null)
+    val peerConversation = _peerConversation.asStateFlow()
+
+    fun sendMessage(message: Message, time: String, conversation: Conversation, sendFirst: Boolean) {
+        sendMessageUseCase(ChatUiMapper.toDomain(message), time, ChatUiMapper.toDomain(conversation), sendFirst)
     }
 
     fun roomIdListForCloudinary(conversation: Conversation): List<String> =
         if (conversation.isGroupThread()) listOf(conversation.friendId)
-        else listOf(conversation.friendId, shared.getAuth()).sorted()
+        else listOf(conversation.friendId, sessionRepository.getAuth()).sorted()
 
     fun messageReceiverId(conversation: Conversation): String = conversation.friendId
 
-    /** Load messages for 1-1 or group chat. */
-    fun getMessage(conversation: Conversation) = viewModelScope.launch {
-        stopMessageListener()
-        val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, shared.getAuth())
-        messageListener = FireBaseInstance.getMessage(
-            idRoom,
-            success = { result ->
-                val messageData = arrayListOf<Message>()
-                result?.forEach { document ->
-                    val raw = document.toObject(Message::class.java)
-                    if (!isMessageInConversation(raw, conversation)) return@forEach
-                    val timeResolved = raw.time.ifBlank { document.id }
-                    messageData.add(raw.copy(time = timeResolved))
-                }
-                _messages.value = messageData
-                if (conversation.isGroupThread()) {
-                    recomputeGroupReaders(messageData)
-                }
-            },
-            failure = { error ->
-                showError(error)
-            },
-        )
-    }
-
-    private fun stopMessageListener() {
-        messageListener?.remove()
-        messageListener = null
-    }
-
-    private fun isMessageInConversation(message: Message, conversation: Conversation): Boolean {
-        if (conversation.isGroupThread()) {
-            return message.receiver == conversation.friendId
-        }
-        return message.sender == shared.getAuth() && message.receiver == conversation.friendId
-            || message.receiver == shared.getAuth() && message.sender == conversation.friendId
-    }
-
-    /**
-     * This function used to update seen message for conversation friend
-     * @param msg data message
-     * @param conversation data friend
-     */
-    fun updateSeenMessage(msg: Message, conversation: Conversation) = viewModelScope.launch {
-        if (conversation.isGroupThread()) {
-            if (msg.time.isNotBlank()) {
-                FireBaseInstance.markGroupMessageRead(
-                    userId = shared.getAuth(),
-                    groupId = conversation.friendId,
-                    lastReadTime = msg.time,
-                )
-            }
-            return@launch
-        }
-        if (msg.sender != shared.getAuth()) {
-            FireBaseInstance.getConversation(
-                friendId = shared.getAuth(),
-                userId = conversation.friendId,
-                success = { cvt ->
-                    if (!cvt.isSeenMessage() && cvt.sender == conversation.friendId) {
-                        FireBaseInstance.seenMessage(
-                            shared.getAuth(),
-                            friendId = conversation.friendId,
-                        )
+    fun getMessage(conversation: Conversation) {
+        messagesJob?.cancel()
+        val domainConversation = ChatUiMapper.toDomain(conversation)
+        messagesJob = viewModelScope.launch {
+            observeMessagesUseCase(domainConversation)
+                .catch { showError(it.message.orEmpty()) }
+                .collect { domainMessages ->
+                    val uiMessages = ChatUiMapper.toUiList(domainMessages)
+                    _messages.value = uiMessages
+                    if (conversation.isGroupThread()) {
+                        recomputeGroupReaders(uiMessages)
                     }
-                },
-            )
+                }
         }
     }
 
-    /**
-     * This function used to upload photo to FireStore
-     * @param context context
-     * @param uris data uri of photo
-     * @param conversation data friend
-     * @param time time message sent
-     */
+    fun updateSeenMessage(msg: Message, conversation: Conversation) {
+        markMessageReadUseCase(ChatUiMapper.toDomain(msg), ChatUiMapper.toDomain(conversation))
+    }
+
     fun uploadListPhoto(
         context: Context,
         uris: ArrayList<Uri>,
         conversation: Conversation,
         time: String,
-        sendFirst: Boolean
+        sendFirst: Boolean,
     ) {
         val idRoom = roomIdListForCloudinary(conversation)
         val intrinsicByIndex = ArrayList<Pair<Int, Int>?>(uris.size)
         for (uri in uris) {
-            val dim = if (context.isVideoUri(uri)) {
-                getVideoDimensions(context, uri)
-            } else {
-                getImageDimensions(context, uri)
-            }
+            val dim = if (context.isVideoUri(uri)) getVideoDimensions(context, uri)
+            else getImageDimensions(context, uri)
             intrinsicByIndex.add(dim)
         }
         setCloudUploadProgress(0f)
-        FireBaseInstance.uploadListPhoto(
-            context = context,
-            uris = uris,
+        uploadChatMediaUseCase.uploadPhotos(
+            uriStrings = uris.map { it.toString() },
             roomId = idRoom,
-            process = { (_, overall) ->
-                setCloudUploadProgress(overall.toFloat().coerceIn(0f, 100f))
-            },
-            failure = { t ->
+            onProgress = { setCloudUploadProgress(it.toFloat().coerceIn(0f, 100f)) },
+            onFailure = { t ->
                 setCloudUploadProgress(null)
                 showError(t.message ?: "Gửi file thất bại")
             },
-            success = { uploadedUrls ->
+            onSuccess = { uploadedUrls ->
                 try {
-                if (uploadedUrls.size == 1) {
-                    val (w, h) = intrinsicByIndex.getOrNull(0) ?: (0 to 0)
-                    val message = Message(
-                        receiver = messageReceiverId(conversation),
-                        sender = shared.getAuth(),
-                        time = time,
-                        photos = arrayListOf(),
-                        photoSizes = null,
-                        singlePhoto = arrayListOf(
-                            uploadedUrls[0],
-                            w.toString(),
-                            h.toString()
-                        ),
-                        type = TypeMessage.SINGLE_PHOTO.ordinal
-                    )
-                    FireBaseInstance.sendMessage(
-                        message = message,
-                        userId = shared.getAuth(),
-                        time = time,
-                        conversation = conversation,
-                        nameSender = shared.getNameUser(),
-                        type = TypeMessage.SINGLE_PHOTO,
-                        sendFirst = sendFirst
-                    ) {}
-                } else {
-                    val sizeTokens = ArrayList<String>(uploadedUrls.size)
-                    for (i in uploadedUrls.indices) {
-                        val dim = intrinsicByIndex.getOrNull(i)
-                        sizeTokens.add(
-                            if (dim != null) "${dim.first}x${dim.second}" else "0x0"
+                    if (uploadedUrls.size == 1) {
+                        val (w, h) = intrinsicByIndex.getOrNull(0) ?: (0 to 0)
+                        val message = Message(
+                            receiver = messageReceiverId(conversation),
+                            sender = sessionRepository.getAuth(),
+                            time = time,
+                            singlePhoto = arrayListOf(uploadedUrls[0], w.toString(), h.toString()),
+                            type = TypeMessage.SINGLE_PHOTO.ordinal,
                         )
+                        sendMessage(message, time, conversation, sendFirst)
+                    } else {
+                        val sizeTokens = ArrayList<String>(uploadedUrls.size)
+                        for (i in uploadedUrls.indices) {
+                            val dim = intrinsicByIndex.getOrNull(i)
+                            sizeTokens.add(if (dim != null) "${dim.first}x${dim.second}" else "0x0")
+                        }
+                        val message = Message(
+                            receiver = messageReceiverId(conversation),
+                            sender = sessionRepository.getAuth(),
+                            time = time,
+                            photos = ArrayList(uploadedUrls),
+                            photoSizes = sizeTokens,
+                            type = TypeMessage.PHOTOS.ordinal,
+                        )
+                        sendMessage(message, time, conversation, sendFirst)
                     }
-
-                    val message = Message(
-                        receiver = messageReceiverId(conversation),
-                        sender = shared.getAuth(),
-                        time = time,
-                        photos = uploadedUrls,
-                        photoSizes = sizeTokens,
-                        singlePhoto = arrayListOf(),
-                        type = TypeMessage.PHOTOS.ordinal
-                    )
-
-                    FireBaseInstance.sendMessage(
-                        message = message,
-                        userId = shared.getAuth(),
-                        time = time,
-                        conversation = conversation,
-                        nameSender = shared.getNameUser(),
-                        type = TypeMessage.PHOTOS,
-                        sendFirst = sendFirst
-                    ) {}
-                }
                 } finally {
                     setCloudUploadProgress(null)
                 }
-            }
+            },
         )
     }
 
@@ -270,60 +189,36 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         _cloudUploadProgress.value = value
     }
 
-    fun uploadAudio(
-        uriAudio: Uri,
-        time: String,
-        conversation: Conversation,
-        sendFirst: Boolean
-    ) {
+    fun uploadAudio(uriAudio: Uri, time: String, conversation: Conversation, sendFirst: Boolean) {
         val idRoom = roomIdListForCloudinary(conversation)
         setCloudUploadProgress(0f)
-        FireBaseInstance.uploadAudio(
+        uploadChatMediaUseCase.uploadAudio(
+            uriString = uriAudio.toString(),
             roomId = idRoom,
-            uriAudio = uriAudio,
-            success = { audioUrl ->
+            onProgress = { setCloudUploadProgress(it.toFloat().coerceIn(0f, 100f)) },
+            onSuccess = { audioUrl ->
                 try {
                     val message = Message(
                         receiver = messageReceiverId(conversation),
-                        sender = shared.getAuth(),
+                        sender = sessionRepository.getAuth(),
                         time = time,
                         audio = audioUrl,
-                        type = TypeMessage.AUDIO.ordinal
+                        type = TypeMessage.AUDIO.ordinal,
                     )
-                    FireBaseInstance.sendMessage(
-                        message = message,
-                        userId = shared.getAuth(),
-                        time = time,
-                        conversation = conversation,
-                        nameSender = shared.getNameUser(),
-                        type = TypeMessage.AUDIO,
-                        sendFirst = sendFirst
-                    ) {}
+                    sendMessage(message, time, conversation, sendFirst)
                 } finally {
                     setCloudUploadProgress(null)
                 }
             },
-            process = { p ->
-                setCloudUploadProgress(p.toFloat().coerceIn(0f, 100f))
-            },
-            failure = { t ->
+            onFailure = { t ->
                 setCloudUploadProgress(null)
                 showError(t.message ?: "Gửi ghi âm thất bại")
-            }
+            },
         )
     }
 
-    /**
-     * This function used to remove message
-     * @param conversation data friend
-     * @param time time message sent
-     */
-    fun removeMessage(conversation: Conversation, time: String) = viewModelScope.launch {
-        FireBaseInstance.removeMessage(
-            conversation = conversation,
-            userId = shared.getAuth(),
-            time = time
-        )
+    fun removeMessage(conversation: Conversation, time: String) {
+        removeMessageUseCase(ChatUiMapper.toDomain(conversation), time)
     }
 
     fun toggleMessageReaction(
@@ -332,34 +227,14 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
         type: EmotionType,
         onApplied: ((EmotionType) -> Unit)? = null,
     ) {
-        if (time.isBlank()) return
-        val userId = shared.getAuth()
-        val idRoom = FireBaseInstance.messageThreadDocumentId(conversation, userId)
         val currentList = _messages.value ?: return
-        val index = currentList.indexOfFirst { it.time == time }
-        if (index < 0) return
-
-        val target = currentList[index]
-        val previousEmotion = target.emotion
-        val merged = (target.emotion ?: Emotion()).toggleUserReaction(userId, type)
-        val reactionApplied = merged.findUserReaction(userId) == type
-        val updatedMessage = target.copy(
-            emotion = merged.takeUnless { it.emotionEmpty() },
-        )
-
-        val optimisticList = ArrayList(currentList)
-        optimisticList[index] = updatedMessage
-        _messages.value = optimisticList
-
-        if (reactionApplied) {
-            onApplied?.invoke(type)
-        }
-
-        FireBaseInstance.toggleMessageReaction(
+        val domainList = currentList.map { ChatUiMapper.toDomain(it) }
+        val previousEmotion = currentList.firstOrNull { it.time == time }?.emotion
+        val result = toggleMessageReactionUseCase(
+            messages = domainList,
             time = time,
-            idRoom = idRoom,
-            userId = userId,
-            type = type,
+            conversation = ChatUiMapper.toDomain(conversation),
+            type = ChatUiMapper.toDomain(type),
             onFailure = { error ->
                 val rollbackList = ArrayList(_messages.value.orEmpty())
                 val rollbackIndex = rollbackList.indexOfFirst { it.time == time }
@@ -369,14 +244,13 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                 }
                 showError(error)
             },
-        )
+        ) ?: return
+        _messages.value = ArrayList(result.optimisticMessages.map { ChatUiMapper.toUi(it) })
+        if (result.reactionApplied) {
+            onApplied?.invoke(type)
+        }
     }
 
-    /**
-     * This function used to save multi photo to gallery
-     * @param context context
-     * @param photos data photos
-     */
     fun saveMultiPhotoWithCombine(context: Context, photos: ArrayList<String>) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -385,10 +259,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
                         .catch { emit("Error: ${it.message}") }
                         .flowOn(Dispatchers.IO)
                 }
-
-                combine(flows) { results ->
-                    results.toList() // Chuyển các kết quả thành danh sách
-                }.collect { _ ->
+                combine(flows) { it.toList() }.collect {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Đã lưu ảnh", Toast.LENGTH_SHORT).show()
                     }
@@ -400,66 +271,72 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun updateTyping(conversation: Conversation, typing: Boolean) {
-        if (conversation.isGroupThread()) {
-            FireBaseInstance.updateGroupTyping(conversation.friendId, shared.getAuth(), typing)
-        } else {
-            FireBaseInstance.updateTypingMessage(
-                userId = shared.getAuth(),
-                friendId = conversation.friendId,
-                typing = typing,
-            )
-        }
+        updateTypingUseCase(ChatUiMapper.toDomain(conversation), typing)
     }
 
     fun observeTyping(conversation: Conversation) {
-        typingListener?.remove()
-        typingListener = null
-        if (conversation.isGroupThread()) {
-            typingListener = FireBaseInstance.observeGroupTyping(
-                conversation.friendId,
-                shared.getAuth(),
-            ) { show -> _typing.value = show }
-        } else {
-            FireBaseInstance.getConversationRlt(conversation.friendId, shared.getAuth()) { cvt ->
-                _typing.value = cvt.typing
-            }
+        typingJob?.cancel()
+        typingJob = viewModelScope.launch {
+            observeTypingUseCase(ChatUiMapper.toDomain(conversation)).collect { _typing.value = it }
         }
     }
 
     fun startObservingFriendPresence(friendId: String) {
         stopObservingFriendPresence()
         if (friendId.isBlank()) return
-        presenceUnsubscriber = presenceManager.observePresence(friendId) { presence ->
-            _friendPresence.value = presence
+        presenceJob = viewModelScope.launch {
+            observePresenceUseCase(friendId).collect { presence ->
+                _friendPresence.value = ChatUiMapper.toUi(presence)
+            }
         }
     }
 
     fun stopObservingFriendPresence() {
-        presenceUnsubscriber?.invoke()
-        presenceUnsubscriber = null
+        presenceJob?.cancel()
+        presenceJob = null
         _friendPresence.value = null
+    }
+
+    fun startObservingPeerConversation(friendId: String) {
+        stopObservingPeerConversation()
+        if (friendId.isBlank()) return
+        peerConversationJob = viewModelScope.launch {
+            getConversationUseCase.observe(friendId, sessionRepository.getAuth())
+                .catch { showError(it.message.orEmpty()) }
+                .collect { conversation ->
+                    _peerConversation.value = ChatUiMapper.toUi(conversation)
+                }
+        }
+    }
+
+    fun stopObservingPeerConversation() {
+        peerConversationJob?.cancel()
+        peerConversationJob = null
+        _peerConversation.value = null
     }
 
     fun startGroupReadTracking(groupId: String) {
         if (groupId.isBlank()) return
         stopGroupReadTracking()
         loadGroupMentionMembers(groupId)
-        FireBaseInstance.getGroupMemberIds(
+        loadGroupMembersUseCase(
             groupId = groupId,
-            success = { memberIds ->
-                groupMemberIds = memberIds
+            onSuccess = { users ->
+                groupMemberIds = users.map { it.keyAuth }
                 recomputeGroupReaders(_messages.value.orEmpty())
             },
         )
-        groupMemberReadListener = FireBaseInstance.observeGroupMemberRead(groupId) { readMap ->
-            _groupMemberReadMap.value = readMap
-            recomputeGroupReaders(_messages.value.orEmpty())
+        groupReadJob = viewModelScope.launch {
+            observeGroupReadStatusUseCase(groupId).collect { readMap ->
+                _groupMemberReadMap.value = readMap
+                recomputeGroupReaders(_messages.value.orEmpty())
+            }
         }
     }
 
     fun stopGroupReadTracking() {
-        groupMemberReadListener?.remove()
-        groupMemberReadListener = null
+        groupReadJob?.cancel()
+        groupReadJob = null
         groupMemberIds = emptyList()
         _groupMemberReadMap.value = emptyMap()
         _groupLastMessageReaders.value = emptyList()
@@ -471,28 +348,13 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             _mentionCandidates.value = emptyList()
             return
         }
-        FireBaseInstance.getGroupMemberIds(
+        loadGroupMembersUseCase(
             groupId = groupId,
-            success = { memberIds ->
-                if (memberIds.isEmpty()) {
-                    _mentionCandidates.value = emptyList()
-                    return@getGroupMemberIds
-                }
-                val users = ArrayList<com.example.messageapp.model.User>(memberIds.size)
-                var remaining = memberIds.size
-                memberIds.forEach { memberId ->
-                    FireBaseInstance.getInfoUser(memberId) { user ->
-                        users.add(
-                            user.copy(keyAuth = user.keyAuth?.takeIf { it.isNotBlank() } ?: memberId),
-                        )
-                        remaining -= 1
-                        if (remaining == 0) {
-                            _mentionCandidates.value = MentionHelper.buildMentionCandidates(users)
-                        }
-                    }
-                }
+            onSuccess = { users ->
+                val uiUsers = users.map { ChatUiMapper.toUi(it) }
+                _mentionCandidates.value = MentionHelper.buildMentionCandidates(uiUsers)
             },
-            failure = { _mentionCandidates.value = emptyList() },
+            onFailure = { _mentionCandidates.value = emptyList() },
         )
     }
 
@@ -502,7 +364,7 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             return
         }
         val lastMsg = messages.last()
-        if (lastMsg.sender != shared.getAuth()) {
+        if (lastMsg.sender != sessionRepository.getAuth()) {
             _groupLastMessageReaders.value = emptyList()
             return
         }
@@ -511,18 +373,18 @@ class ChatFragmentViewModel @Inject constructor() : BaseViewModel() {
             return
         }
         val readMap = _groupMemberReadMap.value
-        val readers = groupMemberIds
-            .filter { memberId ->
-                memberId != shared.getAuth() &&
-                    (DateUtils.parseChatMessageTimeMillis(readMap[memberId].orEmpty()) ?: 0L) >= lastMsgMillis
-            }
+        val readers = groupMemberIds.filter { memberId ->
+            memberId != sessionRepository.getAuth() &&
+                (DateUtils.parseChatMessageTimeMillis(readMap[memberId].orEmpty()) ?: 0L) >= lastMsgMillis
+        }
         _groupLastMessageReaders.value = readers
     }
 
     override fun onCleared() {
-        typingListener?.remove()
-        stopMessageListener()
+        messagesJob?.cancel()
+        typingJob?.cancel()
         stopObservingFriendPresence()
+        stopObservingPeerConversation()
         stopGroupReadTracking()
         super.onCleared()
     }

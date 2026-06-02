@@ -14,6 +14,8 @@ import androidx.core.app.RemoteInput
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.broadcast.NotificationReply
+import com.example.messageapp.data.mapper.EntityMapper
+import com.example.messageapp.mapper.ChatUiMapper
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.User
 import com.example.messageapp.utils.FireBaseInstance
@@ -74,9 +76,15 @@ class ReceiverMessageService : FirebaseMessagingService() {
                     failure = { Log.e(TAG, "getGroup failed: $it") },
                 )
             } else {
-                FireBaseInstance.getInfoUser(senderId) { user ->
-                    user.keyAuth = senderId
-                    sendNotification(title, body, senderId, user, replyMeta)
+                FireBaseInstance.getInfoUser(senderId) { fsUser ->
+                    fsUser.keyAuth = senderId
+                    sendNotification(
+                        title,
+                        body,
+                        senderId,
+                        ChatUiMapper.toUi(EntityMapper.toDomain(fsUser)),
+                        replyMeta,
+                    )
                 }
             }
         }

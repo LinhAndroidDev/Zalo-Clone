@@ -10,7 +10,7 @@
 
 - Đăng ký / đăng nhập: xác thực qua **Firestore** (truy vấn `users` theo email + mật khẩu đã lưu).
 - **Firebase Auth (Phone)**: dùng trong luồng OTP (ví dụ `ReceiveOTPFragment`).
-- Lưu phiên cục bộ (SharedPreferences) qua Hilt / `SharePreferenceRepository`.
+- Lưu phiên cục bộ qua Hilt / `SessionRepository` (`:data` module).
 - Sau khi chấp nhận lời mời kết bạn, đồng bộ danh sách bạn và hội thoại inbox.
 
 ### Chat 1-1
@@ -58,7 +58,32 @@
   <img src="https://github.com/user-attachments/assets/c04bf373-8642-43d0-97ca-68d387c24081" alt="Screen Message" width="250"/>
 </div>
 
-## Cấu trúc thư mục (rút gọn)
+## Kiến trúc (Clean Architecture — multi-module)
+
+```
+:domain/          # Entity thuần Kotlin, repository interfaces, use cases
+:domain/src/main/kotlin/com/example/messageapp/domain/
+  model/          # Message, Conversation, User, …
+  repository/     # ChatRepository, SessionRepository, …
+  usecase/        # ObserveMessagesUseCase, SendMessageUseCase, …
+  chat/           # EmotionReactionDetector, MentionParser
+
+:data/            # Firebase, Retrofit, Cloudinary, repository impl
+:data/src/main/java/com/example/messageapp/data/
+  legacy/         # FireBaseInstance (legacy, đang tách dần)
+  repository/     # ChatRepositoryImpl, …
+  mapper/         # EntityMapper (Firestore ↔ domain)
+  di/             # Hilt RepositoryModule
+
+:app/             # UI — Fragment, ViewModel, Adapter, mapper UI
+  mapper/         # ChatUiMapper (domain ↔ Parcelable UI model)
+```
+
+**Luồng phụ thuộc:** `app → domain ← data`
+
+**Đã refactor chính:** `ChatFragmentViewModel`, `CreateGroupViewModel`, `HomeViewModel`, `LoginFragmentViewModel` dùng use case + repository. Legacy `FireBaseInstance` đã chuyển sang `:data` (app truy cập qua `utils/LegacyCompat.kt` cho code chưa migrate).
+
+## Cấu trúc thư mục app (rút gọn)
 
 ```
 app/src/main/java/com/example/messageapp/

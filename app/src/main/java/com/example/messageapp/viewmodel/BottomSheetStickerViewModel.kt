@@ -3,6 +3,7 @@ package com.example.messageapp.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Sticker
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -49,7 +50,7 @@ class BottomSheetStickerViewModel : BaseViewModel() {
 
     private suspend fun fetchSticker(type: Sticker): List<String> =
         suspendCoroutine { continuation ->
-            FireBaseInstance.getSticker(type) { result ->
+            FireBaseInstance.getSticker(SocialUiMapper.toFirestore(type)) { result ->
                 continuation.resume(result)
             }
         }

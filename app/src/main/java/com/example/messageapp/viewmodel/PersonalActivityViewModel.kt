@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.User
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,13 +34,13 @@ class PersonalActivityViewModel @Inject constructor() : BaseViewModel() {
             FireBaseInstance.getInfoUser(
                 shared.getAuth(),
                 success = { user ->
-                    _user.value = user
+                    _user.value = SocialUiMapper.toUi(user)
                 }
             )
         } else {
             // Get information of friend
             FireBaseInstance.getInfoUser(arg.toString()) { user ->
-                _user.value = user
+                _user.value = SocialUiMapper.toUi(user)
             }
         }
     }

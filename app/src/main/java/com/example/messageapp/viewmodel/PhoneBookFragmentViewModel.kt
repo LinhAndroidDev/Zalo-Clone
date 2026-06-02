@@ -3,6 +3,7 @@ package com.example.messageapp.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Friend
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +28,7 @@ class PhoneBookFragmentViewModel @Inject constructor() : BaseViewModel() {
     fun getFriends() = viewModelScope.launch {
         FireBaseInstance.getFriends(
             userId = shared.getAuth(),
-            success = { _friends.value = it },
+            success = { _friends.value = SocialUiMapper.toUiFriends(it) },
             failure = { showError(it) }
         )
     }

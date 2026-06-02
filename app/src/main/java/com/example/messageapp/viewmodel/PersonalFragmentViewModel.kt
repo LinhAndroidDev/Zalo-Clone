@@ -3,6 +3,7 @@ package com.example.messageapp.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.User
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +21,7 @@ class PersonalFragmentViewModel @Inject constructor() : BaseViewModel() {
 
     fun getInfoUser() = viewModelScope.launch {
         FireBaseInstance.getInfoUser(shared.getAuth()) {
-            _user.value = it
+            _user.value = SocialUiMapper.toUi(it)
         }
     }
 }

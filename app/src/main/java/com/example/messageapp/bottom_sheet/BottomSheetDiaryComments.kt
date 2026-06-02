@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryCommentAdapter
 import com.example.messageapp.databinding.BottomSheetDiaryCommentsBinding
+import com.example.messageapp.mapper.DiaryUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -68,7 +69,7 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
 
         commentsReg = FireBaseInstance.observeDiaryComments(
             postId = postId,
-            onUpdate = { adapter.submitList(it) },
+            onUpdate = { comments -> adapter.submitList(comments.map { DiaryUiMapper.toUi(it) }) },
             onError = { Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show() }
         )
 

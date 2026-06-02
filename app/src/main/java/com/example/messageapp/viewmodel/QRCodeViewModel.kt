@@ -3,6 +3,7 @@ package com.example.messageapp.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.User
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +23,7 @@ class QRCodeViewModel @Inject constructor() : BaseViewModel() {
 
     fun loadCurrentUser() = viewModelScope.launch {
         FireBaseInstance.getInfoUser(shared.getAuth()) { user ->
-            _currentUser.value = user.copy(keyAuth = shared.getAuth())
+            _currentUser.value = SocialUiMapper.toUi(user).copy(keyAuth = shared.getAuth())
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.User
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +22,7 @@ class PreviewPhotoActivityViewModel @Inject constructor() : BaseViewModel() {
 
     fun getInfo(message: Message, keyId: String) = viewModelScope.launch {
         FireBaseInstance.getInfoUser(keyId) { data ->
-            _user.value = data
+            _user.value = SocialUiMapper.toUi(data)
         }
     }
 }

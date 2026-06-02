@@ -20,6 +20,7 @@ import com.example.messageapp.bottom_sheet.BottomSheetStatusMedia
 import com.example.messageapp.databinding.FragmentStatusBinding
 import com.example.messageapp.dialog.StatusImagePreviewDialog
 import com.example.messageapp.helper.StatusMediaGridLayout
+import com.example.messageapp.mapper.DiaryUiMapper
 import com.example.messageapp.model.DiaryLinkPreview
 import com.example.messageapp.model.StatusMediaItem
 import com.example.messageapp.utils.FileUtils.loadImg
@@ -125,7 +126,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                     post.imageUris.forEach { url ->
                         selectedMedia.add(StatusMediaItem(url.toUri()))
                     }
-                    attachedLink = post.linkPreview
+                    attachedLink = post.linkPreview?.let { DiaryUiMapper.toUi(it) }
                     bindLinkPreviewUi()
                     updatePostState()
                 }
@@ -205,7 +206,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                             editorUserId = shared.getAuth(),
                             content = content,
                             imageUris = localUris,
-                            linkPreview = attachedLink,
+                            linkPreview = attachedLink?.let { DiaryUiMapper.toFirestore(it) },
                             success = {
                                 requireActivity().runOnUiThread {
                                     binding?.btnSend?.isEnabled = true
@@ -238,7 +239,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
                             authorAvatarUrl = user.avatar.orEmpty(),
                             content = content,
                             localImageUris = localUris,
-                            linkPreview = attachedLink,
+                            linkPreview = attachedLink?.let { DiaryUiMapper.toFirestore(it) },
                             success = {
                                 requireActivity().runOnUiThread {
                                     binding?.btnSend?.isEnabled = true

@@ -7,6 +7,7 @@ import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetLanguage
 import com.example.messageapp.bottom_sheet.BottomSheetRegister
 import com.example.messageapp.databinding.FragmentIntroBinding
+import com.example.messageapp.mapper.SessionLanguageMapper
 import com.example.messageapp.viewmodel.IntroFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -30,7 +31,7 @@ class IntroFragment : BaseFragment<FragmentIntroBinding, IntroFragmentViewModel>
         super.initView()
 
         viewModel?.shared?.getLanguageSelected()
-            ?.let { language -> setLanguage(language) }
+            ?.let { language -> setLanguage(SessionLanguageMapper.toUiLanguage(language)) }
 
         binding?.let { binding ->
             binding.vpgIntro.adapter = ViewPagerAdapter(requireActivity())
