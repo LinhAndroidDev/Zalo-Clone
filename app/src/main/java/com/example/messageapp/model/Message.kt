@@ -33,8 +33,13 @@ data class Message(
     val photoSizes: ArrayList<String>? = null,
     val singlePhoto: ArrayList<String> = arrayListOf(),
     val audio: String? = null,
-    val type: Int = 0, // 0: message, 1: photos, 2: single photo, 3: audio
+    val type: Int = 0, // 0: message, 1: photos, 2: single photo, 3: audio, 4: system event
     val replyTo: MessageReply? = null,
+    val systemEvent: String = "",
+    val systemActorId: String = "",
+    val systemActorName: String = "",
+    val systemTargetIds: ArrayList<String> = arrayListOf(),
+    val systemTargetNames: ArrayList<String> = arrayListOf(),
 ) : Parcelable
 
 enum class EmotionType(val firestoreKey: String) {

@@ -32,6 +32,11 @@ object ChatUiMapper {
         audio = message.audio,
         type = message.type,
         replyTo = message.replyTo?.let { toUi(it) },
+        systemEvent = message.systemEvent,
+        systemActorId = message.systemActorId,
+        systemActorName = message.systemActorName,
+        systemTargetIds = ArrayList(message.systemTargetIds),
+        systemTargetNames = ArrayList(message.systemTargetNames),
     )
 
     fun toDomain(message: Message): DomainMessage = DomainMessage(
@@ -47,6 +52,11 @@ object ChatUiMapper {
         audio = message.audio,
         type = message.type,
         replyTo = message.replyTo?.let { toDomain(it) },
+        systemEvent = message.systemEvent,
+        systemActorId = message.systemActorId,
+        systemActorName = message.systemActorName,
+        systemTargetIds = message.systemTargetIds.toList(),
+        systemTargetNames = message.systemTargetNames.toList(),
     )
 
     fun toUiList(messages: List<DomainMessage>): ArrayList<Message> =

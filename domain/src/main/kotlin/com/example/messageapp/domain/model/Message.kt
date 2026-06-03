@@ -28,6 +28,11 @@ data class Message(
     val audio: String? = null,
     val type: Int = 0,
     val replyTo: MessageReply? = null,
+    val systemEvent: String = "",
+    val systemActorId: String = "",
+    val systemActorName: String = "",
+    val systemTargetIds: List<String> = emptyList(),
+    val systemTargetNames: List<String> = emptyList(),
 )
 
 enum class EmotionType() {

@@ -44,6 +44,11 @@ object EntityMapper {
         audio = message.audio,
         type = message.type,
         replyTo = message.replyTo?.let { toDomain(it) },
+        systemEvent = message.systemEvent,
+        systemActorId = message.systemActorId,
+        systemActorName = message.systemActorName,
+        systemTargetIds = message.systemTargetIds.toList(),
+        systemTargetNames = message.systemTargetNames.toList(),
     )
 
     fun toFirestore(message: Message): FsMessage = FsMessage(
@@ -59,6 +64,11 @@ object EntityMapper {
         audio = message.audio,
         type = message.type,
         replyTo = message.replyTo?.let { toFirestore(it) },
+        systemEvent = message.systemEvent,
+        systemActorId = message.systemActorId,
+        systemActorName = message.systemActorName,
+        systemTargetIds = ArrayList(message.systemTargetIds),
+        systemTargetNames = ArrayList(message.systemTargetNames),
     )
 
     fun toDomain(mention: FsMessageMention): MessageMention = MessageMention(

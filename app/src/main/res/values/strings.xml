@@ -233,8 +233,15 @@
     <string name="group_no_friends_to_add">Không còn bạn bè để thêm vào nhóm</string>
     <string name="group_remove_confirm_message">Xóa %1$s khỏi nhóm?</string>
     <string name="group_event_added">%1$s đã thêm %2$s vào nhóm</string>
+    <string name="group_event_added_you_target">%1$s đã thêm bạn vào nhóm</string>
+    <string name="group_event_added_actor_self">Bạn đã thêm %1$s vào nhóm</string>
+    <string name="group_system_you">bạn</string>
+    <string name="group_system_you_capital">Bạn</string>
     <string name="group_event_removed">%1$s đã xóa %2$s khỏi nhóm</string>
+    <string name="group_event_removed_you_target">%1$s đã xóa bạn khỏi nhóm</string>
+    <string name="group_event_removed_actor_self">Bạn đã xóa %1$s khỏi nhóm</string>
     <string name="group_event_left">%1$s đã rời nhóm</string>
+    <string name="group_event_left_self">Bạn đã rời nhóm</string>
     <string name="mention_all_label">Tất cả</string>
     <string name="mention_picker_hint">Nhắc tới thành viên</string>
     <string name="notification_mention_title">[Nhắc bạn] %1$s</string>

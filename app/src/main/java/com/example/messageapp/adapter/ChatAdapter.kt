@@ -311,7 +311,13 @@ class ChatAdapter(
         when (holder.itemViewType) {
             VIEW_SYSTEM -> {
                 holder as SystemViewHolder
-                holder.tvSystem.text = GroupSystemMessageStyle.styledText(context, message.message)
+                holder.tvSystem.text = GroupSystemMessageStyle.styledText(
+                    context,
+                    message,
+                    myUserId,
+                    myName,
+                    groupMembers,
+                )
                 applyItemTopMargin(holder, position)
             }
 
@@ -604,7 +610,7 @@ class ChatAdapter(
         DateUtils.parseChatMessageTimeMillis(msg.time)
 
     private fun isSystemMessage(message: Message): Boolean =
-        TypeMessage.of(message.type) == TypeMessage.SYSTEM
+        GroupSystemMessageStyle.isGroupSystemMessage(message)
 
     /** Tin liền trước cùng người gửi và trong [MESSAGE_GROUP_GAP_MS]. */
     private fun isGroupedWithPrevious(position: Int): Boolean {

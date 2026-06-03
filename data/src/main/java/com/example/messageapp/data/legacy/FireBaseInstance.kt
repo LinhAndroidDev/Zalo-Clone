@@ -312,14 +312,20 @@ object FireBaseInstance {
                         resetGroupInboxAvatars(groupId, merged)
                         fetchDisplayNames(listOf(inviterId) + newcomers) { names ->
                             val actorName = displayNameFor(inviterId, names)
-                            val targetNames = newcomers.map { displayNameFor(it, names) }
+                            val targetNames = newcomers.map { id ->
+                                displayNameFor(id, names).trim().ifBlank { id }
+                            }
                             val text = buildGroupEventAddedText(actorName, targetNames)
                             postGroupSystemMessage(
                                 groupId = groupId,
                                 text = text,
                                 memberIdsForInbox = merged,
                                 actorId = inviterId,
+                                actorName = actorName,
                                 groupName = group.name,
+                                systemEvent = SYSTEM_EVENT_ADD,
+                                systemTargetIds = newcomers,
+                                systemTargetNames = targetNames,
                             )
                             success.invoke()
                         }
@@ -377,12 +383,22 @@ object FireBaseInstance {
                                     displayNameFor(memberId, names),
                                 )
                             }
+                            val targetName = displayNameFor(memberId, names)
+                            val actorDisplayName = if (actorId == memberId) {
+                                targetName
+                            } else {
+                                displayNameFor(actorId, names)
+                            }
                             postGroupSystemMessage(
                                 groupId = groupId,
                                 text = text,
                                 memberIdsForInbox = updated,
                                 actorId = actorId,
+                                actorName = actorDisplayName,
                                 groupName = group.name,
+                                systemEvent = if (actorId == memberId) SYSTEM_EVENT_LEAVE else SYSTEM_EVENT_REMOVE,
+                                systemTargetIds = listOf(memberId),
+                                systemTargetNames = listOf(targetName),
                             )
                             success.invoke()
                         }
@@ -410,6 +426,9 @@ object FireBaseInstance {
     }
 
     private const val GROUP_INBOX_PERSON_SYSTEM = "Thông báo"
+    private const val SYSTEM_EVENT_ADD = "add"
+    private const val SYSTEM_EVENT_REMOVE = "remove"
+    private const val SYSTEM_EVENT_LEAVE = "leave"
 
     private fun formatDisplayNameList(names: List<String>): String {
         val cleaned = names.map { it.trim() }.filter { it.isNotBlank() }
@@ -422,7 +441,7 @@ object FireBaseInstance {
     }
 
     private fun displayNameFor(userId: String, names: Map<String, String>): String =
-        names[userId]?.takeIf { it.isNotBlank() } ?: userId
+        names[userId]?.trim()?.takeIf { it.isNotBlank() } ?: userId
 
     private fun fetchDisplayNames(
         userIds: List<String>,
@@ -484,16 +503,25 @@ object FireBaseInstance {
         text: String,
         memberIdsForInbox: List<String>,
         actorId: String,
+        actorName: String,
         groupName: String,
+        systemEvent: String = "",
+        systemTargetIds: List<String> = emptyList(),
+        systemTargetNames: List<String> = emptyList(),
     ) {
         if (groupId.isBlank() || text.isBlank()) return
         val time = DateUtils.getTimeCurrent()
         val chatMessage = Message(
             message = text,
             receiver = groupId,
-            sender = "",
+            sender = actorId,
             time = time,
             type = TypeMessage.SYSTEM.rawValue,
+            systemEvent = systemEvent,
+            systemActorId = actorId,
+            systemActorName = actorName,
+            systemTargetIds = ArrayList(systemTargetIds),
+            systemTargetNames = ArrayList(systemTargetNames),
         )
         val batch = db.batch()
         batch.set(
