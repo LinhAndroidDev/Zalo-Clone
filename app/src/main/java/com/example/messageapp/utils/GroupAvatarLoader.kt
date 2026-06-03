@@ -49,7 +49,7 @@ class GroupAvatarLoader @Inject constructor(
         groupChatRepository.getGroupMemberAvatars(
             groupId = groupId,
             onSuccess = { totalCount, avatarUrls ->
-                val data = GroupAvatarData(totalCount = totalCount - 1, avatarUrls = avatarUrls)
+                val data = GroupAvatarData(totalCount = totalCount, avatarUrls = avatarUrls)
                 cache[groupId] = data
                 dispatch(groupId, Result.success(data))
             },
