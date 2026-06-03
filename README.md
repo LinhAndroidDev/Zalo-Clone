@@ -2,15 +2,54 @@
 
 Ứng dụng nhắn tin trên Android (Kotlin), lấy cảm hứng từ Zalo: danh sách chat 1-1 và nhóm, hội thoại realtime, danh bạ, kết bạn, nhật ký (feed), khám phá, cài đặt và thông báo đẩy (FCM).
 
-> **Nhánh `create-group`:** mở rộng so với `main` với chat nhóm, trạng thái online, mention, trả lời tin, cảm xúc (reaction) và hiệu ứng burst. README này mô tả đầy đủ tính năng trên nhánh `create-group`.
+> **Nhánh khuyến nghị:** `update-project-structure` — gồm toàn bộ tính năng chat nhóm / reply / reaction / presence (như `main`) **cộng** refactor **Clean Architecture** ba module (`:app`, `:domain`, `:data`).  
+> **Nhánh `main`:** monolithic một module `:app`, `FireBaseInstance` nằm trong `app/utils/`.
+
+## So sánh `main` và `update-project-structure`
+
+| Hạng mục | `main` | `update-project-structure` |
+|----------|--------|---------------------------|
+| **Module Gradle** | Chỉ `:app` | `:app` + `:domain` + `:data` |
+| **Lịch sử commit** | Baseline | **+6 commit** trên `main` (không có commit riêng trên `main` mà thiếu trên nhánh này) |
+| **Thống kê diff** | — | ~124 file, **+4409 / −1467** dòng (`main...update-project-structure`) |
+| **Firestore / Firebase** | `app/utils/FireBaseInstance.kt` | `data/legacy/FireBaseInstance.kt` (delegate từ repository impl) |
+| **Model dữ liệu** | `app/model/` (Parcelable UI) | **3 lớp:** `data/firestore/` → `domain/model/` → `app/model/` + mapper |
+| **Session** | `SharePreferenceRepository` + impl trong `app` | `SessionRepository` (`domain`) + `SessionRepositoryImpl` (`:data`) |
+| **ViewModel** | Gọi trực tiếp `FireBaseInstance` | Inject **use case** / **repository** (Hilt) |
+| **Adapter / service** | Nhiều chỗ gọi `FireBaseInstance` | Đã migrate: inbox typing/avatar, search/friend, `GroupAvatarLoader`, `ReceiverMessageService`, `NotificationReply` |
+| **Logic thuần** | `EmotionReactionDetector`, mention trong `app` | `domain/chat/` (`EmotionReactionDetector`, `MentionParser`) |
+| **Test** | Không có module test domain | `domain/src/test/` (`DomainTests.kt`) |
+| **Code đã xóa / gom** | `app/remote/`, `AppModule`, util trùng | Remote → `data/remote/`; `ReplyNotificationHelper` trong `data/legacy/` |
+
+### Các commit trên `update-project-structure` (chưa có trên `main`)
+
+1. `update project structure` — tách `:domain`, `:data`, repository, use case, mapper  
+2. `separate FireBaseInstance from viewmodel` — ViewModel qua use case  
+3. `fix warning`  
+4. `remove code unuse` — dọn file/model trùng  
+5. `update code` — social/diary mapper, ViewModel mở rộng  
+6. `not use FirebaseInstance directly in the adapter and service` — adapter + FCM/reply  
+
+### Trạng thái migrate (nhánh `update-project-structure`)
+
+| Lớp | Đã qua Clean Architecture | Còn legacy |
+|-----|---------------------------|------------|
+| **ViewModel** | Hầu hết (chat, inbox, social, diary, auth, profile, …) | Một số vẫn import `PresenceManager` / `DateUtils` từ `data/legacy` |
+| **Repository impl** (`:data`) | Interface đầy đủ trong `:domain` | Implementation **ủy quyền** `FireBaseInstance` |
+| **`:app` trực tiếp Firebase** | Không (trừ typealias) | `MessageReplyHelper.fetchUserDisplayName` → `LegacyCompat.FireBaseInstance` |
+| **FCM gửi đi** | `NotificationRepository` (có thể) | Token OAuth: `data/legacy/AccessToken.kt` |
+
+---
 
 ## Tính năng chính
+
+*(Cùng bộ tính năng trên `main` và `update-project-structure`; khác biệt chủ yếu là **cách tổ chức code**.)*
 
 ### Xác thực & tài khoản
 
 - Đăng ký / đăng nhập: xác thực qua **Firestore** (truy vấn `users` theo email + mật khẩu đã lưu).
 - **Firebase Auth (Phone)**: dùng trong luồng OTP (ví dụ `ReceiveOTPFragment`).
-- Lưu phiên cục bộ (SharedPreferences) qua Hilt / `SharePreferenceRepository`.
+- Lưu phiên cục bộ qua Hilt / **`SessionRepository`** (`:data` module; trên `main` là `SharePreferenceRepository`).
 - Sau khi chấp nhận lời mời kết bạn, đồng bộ danh sách bạn và hội thoại inbox.
 
 ### Chat 1-1
@@ -18,38 +57,37 @@
 - Tin nhắn **realtime** qua Firestore (`messages/{roomId}/chats`).
 - Tin văn, ảnh, một ảnh, ghi âm; **cảm xúc (reaction)** trên tin (yêu thích, thích, cười, khóc, giận).
 - **Trả lời tin (reply)**: quote tin gốc trên bubble, preview khi soạn, tap quote để cuộn tới tin gốc và **highlight** tạm thời.
-- **Hiệu ứng burst cảm xúc**: icon mini bay ra từ chip reaction khi người gửi thả cảm xúc; người nhận thấy hiệu ứng tương tự khi đang mở `ChatFragment` (phát hiện qua snapshot `messages`).
-- Trạng thái đã xem, đếm chưa đọc, chỉ báo đang gõ.
-- **Trạng thái online / last seen** của bạn bè (Firebase Realtime Database qua `PresenceManager`).
+- **Hiệu ứng burst cảm xúc**: icon mini bay ra từ chip reaction; phát hiện reaction remote qua `EmotionReactionDetector` (`:domain` trên nhánh refactor).
+- Trạng thái đã xem, đếm chưa đọc, chỉ báo đang gõ (inbox sync typing qua `HomeViewModel` trên nhánh refactor).
+- **Trạng thái online / last seen** (Firebase Realtime Database qua `PresenceManager` trong `data/legacy`).
 - **Chat head** (dịch vụ nổi) khi có thông báo.
-- Gửi thông báo FCM tới người nhận: đọc token từ `Tokens/{userId}` rồi gọi **FCM HTTP v1** (Retrofit).
+- Gửi thông báo FCM: đọc token từ `Tokens/{userId}` → **FCM HTTP v1** (Retrofit, `data/remote`).
 
 ### Chat nhóm
 
-- **Tạo nhóm** từ menu Home (`CreateGroupFragment`): chọn tên, chọn thành viên từ danh sách bạn (tối thiểu 1), tạo xong mở thẳng màn chat.
-- Tin nhắn chung trong phòng `messages/{groupId}/chats`; metadata nhóm tại `groups/{groupId}`.
-- **Avatar nhóm ghép** từ avatar thành viên (`GroupAvatarView`, `GroupAvatarLoader`); sắp xếp ổn định khi nhóm 2 người.
-- **Tin chào mừng** tự động khi tạo nhóm; đồng bộ hàng inbox `Conversation{userId}/{groupId}` cho mọi thành viên.
-- **Mention (@)**: gõ `@` để nhắc thành viên hoặc `@All` trong nhóm; gửi kèm metadata `mentions` trên tin; thông báo FCM riêng khi bị nhắc.
-- **Đang gõ** trong nhóm: lưu `typing` / `typingUserId` trên document nhóm.
-- **Chưa đọc & đã xem**: đếm tin chưa đọc; hiển thị ai đã xem tin cuối (`memberRead` trên `groups/{groupId}`).
-- Hỗ trợ reply, reaction, burst cảm xúc và long-press menu giống chat 1-1; hiển thị tên người gửi trên bubble nhận.
+- **Tạo nhóm** (`CreateGroupFragment`): chọn tên, thành viên, mở thẳng chat.
+- Tin trong `messages/{groupId}/chats`; metadata tại `groups/{groupId}`.
+- **Avatar nhóm ghép** (`GroupAvatarView`, **`GroupAvatarLoader`** inject `GroupChatRepository` trên nhánh refactor).
+- **Tin chào mừng**; đồng bộ inbox `Conversation{userId}/{groupId}`.
+- **Mention (@)** / **@All**, FCM khi bị nhắc.
+- **Đang gõ** nhóm; **đã xem** (`memberRead`).
+- Reply, reaction, burst, long-press menu; tên người gửi trên bubble nhận.
 
 ### Danh bạ & bạn bè
 
 - Danh bạ nhóm theo chữ cái, sticky header, fast scroll.
-- Lời mời kết bạn (gửi / nhận / chấp nhận / từ chối / hủy), đồng bộ subcollection `friends` trên `users`.
+- Lời mời kết bạn (gửi / nhận / chấp nhận / từ chối / hủy).
 
 ### Nhật ký (Diary)
 
-- Đăng bài, ảnh, link preview; thích và bình luận; feed theo bạn bè (Firestore + listener).
+- Đăng bài, ảnh, link preview; thích và bình luận; feed bạn bè (`DiaryRepository` + use case).
 
 ### Khác
 
-- Trạng thái (Status): đăng / xem media.
+- Trạng thái (Status): đăng / xem / sửa media.
 - Tìm kiếm người dùng, lịch sử tìm kiếm.
-- QR (quét mã), một số màn hồ sơ / xem trước ảnh.
-- **Cloudinary**: upload ảnh / video / audio chat (unsigned preset trong code — nên tách ra cấu hình riêng khi fork).
+- QR, hồ sơ cá nhân, xem trước ảnh.
+- **Cloudinary**: upload ảnh / video / audio (`data/legacy/CloudinaryManager.kt`).
 
 ## Ảnh màn hình
 
@@ -58,54 +96,99 @@
   <img src="https://github.com/user-attachments/assets/c04bf373-8642-43d0-97ca-68d387c24081" alt="Screen Message" width="250"/>
 </div>
 
-## Cấu trúc thư mục (rút gọn)
+## Kiến trúc (Clean Architecture — `update-project-structure`)
+
+```
+:domain/          # Kotlin thuần — không phụ thuộc Android/Firebase
+  model/          # Message, Conversation, User, DiaryPost, …
+  repository/     # Interfaces: Chat, Session, GroupChat, Friend, Diary, …
+  usecase/
+    chat/         # SendMessage, ObserveMessages, CreateGroup, …
+    inbox/        # ObserveInbox, GetConversation, …
+    social/       # SearchUsers, FriendRequest, GetUserInfo, …
+    diary/        # ObserveDiaryFeed, CreatePost, Comments, …
+  chat/           # EmotionReactionDetector, MentionParser
+
+:data/            # Firebase, Retrofit, Cloudinary, Hilt bindings
+  firestore/      # DTO Firestore (Message, Conversation, …)
+  legacy/         # FireBaseInstance, PresenceManager, CloudinaryManager, …
+  repository/     # *RepositoryImpl → delegate legacy khi cần
+  mapper/         # EntityMapper (firestore ↔ domain)
+  remote/         # ApiClient, ApiService, FCM DTO
+  session/        # SessionRepositoryImpl
+  di/             # RepositoryModule, DataModule
+
+:app/             # UI Android
+  fragment/, adapter/, viewmodel/, service/, broadcast/
+  model/          # Parcelable UI (Navigation, Intent extras)
+  mapper/         # ChatUiMapper, SocialUiMapper, DiaryUiMapper, SessionLanguageMapper
+  utils/          # UI helpers; LegacyCompat (typealias tạm)
+```
+
+**Luồng phụ thuộc:** `app → domain ← data` (domain không biết Android).
+
+**Luồng dữ liệu điển hình:**
+
+```
+UI (Fragment/Adapter)
+  → ViewModel (use case)
+    → Repository interface (:domain)
+      → RepositoryImpl (:data)
+        → FireBaseInstance / Firestore / RTDB / Retrofit
+```
+
+**Mapper:**
+
+| Mapper | Vai trò |
+|--------|---------|
+| `EntityMapper` | `data/firestore` ↔ `domain/model` |
+| `ChatUiMapper` / `SocialUiMapper` / `DiaryUiMapper` | `domain` ↔ `app/model` (Parcelable) |
+
+## Cấu trúc thư mục `:app` (rút gọn)
 
 ```
 app/src/main/java/com/example/messageapp/
-├── adapter/          # RecyclerView adapters (Chat, ListChat, Mention, CreateGroupMember, …)
-├── argument/         # Safe Args / navigation args
-├── base/             # BaseFragment, BaseViewModel, CoreInterface
-├── bottom_sheet/     # Bottom sheets (ảnh, sticker, ngôn ngữ, …)
-├── broadcast/        # NotificationReply — trả lời từ notification (kèm replyTo)
-├── custom/           # Custom views (GroupAvatarView, CustomHeaderView, …)
-├── dialog/           # Dialog fragments
-├── di/               # Hilt modules (AppModule)
-├── fragment/         # Home, Chat, CreateGroup, Diary, …
-├── helper/           # Hằng số, layout helper
-├── library/          # Thành phần tái sử dụng (OTP, audio wave, fast scroll)
-├── model/            # Message, Conversation, GroupChat, UserPresence, Emotion, …
-├── remote/           # Retrofit ApiClient, ApiService, request DTOs
-├── service/          # FCM ReceiverMessageService, ChatHeadService
+├── adapter/          # Chat, ListChat, Search, FriendRequest, CreateGroupMember, …
+├── broadcast/        # NotificationReply (SendMessageUseCase + GetUserInfoUseCase)
+├── bottom_sheet/     # Ảnh, sticker, ngôn ngữ, diary comments, …
+├── custom/           # GroupAvatarView, CustomHeaderView, TypingIndicatorView, …
+├── fragment/         # Home, Chat, CreateGroup, Diary, Status, …
+├── mapper/           # ChatUiMapper, SocialUiMapper, DiaryUiMapper
+├── model/            # UI Parcelable (giữ cho Navigation / Intent)
+├── service/          # ReceiverMessageService (FCM), ChatHeadService
 ├── utils/
-│   ├── FireBaseInstance.kt      # Firestore: chat, nhóm, friend, diary, FCM trigger
-│   ├── PresenceManager.kt       # Online / last seen (Realtime Database)
-│   ├── MentionHelper.kt         # Parse & gợi ý @mention trong nhóm
-│   ├── MessageReplyHelper.kt    # Bind quote reply, preview inbox/notification
-│   ├── EmotionBurstEffect.kt    # Hiệu ứng particle khi thả cảm xúc
-│   ├── EmotionReactionDetector.kt # Phát hiện reaction remote cho burst
-│   ├── GroupAvatarLoader.kt     # Tải avatar thành viên cho avatar nhóm
-│   └── CloudinaryManager.kt, DateUtils.kt, …
-├── viewmodel/
-├── MainActivity.kt
-├── MyApplication.kt
-├── PersonalActivity.kt, PreviewPhotoActivity.kt, …
-└── res/
-    ├── layout/       # fragment_create_group, layout_message_reply_quote, view_group_avatar, …
-    └── navigation/   # navigation_main.xml (Home → CreateGroup → Chat)
+│   ├── LegacyCompat.kt          # typealias FireBaseInstance, PresenceManager, DateUtils
+│   ├── MessageReplyHelper.kt    # Bind quote reply UI
+│   ├── GroupAvatarLoader.kt     # @Singleton — GroupChatRepository
+│   ├── MentionHelper.kt         # UI @mention (parse core ở domain)
+│   ├── EmotionBurstEffect.kt
+│   └── FileUtils, GalleryUtils, …
+└── viewmodel/        # Hilt + use case (không gọi FireBaseInstance trực tiếp)
 ```
+
+> Trên **`main`**, cấu trúc tương tự nhưng **không có** `mapper/`, `FireBaseInstance.kt` nằm trong `utils/`, có thêm `remote/` và `di/AppModule` trong `:app`.
+
+## Use case chính (`:domain`)
+
+| Nhóm | Ví dụ |
+|------|--------|
+| **Chat** | `ObserveMessagesUseCase`, `SendMessageUseCase`, `UpdateTypingUseCase`, `CreateGroupUseCase`, `UploadChatMediaUseCase` |
+| **Inbox** | `ObserveInboxUseCase`, `GetConversationUseCase`, `GetUnreadCountUseCase` |
+| **Social** | `GetFriendsUseCase`, `SearchUsersUseCase`, `SendFriendRequestUseCase`, `GetUserInfoUseCase` |
+| **Diary** | `ObserveDiaryFeedUseCase`, `CreateDiaryPostUseCase`, `ObserveDiaryCommentsUseCase` |
 
 ## Mô hình dữ liệu (Firestore / RTDB)
 
 | Collection / path | Mô tả |
 |-------------------|--------|
 | `users/{userId}` | Hồ sơ, subcollection `friends` |
-| `Conversation{userId}/{roomId}` | Hàng inbox; `isGroup = true` cho nhóm; `friendId` = `groupId` (UUID) |
+| `Conversation{userId}/{roomId}` | Inbox; `isGroup = true` cho nhóm; `friendId` = `groupId` (UUID) |
 | `groups/{groupId}` | Tên nhóm, `memberIds`, `typing`, `memberRead/{userId}` |
-| `messages/{roomId}/chats/{time}` | Tin chat; field `emotion`, `replyTo`, `mentions` |
+| `messages/{roomId}/chats/{time}` | Tin chat; `emotion`, `replyTo`, `mentions` |
 | `Tokens/{userId}` | FCM device token |
-| RTDB `status/{userId}` | `online`, `lastSeen` (presence) |
+| RTDB `status/{userId}` | `online`, `lastSeen` |
 
-**Room id:** chat 1-1 dùng id ghép hai user; chat nhóm dùng UUID lưu tại `groups/{groupId}`.
+**Room id:** chat 1-1 = id ghép hai user; nhóm = UUID (`groups/{groupId}`).
 
 ## Công nghệ & phiên bản
 
@@ -115,76 +198,62 @@ app/src/main/java/com/example/messageapp/
 | Android Gradle Plugin | **8.2.1** |
 | Gradle Wrapper | **8.2** |
 | `minSdk` / `targetSdk` | **24** / **34** (`compileSdk` 34) |
+| Module | `:app`, `:domain`, `:data` (`update-project-structure`) |
 | UI | Material, ViewBinding + Data Binding, Navigation Component |
-| DI | **Hilt** 2.48 |
-| Async | Kotlin **Coroutines**, Flow |
-| Backend phía app | **Firebase**: Firestore (chat, user, nhóm), **Realtime Database** (presence), Cloud Messaging, Analytics, Crashlytics, Installations, Auth (phone) |
-| Media upload | **Cloudinary** (OkHttp multipart) |
-| HTTP client | **Retrofit** + Gson, OkHttp |
-| Khác | Glide, Media3 ExoPlayer, ZXing / Code scanner, PhotoView |
+| DI | **Hilt** 2.48 — `RepositoryModule` trong `:data` |
+| Async | Kotlin **Coroutines**, **Flow** |
+| Backend | Firestore, RTDB (presence), FCM, Analytics, Crashlytics, Auth (phone) |
+| Media | **Cloudinary** (OkHttp) |
+| HTTP | **Retrofit** + Gson — FCM HTTP v1 |
 
-> **Lưu ý:** Chat và user data nằm trên **Firestore**; file media upload lên **Cloudinary**. **Realtime Database** chỉ dùng cho trạng thái online / last seen, không dùng Firebase Storage cho chat.
+> Chat và user data trên **Firestore**; media trên **Cloudinary**. **RTDB** chỉ cho online / last seen.
 
 ## Một số Fragment / luồng UI
 
-- **Splash / Intro / Login / Register / OTP** — vào app và xác thực.
-- **HomeFragment** — danh sách hội thoại (1-1 + nhóm), gợi ý kết bạn; menu **Tạo nhóm**.
-- **CreateGroupFragment** — chọn thành viên, đặt tên, tạo nhóm → **ChatFragment**.
-- **ChatFragment** — hội thoại 1-1 hoặc nhóm (reply bar, mention picker, reaction burst).
+- **Splash / Intro / Login / Register / OTP** — xác thực.
+- **HomeFragment** — inbox 1-1 + nhóm, presence/typing/avatar sync (`HomeViewModel`).
+- **CreateGroupFragment** → **ChatFragment** — nhóm mới.
+- **ChatFragment** — reply, mention, reaction burst.
 - **PhoneBookFragment**, **SearchFragment**, **FriendRequestFragment**.
 - **PersonalFragment**, **DiaryFragment**, **DiscoverFragment**, **SettingFragment**, **StatusFragment**, **ScanQRFragment**.
 
-## Thay đổi chính so với nhánh `main`
-
-| Hạng mục | Mô tả ngắn |
-|----------|------------|
-| Tạo & chat nhóm | `CreateGroupFragment`, `GroupChat`, gửi tin tới `messages/{groupId}` |
-| Avatar nhóm | Ghép avatar thành viên, `GroupAvatarView` |
-| Mention | `@` thành viên / `@All`, FCM nhắc tên |
-| Presence | Online & last seen qua RTDB + `PresenceManager` |
-| Read receipt nhóm | `memberRead`, số chưa đọc, ai đã xem tin cuối |
-| Reply tin | Quote block, scroll + highlight tin gốc |
-| Cảm xúc | Toggle reaction, burst local + remote khi đang ở chat |
-| Notification | Reply từ notification kèm `replyTo`; mention / group payload |
-| UX | Back từ chat, sửa spacing tin dài, preview ảnh long-press, delay emoji |
-
 ## Chạy dự án
 
-1. **Clone** repository và checkout nhánh cần dùng (ví dụ `create-group`).
-2. Mở bằng **Android Studio** (khuyến nghị AGP 8.2 / JDK 17).
-3. Thêm **`google-services.json`** của Firebase vào `app/`.
-4. Bật **Firestore**, **Realtime Database** (rules cho `status/`), **Cloud Messaging**, **Authentication** (Phone nếu dùng OTP).
-5. **Đồng bộ Gradle** và Run trên thiết bị / emulator API 24+.
+1. **Clone** và checkout nhánh phù hợp:
+   - Phát triển / PR: `git checkout update-project-structure`
+   - So sánh legacy: `git checkout main`
+2. Mở **Android Studio** (AGP 8.2, **JDK 17**).
+3. Thêm **`google-services.json`** vào `app/`.
+4. Bật **Firestore**, **Realtime Database** (rules `status/`), **Cloud Messaging**, **Authentication** (Phone nếu dùng OTP).
+5. **Sync Gradle** (3 module) và Run (API 24+).
 
 ### Firebase & biến môi trường
 
-- Collection token: **`Tokens/{userId}`** — FCM token thiết bị (lưu khi đăng nhập / refresh).
-- RTDB presence: app ghi `status/{userId}` khi online/offline; cần rule cho phép user đọc/ghi node của mình và đọc bạn bè.
+- **`Tokens/{userId}`** — FCM token (lưu khi đăng nhập).
+- RTDB **`status/{userId}`** — presence online/offline.
 
-### Cloudinary (upload ảnh / video / audio)
+### Cloudinary
 
-Trong `CloudinaryManager.kt` có `CLOUD_NAME` và `UPLOAD_PRESET`. Khi fork, tạo preset trên Cloudinary và cập nhật giá trị — **không** commit secret server-side lên Git công khai.
+Cấu hình trong `data/legacy/CloudinaryManager.kt` (`CLOUD_NAME`, `UPLOAD_PRESET`). Không commit secret production lên Git công khai.
 
 ## Thông báo đẩy (FCM HTTP v1)
 
-App gửi tin nhắn FCM qua:
+Endpoint:
 
 `https://fcm.googleapis.com/v1/projects/{PROJECT_ID}/messages:send`
 
-Cần **OAuth2 access token** service account (scope `https://www.googleapis.com/auth/firebase.messaging`).
+Cần **OAuth2 access token** service account — `data/legacy/AccessToken.kt`, `data/remote/ApiService.kt`.
 
-### Các bước cấu hình (khuyến nghị)
+### Cấu hình (khuyến nghị)
 
-1. Firebase Console → **Project settings → Service accounts → Generate new private key**.
-2. **Không** commit private key công khai; đọc JSON local (`.gitignore`) hoặc dùng backend proxy.
-3. Cập nhật **`AccessToken.kt`** và **`ApiService.kt`** (`{projectId}/messages:send`) khớp project của bạn.
-4. Phụ thuộc: `firebase-messaging`, `google-auth-library-oauth2-http` (trong `app/build.gradle.kts`).
-
-Payload hỗ trợ thêm data cho **chat nhóm**, **mention**, **reply** (`NotificationData` / `NotificationReply`).
+1. Firebase Console → **Service accounts → Generate new private key**.
+2. Không commit private key; dùng file local (`.gitignore`) hoặc **Cloud Functions** (khuyến nghị production).
+3. Cập nhật `AccessToken.kt` và `ApiService` đúng `{projectId}`.
+4. Payload data: **nhóm**, **mention**, **reply** (`NotificationData`, `ReceiverMessageService`, `NotificationReply`).
 
 ### HTTP v1 payload (tham khảo)
 
-Tài liệu: [Migrate to FCM HTTP v1](https://firebase.google.com/docs/cloud-messaging/migrate-v1).
+[Tài liệu FCM HTTP v1](https://firebase.google.com/docs/cloud-messaging/migrate-v1)
 
 ```json
 {
@@ -200,7 +269,14 @@ Tài liệu: [Migrate to FCM HTTP v1](https://firebase.google.com/docs/cloud-mes
 
 ### Cảnh báo bảo mật
 
-Nếu service account JSON từng lộ trên repo công khai, **thu hồi và tạo lại key** trên Google Cloud Console.
+Nếu service account JSON từng lộ công khai, **thu hồi và tạo lại key** trên Google Cloud Console.
+
+## Việc tiếp theo (gợi ý kỹ thuật)
+
+- Hoàn tất tách `FireBaseInstance` khỏi `*RepositoryImpl` (implementation Firestore thật trong `:data`).
+- Gỡ `LegacyCompat` và `MessageReplyHelper` → `GetUserInfoUseCase`.
+- FCM gửi từ **Cloud Functions** thay client.
+- Phân trang tin nhắn + cache local (Room).
 
 ## Đóng góp
 

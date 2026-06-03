@@ -67,7 +67,6 @@ import com.example.messageapp.utils.EmotionReactionDetector
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.MessageReplyHelper
@@ -221,6 +220,9 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 uid,
                 viewModel?.shared?.getNameUser().orEmpty(),
                 cvt.name,
+                loadUserAvatar = { userId, onResult ->
+                    viewModel?.loadUserAvatar(userId, onResult)
+                },
             )
             chatAdapter?.updateReplyNameContext(
                 myName = viewModel?.shared?.getNameUser().orEmpty(),
@@ -604,6 +606,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             viewModel?.observeTyping(cvt)
             if (cvt.isGroupThread()) {
                 viewModel?.startGroupReadTracking(cvt.friendId)
+            } else {
+                viewModel?.startObservingPeerConversation(cvt.friendId)
             }
 
             viewLifecycleOwner.lifecycleScope.launch {
@@ -654,6 +658,18 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                             }
                         }
                     }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel?.peerConversation?.collect { conv ->
+                    val msg = lastMessagesSnapshot
+                    if (conv == null || msg.isEmpty()) return@collect
+                    val userId = viewModel?.shared?.getAuth().orEmpty()
+                    chatAdapter?.seen = conv.isSeenMessage() && msg.last().sender == userId
+                    chatAdapter?.notifyItemChanged(msg.lastIndex)
                 }
             }
         }
@@ -715,29 +731,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
      * and friend seen message
      */
     private fun updateSeenMessage(msg: ArrayList<Message>) {
-        val userId = viewModel?.shared?.getAuth() ?: ""
         val cvt = conversation ?: return
+        if (msg.isEmpty()) return
         if (cvt.isGroupThread()) {
-            if (msg.isNotEmpty()) {
-                chatAdapter?.notifyItemChanged(msg.lastIndex)
-            }
-            conversation?.let { viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
-            return
+            chatAdapter?.notifyItemChanged(msg.lastIndex)
         }
-        FireBaseInstance.getConversationRlt(
-            friendId = conversation?.friendId ?: "",
-            userId = userId,
-            success = { conv ->
-                if (conv.isSeenMessage() && msg[msg.lastIndex].sender == userId) {
-                    chatAdapter?.seen = true
-                    chatAdapter?.notifyItemChanged(msg.lastIndex)
-                } else {
-                    chatAdapter?.seen = false
-                    chatAdapter?.notifyItemChanged(msg.lastIndex)
-                }
-                conversation?.let { viewModel?.updateSeenMessage(msg[msg.lastIndex], it) }
-            }
-        )
+        viewModel?.updateSeenMessage(msg[msg.lastIndex], cvt)
     }
 
     private fun handleCopyMessage(message: Message) {
@@ -847,6 +846,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun onDestroyView() {
         viewModel?.stopObservingFriendPresence()
+        viewModel?.stopObservingPeerConversation()
         viewModel?.stopGroupReadTracking()
         pendingMentions.clear()
         hideMentionPicker()

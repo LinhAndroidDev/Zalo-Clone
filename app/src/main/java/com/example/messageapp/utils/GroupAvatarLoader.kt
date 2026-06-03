@@ -1,8 +1,14 @@
 package com.example.messageapp.utils
 
+import com.example.messageapp.domain.repository.GroupChatRepository
 import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object GroupAvatarLoader {
+@Singleton
+class GroupAvatarLoader @Inject constructor(
+    private val groupChatRepository: GroupChatRepository,
+) {
 
     data class GroupAvatarData(
         val totalCount: Int,
@@ -40,14 +46,14 @@ object GroupAvatarLoader {
             inFlight[groupId] = mutableListOf(callback)
         }
 
-        FireBaseInstance.getGroupMemberAvatars(
+        groupChatRepository.getGroupMemberAvatars(
             groupId = groupId,
-            success = { totalCount, avatarUrls ->
+            onSuccess = { totalCount, avatarUrls ->
                 val data = GroupAvatarData(totalCount = totalCount - 1, avatarUrls = avatarUrls)
                 cache[groupId] = data
                 dispatch(groupId, Result.success(data))
             },
-            failure = {
+            onFailure = {
                 dispatch(groupId, Result.failure(IllegalStateException(it)))
             },
         )

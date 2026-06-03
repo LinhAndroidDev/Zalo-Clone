@@ -14,7 +14,6 @@ import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.MessageReplyHelper
 
@@ -135,7 +134,12 @@ class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v
         v.viewReceived.isVisible = false
     }
 
-    fun bindGroupSeenAvatars(context: Context, readerIds: List<String>, maxVisible: Int = 4) {
+    fun bindGroupSeenAvatars(
+        context: Context,
+        readerIds: List<String>,
+        loadUserAvatar: (String, (String) -> Unit) -> Unit,
+        maxVisible: Int = 4,
+    ) {
         v.avtSeen.isVisible = false
         v.viewReceived.isVisible = false
         if (readerIds.isEmpty()) {
@@ -152,8 +156,8 @@ class SenderViewHolder(val v: ItemChatSenderBinding) : RecyclerView.ViewHolder(v
             val userId = readerIds[i]
             val imageView = avatars[i]
             imageView.isVisible = true
-            FireBaseInstance.getInfoUser(userId) { user ->
-                context.loadImg(user.avatar.toString(), imageView)
+            loadUserAvatar(userId) { avatarUrl ->
+                context.loadImg(avatarUrl, imageView)
             }
         }
         val remaining = readerIds.size - maxVisible

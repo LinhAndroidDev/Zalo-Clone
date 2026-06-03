@@ -8,6 +8,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.example.messageapp.databinding.BottomSheetLanguageBinding
 import com.example.messageapp.fragment.Language
+import com.example.messageapp.mapper.SessionLanguageMapper
 import com.example.messageapp.viewmodel.BottomSheetLanguageViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
@@ -29,17 +30,17 @@ class BottomSheetLanguage : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.shared.getLanguageSelected()
-            .let { language -> setViewLanguage(language) }
+        viewModel.sessionRepository.getLanguageSelected()
+            .let { language -> setViewLanguage(SessionLanguageMapper.toUiLanguage(language)) }
 
         binding.vietnamese.setOnClickListener {
-            viewModel.shared.saveLanguageSelected(Language.VIETNAMESE)
+            viewModel.sessionRepository.saveLanguageSelected(SessionLanguageMapper.toAppLanguage(Language.VIETNAMESE))
             onSelectLanguage?.invoke(Language.VIETNAMESE)
             dismiss()
         }
 
         binding.english.setOnClickListener {
-            viewModel.shared.saveLanguageSelected(Language.ENGLISH)
+            viewModel.sessionRepository.saveLanguageSelected(SessionLanguageMapper.toAppLanguage(Language.ENGLISH))
             onSelectLanguage?.invoke(Language.ENGLISH)
             dismiss()
         }

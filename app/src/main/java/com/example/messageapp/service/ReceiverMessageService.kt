@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
 import android.os.Build
@@ -14,10 +13,12 @@ import androidx.core.app.RemoteInput
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.broadcast.NotificationReply
+import com.example.messageapp.domain.repository.GroupChatRepository
+import com.example.messageapp.domain.repository.SessionRepository
+import com.example.messageapp.domain.usecase.social.GetUserInfoUseCase
+import com.example.messageapp.mapper.ChatUiMapper
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.User
-import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.SharePreferenceRepository
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,8 +28,9 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ReceiverMessageService : FirebaseMessagingService() {
 
-    @Inject
-    lateinit var shared: SharePreferenceRepository
+    @Inject lateinit var sessionRepository: SessionRepository
+    @Inject lateinit var groupChatRepository: GroupChatRepository
+    @Inject lateinit var getUserInfoUseCase: GetUserInfoUseCase
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -37,7 +39,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        if (shared.getStatusLoggedIn()) {
+        if (sessionRepository.getStatusLoggedIn()) {
             val data = remoteMessage.data
             if (data.isEmpty()) return
             Log.d(TAG, "Message data payload: $data")
@@ -49,9 +51,9 @@ class ReceiverMessageService : FirebaseMessagingService() {
             val replyMeta = parseReplyMeta(data)
 
             if (groupId.isNotEmpty()) {
-                FireBaseInstance.getGroup(
+                groupChatRepository.getGroup(
                     groupId,
-                    success = { group ->
+                    onSuccess = { group ->
                         val conv = Conversation(
                             friendId = groupId,
                             friendImage = group.photoUrl,
@@ -71,13 +73,22 @@ class ReceiverMessageService : FirebaseMessagingService() {
                             isMention = isMention,
                         )
                     },
-                    failure = { Log.e(TAG, "getGroup failed: $it") },
+                    onFailure = { Log.e(TAG, "getGroup failed: $it") },
                 )
             } else {
-                FireBaseInstance.getInfoUser(senderId) { user ->
-                    user.keyAuth = senderId
-                    sendNotification(title, body, senderId, user, replyMeta)
-                }
+                getUserInfoUseCase(
+                    userId = senderId,
+                    onSuccess = { user ->
+                        sendNotification(
+                            title,
+                            body,
+                            senderId,
+                            ChatUiMapper.toUi(user),
+                            replyMeta,
+                        )
+                    },
+                    onFailure = { Log.e(TAG, "getInfoUser failed: $it") },
+                )
             }
         }
     }
@@ -203,7 +214,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
     }
 
     private fun showNotification(channelId: Int, notificationBuilder: NotificationCompat.Builder) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -214,7 +225,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        shared.saveChannelId(channelId)
+        sessionRepository.saveChannelId(channelId)
         notificationManager.notify(channelId, notificationBuilder.build())
     }
 

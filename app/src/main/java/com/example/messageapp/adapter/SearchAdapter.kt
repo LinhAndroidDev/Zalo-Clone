@@ -6,7 +6,6 @@ import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemSearchFriendBinding
 import com.example.messageapp.model.User
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.viewmodel.UserWithStatus
 
 class SearchAdapter : BaseAdapter<UserWithStatus, ItemSearchFriendBinding>() {
@@ -23,13 +22,11 @@ class SearchAdapter : BaseAdapter<UserWithStatus, ItemSearchFriendBinding>() {
         position: Int
     ) {
         val (user, status) = items[position]
-        FireBaseInstance.getInfoUser(user.keyAuth.toString()) { u ->
-            holder.v.root.context.loadImg(
-                u.avatar.toString(),
-                holder.v.avtFriend,
-                R.drawable.bg_grey_equal
-            )
-        }
+        holder.v.root.context.loadImg(
+            user.avatar.orEmpty(),
+            holder.v.avtFriend,
+            R.drawable.bg_grey_equal
+        )
         holder.v.nameFriend.text = user.name
         holder.v.root.setOnClickListener { onItemClick?.invoke(user) }
 

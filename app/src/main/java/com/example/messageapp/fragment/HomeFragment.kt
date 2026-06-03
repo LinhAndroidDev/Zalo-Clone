@@ -17,8 +17,10 @@ import com.example.messageapp.model.Conversation
 import com.example.messageapp.service.ChatHeadService
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
+import com.example.messageapp.utils.GroupAvatarLoader
 import com.example.messageapp.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -29,6 +31,8 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override val layoutResId: Int = R.layout.fragment_home
+
+    @Inject lateinit var groupAvatarLoader: GroupAvatarLoader
 
     private var listChatAdapter: ListChatAdapter? = null
     private var updateJob: Job? = null
@@ -41,7 +45,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        listChatAdapter = ListChatAdapter(viewModel?.shared?.getAuth() ?: "")
+        listChatAdapter = ListChatAdapter(groupAvatarLoader)
         listChatAdapter?.onClickView = { conversation ->
             goToChatFragment(conversation)
         }
@@ -132,6 +136,18 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.presenceMap?.collect { presenceMap ->
                 listChatAdapter?.updatePresenceMap(presenceMap)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.typingMap?.collect { typingMap ->
+                listChatAdapter?.updateTypingMap(typingMap)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.avatarMap?.collect { avatarMap ->
+                listChatAdapter?.updateAvatarMap(avatarMap)
             }
         }
 

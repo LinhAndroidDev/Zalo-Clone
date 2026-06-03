@@ -1,0 +1,13 @@
+package com.example.messageapp.data.firestore
+
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+data class User(
+    val name: String? = "",
+    val email: String? = "",
+    val avatar: String? = "",
+    val imageCover: String? = "",
+    var keyAuth: String? = ""
+) : Parcelable

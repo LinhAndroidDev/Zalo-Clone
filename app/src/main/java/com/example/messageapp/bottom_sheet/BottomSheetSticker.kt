@@ -6,7 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.R
@@ -17,11 +17,13 @@ import com.example.messageapp.viewmodel.BottomSheetStickerViewModel
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayout
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class BottomSheetSticker : BottomSheetDialogFragment() {
     private var binding: BottomSheetStickerBinding? = null
-    private lateinit var viewModel: BottomSheetStickerViewModel
+    private val viewModel by viewModels<BottomSheetStickerViewModel>()
     private var isTabClick = false
 
     override fun onStart() {
@@ -56,7 +58,6 @@ class BottomSheetSticker : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel = ViewModelProvider(this)[BottomSheetStickerViewModel::class.java]
         viewModel.initData()
 
         bindData()

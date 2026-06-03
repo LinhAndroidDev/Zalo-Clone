@@ -2,8 +2,9 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.domain.usecase.social.GetUserByIdUseCase
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.model.User
-import com.example.messageapp.utils.FireBaseInstance
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +19,9 @@ sealed class ScanResult {
 }
 
 @HiltViewModel
-class ScanQRFragmentViewModel @Inject constructor() : BaseViewModel() {
+class ScanQRFragmentViewModel @Inject constructor(
+    private val getUserByIdUseCase: GetUserByIdUseCase,
+) : BaseViewModel() {
 
     private val _scanResult = MutableStateFlow<ScanResult>(ScanResult.Idle)
     val scanResult = _scanResult.asStateFlow()
@@ -27,10 +30,10 @@ class ScanQRFragmentViewModel @Inject constructor() : BaseViewModel() {
         if (_scanResult.value is ScanResult.Loading) return@launch
         _scanResult.value = ScanResult.Loading
 
-        FireBaseInstance.getUserById(
+        getUserByIdUseCase(
             userId = scannedText.trim(),
-            success = { user -> _scanResult.value = ScanResult.UserFound(user) },
-            failure = { error -> _scanResult.value = ScanResult.Error(error) }
+            onSuccess = { user -> _scanResult.value = ScanResult.UserFound(SocialUiMapper.toUi(user)) },
+            onFailure = { error -> _scanResult.value = ScanResult.Error(error) },
         )
     }
 

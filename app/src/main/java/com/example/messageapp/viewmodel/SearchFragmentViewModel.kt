@@ -2,9 +2,15 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.domain.repository.SessionRepository
+import com.example.messageapp.domain.usecase.social.CancelFriendRequestUseCase
+import com.example.messageapp.domain.usecase.social.GetFriendshipStatusUseCase
+import com.example.messageapp.domain.usecase.social.GetSearchHistoryUseCase
+import com.example.messageapp.domain.usecase.social.SaveSearchHistoryUseCase
+import com.example.messageapp.domain.usecase.social.SearchUsersUseCase
+import com.example.messageapp.domain.usecase.social.SendFriendRequestUseCase
+import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.model.User
-import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,18 +20,22 @@ import javax.inject.Inject
 data class UserWithStatus(val user: User, val status: String)
 
 @HiltViewModel
-class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
+class SearchFragmentViewModel @Inject constructor(
+    private val sessionRepository: SessionRepository,
+    private val searchUsersUseCase: SearchUsersUseCase,
+    private val getFriendshipStatusUseCase: GetFriendshipStatusUseCase,
+    private val sendFriendRequestUseCase: SendFriendRequestUseCase,
+    private val cancelFriendRequestUseCase: CancelFriendRequestUseCase,
+    private val getSearchHistoryUseCase: GetSearchHistoryUseCase,
+    private val saveSearchHistoryUseCase: SaveSearchHistoryUseCase,
+) : BaseViewModel() {
 
-    @Inject
-    lateinit var shared: SharePreferenceRepository
-
-    private val _users: MutableStateFlow<List<UserWithStatus>> = MutableStateFlow(emptyList())
+    private val _users = MutableStateFlow<List<UserWithStatus>>(emptyList())
     val users = _users.asStateFlow()
 
-    private val _history: MutableStateFlow<List<User>> = MutableStateFlow(emptyList())
+    private val _history = MutableStateFlow<List<User>>(emptyList())
     val history = _history.asStateFlow()
 
-    // Tracks the most recent query to discard stale async callbacks
     @Volatile private var currentQuery: String = ""
 
     fun searchFriend(keySearch: String) {
@@ -35,59 +45,56 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
             getSearchHistory()
             return
         }
-        FireBaseInstance.searchFriend(queryText = keySearch) { results ->
-            // Discard results if a newer query has already been issued
-            if (keySearch != currentQuery) return@searchFriend
+        searchUsersUseCase(
+            query = keySearch,
+            onSuccess = { results ->
+            if (keySearch != currentQuery) return@searchUsersUseCase
 
-            val myId = shared.getAuth()
+            val myId = sessionRepository.getAuth()
             val others = results.filter { it.keyAuth != myId }
             if (others.isEmpty()) {
                 if (keySearch == currentQuery) _users.value = emptyList()
-                return@searchFriend
+                return@searchUsersUseCase
             }
             val output = mutableListOf<UserWithStatus>()
             var pending = others.size
             others.forEach { user ->
-                FireBaseInstance.getFriendshipStatus(myId, user.keyAuth.orEmpty()) { status ->
+                getFriendshipStatusUseCase(
+                    otherId = user.keyAuth,
+                    onSuccess = { status ->
                     synchronized(output) {
-                        output.add(UserWithStatus(user, status))
+                        output.add(UserWithStatus(SocialUiMapper.toUi(user), status))
                         pending--
                         if (pending == 0 && keySearch == currentQuery) {
                             _users.value = output.sortedBy { it.user.name }
                         }
                     }
-                }
+                },
+                )
             }
-        }
+        },
+        )
     }
 
     fun sendFriendRequest(target: User) = viewModelScope.launch {
-        FireBaseInstance.getInfoUser(shared.getAuth()) { me ->
-            FireBaseInstance.sendFriendRequest(
-                fromId = shared.getAuth(),
-                fromName = me.name.orEmpty(),
-                fromAvatar = me.avatar.orEmpty(),
-                toId = target.keyAuth.orEmpty(),
-                toName = target.name.orEmpty(),
-                toAvatar = target.avatar.orEmpty(),
-                success = {
-                    showMessage("Đã gửi lời mời kết bạn")
-                    updateUserStatus(target.keyAuth.orEmpty(), "pending_sent")
-                },
-                failure = { showError(it) }
-            )
-        }
+        sendFriendRequestUseCase(
+            target = SocialUiMapper.toDomain(target),
+            onSuccess = {
+                showMessage("Đã gửi lời mời kết bạn")
+                updateUserStatus(target.keyAuth.orEmpty(), "pending_sent")
+            },
+            onFailure = { showError(it) },
+        )
     }
 
     fun cancelFriendRequest(target: User) = viewModelScope.launch {
-        FireBaseInstance.cancelFriendRequest(
-            fromId = shared.getAuth(),
+        cancelFriendRequestUseCase(
             toId = target.keyAuth.orEmpty(),
-            success = {
+            onSuccess = {
                 showMessage("Đã huỷ lời mời kết bạn")
                 updateUserStatus(target.keyAuth.orEmpty(), "none")
             },
-            failure = { showError(it) }
+            onFailure = { showError(it) },
         )
     }
 
@@ -98,18 +105,10 @@ class SearchFragmentViewModel @Inject constructor() : BaseViewModel() {
     }
 
     fun getSearchHistory() = viewModelScope.launch {
-        FireBaseInstance.getSearchHistory(
-            myId = shared.getAuth(),
-            success = { _history.value = it },
-            failure = { showError(it) }
-        )
+        getSearchHistoryUseCase(onSuccess = { _history.value = SocialUiMapper.toUiUsers(it) })
     }
 
     fun saveSearchHistory(user: User) = viewModelScope.launch {
-        FireBaseInstance.saveSearchHistory(
-            myId = shared.getAuth(),
-            user = user,
-            failure = { showError(it) }
-        )
+        saveSearchHistoryUseCase(SocialUiMapper.toDomain(user))
     }
 }

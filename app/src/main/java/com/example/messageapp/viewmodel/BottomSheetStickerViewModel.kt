@@ -2,28 +2,35 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.domain.usecase.social.GetStickerUrlsUseCase
 import com.example.messageapp.model.Sticker
-import com.example.messageapp.utils.FireBaseInstance
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import javax.inject.Inject
 
-class BottomSheetStickerViewModel : BaseViewModel() {
-    private val _stickerHellos: MutableStateFlow<MutableList<String>?> = MutableStateFlow(null)
+@HiltViewModel
+class BottomSheetStickerViewModel @Inject constructor(
+    private val getStickerUrlsUseCase: GetStickerUrlsUseCase,
+) : BaseViewModel() {
+
+    private val _stickerHellos = MutableStateFlow<MutableList<String>?>(null)
     val stickerHellos = _stickerHellos.asStateFlow()
-    private val _stickerLoves: MutableStateFlow<MutableList<String>?> = MutableStateFlow(null)
+    private val _stickerLoves = MutableStateFlow<MutableList<String>?>(null)
     val stickerLoves = _stickerLoves.asStateFlow()
-    private val _stickerCongratulations: MutableStateFlow<MutableList<String>?> = MutableStateFlow(null)
+    private val _stickerCongratulations = MutableStateFlow<MutableList<String>?>(null)
     val stickerCongratulations = _stickerCongratulations.asStateFlow()
-    private val _stickerAngries: MutableStateFlow<MutableList<String>?> = MutableStateFlow(null)
+    private val _stickerAngries = MutableStateFlow<MutableList<String>?>(null)
     val stickerAngries = _stickerAngries.asStateFlow()
-    private val _stickerSads: MutableStateFlow<MutableList<String>?> = MutableStateFlow(null)
+    private val _stickerSads = MutableStateFlow<MutableList<String>?>(null)
     val stickerSads = _stickerSads.asStateFlow()
-    private val _stickerSorries: MutableStateFlow<MutableList<String>?> = MutableStateFlow(null)
+    private val _stickerSorries = MutableStateFlow<MutableList<String>?>(null)
     val stickerSorries = _stickerSorries.asStateFlow()
 
     fun initData() {
@@ -37,7 +44,6 @@ class BottomSheetStickerViewModel : BaseViewModel() {
                 async { Sticker.SORRY to fetchSticker(Sticker.SORRY) },
             ).toMap()
 
-            // Lần lượt gán theo đúng thứ tự
             _stickerHellos.value = results[Sticker.HELLO]?.toMutableList()
             _stickerLoves.value = results[Sticker.LOVE]?.toMutableList()
             _stickerCongratulations.value = results[Sticker.CONGRATULATION]?.toMutableList()
@@ -48,9 +54,9 @@ class BottomSheetStickerViewModel : BaseViewModel() {
     }
 
     private suspend fun fetchSticker(type: Sticker): List<String> =
-        suspendCoroutine { continuation ->
-            FireBaseInstance.getSticker(type) { result ->
+        suspendCancellableCoroutine { continuation ->
+            getStickerUrlsUseCase(typeName = type.name, onSuccess = { result ->
                 continuation.resume(result)
-            }
+            })
         }
 }

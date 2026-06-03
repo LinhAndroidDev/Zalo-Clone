@@ -16,9 +16,11 @@ import com.example.messageapp.databinding.BottomSheetRegisterBinding
 import com.example.messageapp.viewmodel.BottomSheetRegisterViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.textfield.TextInputLayout
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class BottomSheetRegister : BottomSheetDialogFragment() {
     private val binding by lazy { BottomSheetRegisterBinding.inflate(LayoutInflater.from(context)) }
     private val viewModel by viewModels<BottomSheetRegisterViewModel>()

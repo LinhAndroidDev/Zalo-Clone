@@ -2,10 +2,9 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
-import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.PresenceManager
-import com.example.messageapp.utils.SharePreferenceRepository
-import com.google.firebase.firestore.QuerySnapshot
+import com.example.messageapp.data.legacy.PresenceManager
+import com.example.messageapp.domain.repository.AuthRepository
+import com.example.messageapp.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,54 +12,37 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class LoginFragmentViewModel @Inject constructor() : BaseViewModel() {
-    @Inject
-    lateinit var shared: SharePreferenceRepository
-
-    @Inject
-    lateinit var presenceManager: PresenceManager
+class LoginFragmentViewModel @Inject constructor(
+    private val sessionRepository: SessionRepository,
+    private val authRepository: AuthRepository,
+    private val presenceManager: PresenceManager,
+) : BaseViewModel() {
 
     private val _loginSuccessful = MutableStateFlow(false)
     var loginSuccessful: StateFlow<Boolean> = _loginSuccessful
 
-    /**
-     * This function handle action login
-     * @param email is email which user registered
-     * @param password is password which user registered with email
-     */
     fun handlerActionLogin(email: String, password: String) = viewModelScope.launch {
         showLoading(true)
-        FireBaseInstance.checkLogin(
+        authRepository.checkLogin(
             email = email,
             password = password,
-            success = { result ->
+            onSuccess = { users ->
                 showLoading(false)
-                handlerLoginSuccess(result)
+                val user = users.firstOrNull()
+                if (user != null && user.keyAuth.isNotBlank()) {
+                    sessionRepository.saveAuth(user.keyAuth)
+                    sessionRepository.saveNameUser(user.name)
+                    sessionRepository.saveStatusLoggedIn(true)
+                    presenceManager.connect(user.keyAuth)
+                    _loginSuccessful.value = true
+                } else {
+                    showError("Đăng nhập thất bại")
+                }
             },
-            failure = { error ->
+            onFailure = { error ->
                 showLoading(false)
                 showError(error)
-            }
+            },
         )
-    }
-
-    /**
-     * This function handler when login success
-     * @param result get data user and save to share preference
-     * Then send action _loginSuccessful to Fragment
-     */
-    private fun handlerLoginSuccess(result: QuerySnapshot) {
-        if (result.isEmpty) {
-            showError("Dont Exist Account")
-        } else {
-            result.forEach { document ->
-                val data = document.data as Map<*, *>
-                shared.saveAuth(document.id)
-                shared.saveNameUser(data["name"].toString())
-                shared.saveStatusLoggedIn(true)
-                presenceManager.connect(document.id)
-                _loginSuccessful.value = true
-            }
-        }
     }
 }

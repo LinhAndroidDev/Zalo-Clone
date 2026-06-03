@@ -2,10 +2,11 @@ package com.example.messageapp.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
+import com.example.messageapp.domain.repository.FriendRepository
+import com.example.messageapp.domain.repository.SessionRepository
+import com.example.messageapp.domain.usecase.chat.CreateGroupUseCase
+import com.example.messageapp.mapper.ChatUiMapper
 import com.example.messageapp.model.Conversation
-import com.example.messageapp.model.Friend
-import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,19 +15,20 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class CreateGroupViewModel @Inject constructor() : BaseViewModel() {
+class CreateGroupViewModel @Inject constructor(
+    private val sessionRepository: SessionRepository,
+    private val friendRepository: FriendRepository,
+    private val createGroupUseCase: CreateGroupUseCase,
+) : BaseViewModel() {
 
-    @Inject
-    lateinit var shared: SharePreferenceRepository
-
-    private val _friends = MutableStateFlow<List<Friend>>(emptyList())
-    val friends: StateFlow<List<Friend>> = _friends.asStateFlow()
+    private val _friends = MutableStateFlow<List<com.example.messageapp.model.Friend>>(emptyList())
+    val friends: StateFlow<List<com.example.messageapp.model.Friend>> = _friends.asStateFlow()
 
     fun loadFriends() = viewModelScope.launch {
-        FireBaseInstance.getFriends(
-            userId = shared.getAuth(),
-            success = { list -> _friends.value = list },
-            failure = { showError(it) },
+        friendRepository.getFriends(
+            userId = sessionRepository.getAuth(),
+            onSuccess = { list -> _friends.value = list.map { ChatUiMapper.toUi(it) } },
+            onFailure = { showError(it) },
         )
     }
 
@@ -38,15 +40,15 @@ class CreateGroupViewModel @Inject constructor() : BaseViewModel() {
         onSuccess: (Conversation) -> Unit,
         onFailure: (String) -> Unit,
     ) {
-        FireBaseInstance.createGroup(
+        createGroupUseCase(
             name = displayName,
-            creatorId = shared.getAuth(),
+            creatorId = sessionRepository.getAuth(),
             creatorAvatar = "",
             welcomeMessage = welcomeMessage,
             welcomeInboxPerson = welcomeInboxPerson,
-            otherMemberIds = otherMemberIds,
-            success = { _, inbox -> onSuccess(inbox) },
-            failure = onFailure,
+            memberIds = otherMemberIds,
+            onSuccess = { _, inbox -> onSuccess(ChatUiMapper.toUi(inbox)) },
+            onFailure = onFailure,
         )
     }
 }

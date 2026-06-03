@@ -12,11 +12,11 @@ import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.GroupAvatarLoader
-import com.google.firebase.firestore.ListenerRegistration
 
-class ListChatAdapter(private val userId: String) :
+class ListChatAdapter(
+    private val groupAvatarLoader: GroupAvatarLoader,
+) :
     BaseAdapter<Conversation, ItemListChatBinding>() {
 
     private val binderHelper = ViewBinderHelper()
@@ -24,6 +24,8 @@ class ListChatAdapter(private val userId: String) :
     var showOptionConversation: (() -> Unit)? = null
     var indexOpenSwipe: Int? = null
     private var presenceMap: Map<String, UserPresence> = emptyMap()
+    private var typingMap: Map<String, Boolean> = emptyMap()
+    private var avatarMap: Map<String, String> = emptyMap()
 
     override fun getLayout(): Int = R.layout.item_list_chat
 
@@ -35,8 +37,7 @@ class ListChatAdapter(private val userId: String) :
     }
 
     override fun onViewRecycled(holder: BaseViewHolder<ItemListChatBinding>) {
-        holder.clearGroupTypingListener()
-        GroupAvatarLoader.cancel(holder.v.groupAvatar.tag as? String)
+        groupAvatarLoader.cancel(holder.v.groupAvatar.tag as? String)
         holder.v.groupAvatar.reset()
         super.onViewRecycled(holder)
     }
@@ -57,26 +58,27 @@ class ListChatAdapter(private val userId: String) :
         notifyDataSetChanged()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateTypingMap(map: Map<String, Boolean>) {
+        if (typingMap == map) return
+        typingMap = map
+        notifyDataSetChanged()
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateAvatarMap(map: Map<String, String>) {
+        if (avatarMap == map) return
+        avatarMap = map
+        notifyDataSetChanged()
+    }
+
     @SuppressLint("SetTextI18n", "NotifyDataSetChanged")
     private fun BaseViewHolder<ItemListChatBinding>.initView(position: Int) {
         val conversation = items[position]
         v.tvNameFriend.text = conversation.name
-        clearGroupTypingListener()
-        if (conversation.isGroupThread()) {
-            val registration = FireBaseInstance.observeGroupTyping(
-                groupId = conversation.friendId,
-                myUserId = userId,
-            ) { isTyping ->
-                v.typingView.isVisible = isTyping
-                v.tvMessage.isVisible = !isTyping
-            }
-            itemView.setTag(R.id.tag_group_typing_listener, registration)
-        } else {
-            FireBaseInstance.getConversationRlt(conversation.friendId, userId) { cvt ->
-                v.typingView.isVisible = cvt.typing
-                v.tvMessage.isVisible = !cvt.typing
-            }
-        }
+        val isTyping = typingMap[conversation.friendId] == true
+        v.typingView.isVisible = isTyping
+        v.tvMessage.isVisible = !isTyping
         v.tvMessage.text = "${conversation.person}: ${conversation.message}"
         v.tvTime.text = DateUtils.formatTime(conversation.time)
         bindOnlineIndicator(conversation)
@@ -121,7 +123,7 @@ class ListChatAdapter(private val userId: String) :
                 v.groupAvatar.showSinglePhoto(conversation.friendImage)
             } else {
                 v.groupAvatar.showPlaceholder()
-                GroupAvatarLoader.load(
+                groupAvatarLoader.load(
                     groupId = friendId,
                     onReady = { data ->
                         if (v.groupAvatar.tag != friendId) return@load
@@ -141,17 +143,11 @@ class ListChatAdapter(private val userId: String) :
         v.avatarFriend.isVisible = true
         v.avatarFriend.tag = friendId
 
-        FireBaseInstance.getInfoUser(friendId) { user ->
-            if (v.avatarFriend.tag != friendId) return@getInfoUser
-            val avatarUrl = user.avatar.orEmpty()
+        val avatarUrl = avatarMap[friendId].orEmpty().ifBlank { conversation.friendImage }
+        if (avatarUrl.isNotBlank()) {
             itemView.context.loadImg(avatarUrl, v.avatarFriend)
             itemView.context.loadImg(avatarUrl, v.avtSeen)
         }
-    }
-
-    private fun BaseViewHolder<ItemListChatBinding>.clearGroupTypingListener() {
-        (itemView.getTag(R.id.tag_group_typing_listener) as? ListenerRegistration)?.remove()
-        itemView.setTag(R.id.tag_group_typing_listener, null)
     }
 
     private fun BaseViewHolder<ItemListChatBinding>.bindOnlineIndicator(conversation: Conversation) {

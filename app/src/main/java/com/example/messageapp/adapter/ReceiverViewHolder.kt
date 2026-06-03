@@ -14,7 +14,6 @@ import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.MessageReplyHelper
 
@@ -26,7 +25,11 @@ class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHold
     }
 
     // This function used to show avatar receiver
-    fun showAvatarReceiver(context: Context, friendId: String) {
+    fun showAvatarReceiver(
+        context: Context,
+        friendId: String,
+        loadUserAvatar: (String, (String) -> Unit) -> Unit,
+    ) {
         avatarUrlCache[friendId]?.let { cachedUrl ->
             context.loadImg(
                 cachedUrl,
@@ -35,8 +38,7 @@ class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHold
             return
         }
 
-        FireBaseInstance.getInfoUser(friendId) { user ->
-            val avatarUrl = user.avatar.toString()
+        loadUserAvatar(friendId) { avatarUrl ->
             avatarUrlCache[friendId] = avatarUrl
             context.loadImg(
                 avatarUrl,
