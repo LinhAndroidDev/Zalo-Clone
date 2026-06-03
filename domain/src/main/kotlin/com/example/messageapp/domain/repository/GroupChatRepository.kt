@@ -28,4 +28,24 @@ interface GroupChatRepository {
     fun observeGroupTyping(groupId: String, myUserId: String): Flow<Boolean>
     fun markGroupMessageRead(userId: String, groupId: String, lastReadTime: String)
     fun loadGroupMembers(groupId: String, onSuccess: (List<User>) -> Unit, onFailure: (String) -> Unit = {})
+    fun addGroupMembers(
+        groupId: String,
+        newMemberIds: List<String>,
+        inviterId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit = {},
+    )
+    fun removeGroupMember(
+        groupId: String,
+        memberId: String,
+        actorId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit = {},
+    )
+    fun leaveGroup(
+        groupId: String,
+        userId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit = {},
+    )
 }

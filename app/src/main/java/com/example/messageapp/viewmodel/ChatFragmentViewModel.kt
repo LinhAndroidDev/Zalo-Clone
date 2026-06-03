@@ -6,10 +6,14 @@ import android.widget.Toast
 import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.data.legacy.DateUtils
+import com.example.messageapp.domain.repository.FriendRepository
 import com.example.messageapp.domain.repository.SessionRepository
 import com.example.messageapp.domain.repository.UserRepository
 import com.example.messageapp.domain.usecase.inbox.GetConversationUseCase
+import com.example.messageapp.domain.usecase.chat.AddGroupMembersUseCase
+import com.example.messageapp.domain.usecase.chat.LeaveGroupUseCase
 import com.example.messageapp.domain.usecase.chat.LoadGroupMembersUseCase
+import com.example.messageapp.domain.usecase.chat.RemoveGroupMemberUseCase
 import com.example.messageapp.domain.usecase.chat.MarkMessageReadUseCase
 import com.example.messageapp.domain.usecase.chat.ObserveGroupReadStatusUseCase
 import com.example.messageapp.domain.usecase.chat.ObserveMessagesUseCase
@@ -23,11 +27,14 @@ import com.example.messageapp.domain.usecase.chat.UploadChatMediaUseCase
 import com.example.messageapp.mapper.ChatUiMapper
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.EmotionType
+import com.example.messageapp.model.Friend
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.User
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.UserPresence
 import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isVideoUri
+import com.example.messageapp.utils.GroupAvatarLoader
 import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.getImageDimensions
 import com.example.messageapp.utils.getVideoDimensions
@@ -61,7 +68,16 @@ class ChatFragmentViewModel @Inject constructor(
     private val loadGroupMembersUseCase: LoadGroupMembersUseCase,
     private val uploadChatMediaUseCase: UploadChatMediaUseCase,
     private val userRepository: UserRepository,
+    private val friendRepository: FriendRepository,
+    private val addGroupMembersUseCase: AddGroupMembersUseCase,
+    private val removeGroupMemberUseCase: RemoveGroupMemberUseCase,
+    private val leaveGroupUseCase: LeaveGroupUseCase,
+    private val groupAvatarLoader: GroupAvatarLoader,
 ) : BaseViewModel() {
+
+    private fun refreshGroupAvatarCache(groupId: String) {
+        groupAvatarLoader.invalidate(groupId)
+    }
 
     /** Session access for fragments/adapters during migration from SharePreferenceRepository. */
     val shared: SessionRepository
@@ -97,6 +113,12 @@ class ChatFragmentViewModel @Inject constructor(
 
     private val _peerConversation = MutableStateFlow<Conversation?>(null)
     val peerConversation = _peerConversation.asStateFlow()
+
+    private val _friendsToAdd = MutableStateFlow<List<Friend>>(emptyList())
+    val friendsToAdd = _friendsToAdd.asStateFlow()
+
+    private val _groupMembersForManage = MutableStateFlow<List<User>>(emptyList())
+    val groupMembersForManage = _groupMembersForManage.asStateFlow()
 
     fun sendMessage(message: Message, time: String, conversation: Conversation, sendFirst: Boolean) {
         sendMessageUseCase(ChatUiMapper.toDomain(message), time, ChatUiMapper.toDomain(conversation), sendFirst)
@@ -383,6 +405,78 @@ class ChatFragmentViewModel @Inject constructor(
 
     fun loadUserAvatar(userId: String, onResult: (String) -> Unit) {
         userRepository.getInfoUser(userId, onSuccess = { onResult(it.avatar) })
+    }
+
+    fun prepareAddMembersSheet(groupId: String) {
+        friendRepository.getFriends(
+            userId = sessionRepository.getAuth(),
+            onSuccess = { friends ->
+                loadGroupMembersUseCase(
+                    groupId = groupId,
+                    onSuccess = { members ->
+                        val memberIds = members.map { it.keyAuth }.toSet()
+                        _friendsToAdd.value = friends
+                            .map { ChatUiMapper.toUi(it) }
+                            .filter { it.keyAuth.isNotBlank() && it.keyAuth !in memberIds }
+                    },
+                    onFailure = {
+                        _friendsToAdd.value = friends.map { ChatUiMapper.toUi(it) }
+                    },
+                )
+            },
+            onFailure = { showError(it) },
+        )
+    }
+
+    fun refreshGroupMembersForManage(groupId: String) {
+        loadGroupMembersUseCase(
+            groupId = groupId,
+            onSuccess = { users ->
+                _groupMembersForManage.value = users.map { ChatUiMapper.toUi(it) }
+                loadGroupMentionMembers(groupId)
+            },
+            onFailure = { showError(it) },
+        )
+    }
+
+    fun addGroupMembers(groupId: String, memberIds: List<String>, onSuccess: () -> Unit) {
+        addGroupMembersUseCase(
+            groupId = groupId,
+            newMemberIds = memberIds,
+            onSuccess = {
+                refreshGroupAvatarCache(groupId)
+                showMessage("Đã thêm thành viên vào nhóm")
+                refreshGroupMembersForManage(groupId)
+                onSuccess()
+            },
+            onFailure = { showError(it) },
+        )
+    }
+
+    fun removeGroupMember(groupId: String, memberId: String, onSuccess: () -> Unit) {
+        removeGroupMemberUseCase(
+            groupId = groupId,
+            memberId = memberId,
+            onSuccess = {
+                refreshGroupAvatarCache(groupId)
+                showMessage("Đã xóa thành viên khỏi nhóm")
+                refreshGroupMembersForManage(groupId)
+                onSuccess()
+            },
+            onFailure = { showError(it) },
+        )
+    }
+
+    fun leaveGroup(groupId: String, onSuccess: () -> Unit) {
+        leaveGroupUseCase(
+            groupId = groupId,
+            onSuccess = {
+                refreshGroupAvatarCache(groupId)
+                showMessage("Đã rời nhóm")
+                onSuccess()
+            },
+            onFailure = { showError(it) },
+        )
     }
 
     override fun onCleared() {

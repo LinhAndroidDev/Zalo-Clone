@@ -63,6 +63,12 @@ class GroupAvatarLoader @Inject constructor(
         // Recycled rows rely on avatarFriend.tag checks; in-flight work may still fill cache.
     }
 
+    /** Call after group membership changes so composite avatar refetches current members. */
+    fun invalidate(groupId: String) {
+        if (groupId.isBlank()) return
+        cache.remove(groupId)
+    }
+
     private fun dispatch(groupId: String, result: Result<GroupAvatarData>) {
         val callbacks = synchronized(inFlight) {
             inFlight.remove(groupId).orEmpty()

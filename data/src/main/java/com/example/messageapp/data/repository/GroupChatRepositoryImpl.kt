@@ -105,4 +105,51 @@ class GroupChatRepositoryImpl @Inject constructor() : GroupChatRepository {
             failure = onFailure,
         )
     }
+
+    override fun addGroupMembers(
+        groupId: String,
+        newMemberIds: List<String>,
+        inviterId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.addGroupMembers(
+            groupId = groupId,
+            inviterId = inviterId,
+            newMemberIds = newMemberIds,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
+
+    override fun removeGroupMember(
+        groupId: String,
+        memberId: String,
+        actorId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.removeGroupMember(
+            groupId = groupId,
+            memberId = memberId,
+            actorId = actorId,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
+
+    override fun leaveGroup(
+        groupId: String,
+        userId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.leaveGroup(
+            groupId = groupId,
+            userId = userId,
+            actorId = userId,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
 }

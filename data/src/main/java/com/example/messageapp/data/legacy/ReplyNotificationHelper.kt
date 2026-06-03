@@ -40,7 +40,7 @@ object ReplyNotificationHelper {
     private fun buildPreviewText(message: Message): String {
         val type = resolveMessageType(message)
         val base = when (type) {
-            TypeMessage.MESSAGE -> message.message
+            TypeMessage.MESSAGE, TypeMessage.SYSTEM -> message.message
             TypeMessage.PHOTOS -> "${message.photos.size} ảnh"
             TypeMessage.SINGLE_PHOTO -> "Ảnh"
             TypeMessage.AUDIO -> "Tin thoại"
@@ -48,8 +48,7 @@ object ReplyNotificationHelper {
         return truncate(base)
     }
 
-    private fun resolveMessageType(message: Message): TypeMessage =
-        TypeMessage.entries.getOrElse(message.type) { TypeMessage.MESSAGE }
+    private fun resolveMessageType(message: Message): TypeMessage = TypeMessage.of(message.type)
 
     private fun firstPhotoUrl(message: Message): String? =
         message.singlePhoto.firstOrNull()?.takeIf { it.isNotBlank() }

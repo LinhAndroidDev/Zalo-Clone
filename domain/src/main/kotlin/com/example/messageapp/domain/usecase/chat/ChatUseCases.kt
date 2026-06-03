@@ -139,6 +139,64 @@ class LoadGroupMembersUseCase @Inject constructor(
     }
 }
 
+class AddGroupMembersUseCase @Inject constructor(
+    private val groupChatRepository: com.example.messageapp.domain.repository.GroupChatRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(
+        groupId: String,
+        newMemberIds: List<String>,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit = {},
+    ) {
+        groupChatRepository.addGroupMembers(
+            groupId = groupId,
+            newMemberIds = newMemberIds,
+            inviterId = sessionRepository.getAuth(),
+            onSuccess = onSuccess,
+            onFailure = onFailure,
+        )
+    }
+}
+
+class RemoveGroupMemberUseCase @Inject constructor(
+    private val groupChatRepository: com.example.messageapp.domain.repository.GroupChatRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(
+        groupId: String,
+        memberId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit = {},
+    ) {
+        groupChatRepository.removeGroupMember(
+            groupId = groupId,
+            memberId = memberId,
+            actorId = sessionRepository.getAuth(),
+            onSuccess = onSuccess,
+            onFailure = onFailure,
+        )
+    }
+}
+
+class LeaveGroupUseCase @Inject constructor(
+    private val groupChatRepository: com.example.messageapp.domain.repository.GroupChatRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(
+        groupId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit = {},
+    ) {
+        groupChatRepository.leaveGroup(
+            groupId = groupId,
+            userId = sessionRepository.getAuth(),
+            onSuccess = onSuccess,
+            onFailure = onFailure,
+        )
+    }
+}
+
 class UploadChatMediaUseCase @Inject constructor(
     private val mediaUploadRepository: com.example.messageapp.domain.repository.MediaUploadRepository,
 ) {

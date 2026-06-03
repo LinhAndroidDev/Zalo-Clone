@@ -17,6 +17,7 @@ import android.view.ViewGroup.MarginLayoutParams
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.ActionBar.LayoutParams
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
@@ -35,12 +36,14 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.isLikelyVideoUrl
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.MessageReplyHelper
+import com.example.messageapp.utils.GroupSystemMessageStyle
 import com.example.messageapp.utils.MentionHelper
 import kotlin.math.ceil
 import androidx.core.graphics.drawable.toDrawable
 
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
+const val VIEW_SYSTEM = 2
 
 data class ClickPhotoModel(
     val message: Message,
@@ -188,6 +191,13 @@ class ChatAdapter(
                 )
             }
 
+            VIEW_SYSTEM -> {
+                SystemViewHolder(
+                    LayoutInflater.from(parent.context)
+                        .inflate(R.layout.item_chat_system, parent, false),
+                )
+            }
+
             else -> {
                 ReceiverViewHolder(
                     DataBindingUtil.inflate(
@@ -199,6 +209,10 @@ class ChatAdapter(
                 )
             }
         }
+    }
+
+    class SystemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val tvSystem: TextView = itemView.findViewById(R.id.tvSystem)
     }
 
     /**
@@ -219,6 +233,7 @@ class ChatAdapter(
         val cardExtraPx = (13 * density).toInt()
         return when (MessageReplyHelper.resolveMessageType(message)) {
             TypeMessage.MESSAGE -> defaultScrollItemHeightPx()
+            TypeMessage.SYSTEM -> (40 * density).toInt()
             TypeMessage.AUDIO -> (58 * density).toInt() + cardExtraPx
             TypeMessage.SINGLE_PHOTO -> estimateSinglePhotoScrollHeightPx(message) + cardExtraPx
             TypeMessage.PHOTOS -> estimateMultiPhotoScrollHeightPx(message) + cardExtraPx
@@ -294,6 +309,12 @@ class ChatAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val message = messages[position]
         when (holder.itemViewType) {
+            VIEW_SYSTEM -> {
+                holder as SystemViewHolder
+                holder.tvSystem.text = GroupSystemMessageStyle.styledText(context, message.message)
+                applyItemTopMargin(holder, position)
+            }
+
             VIEW_SENDER -> {
                 holder as SenderViewHolder
                 holder.checkShowEmotion(message)
@@ -329,6 +350,8 @@ class ChatAdapter(
                             mCallBack?.onOptionMenuClick(message)
                         }
                     }
+
+                    TypeMessage.SYSTEM -> Unit
                 }
                 checkShowSeenMessage(holder, position)
                 holder.v.optionMenuPhoto.setOnClickListener {
@@ -377,6 +400,8 @@ class ChatAdapter(
                             mCallBack?.onOptionMenuClick(message)
                         }
                     }
+
+                    TypeMessage.SYSTEM -> Unit
                 }
                 holder.v.optionMenuPhoto.setOnClickListener {
                     mCallBack?.onOptionMenuClick(message)
@@ -458,6 +483,7 @@ class ChatAdapter(
                     bubbleDrawableRes = R.drawable.bg_sender,
                     normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
                 )
+                TypeMessage.SYSTEM -> ReplyHighlightState(bubbleView = null)
             }
             is ReceiverViewHolder -> when (MessageReplyHelper.resolveMessageType(message)) {
                 TypeMessage.MESSAGE -> ReplyHighlightState(
@@ -475,6 +501,7 @@ class ChatAdapter(
                     bubbleDrawableRes = R.drawable.bg_receiver,
                     normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
                 )
+                TypeMessage.SYSTEM -> ReplyHighlightState(bubbleView = null)
             }
             else -> ReplyHighlightState(bubbleView = null)
         }
@@ -576,11 +603,15 @@ class ChatAdapter(
     private fun messageTimeMillis(msg: Message): Long? =
         DateUtils.parseChatMessageTimeMillis(msg.time)
 
+    private fun isSystemMessage(message: Message): Boolean =
+        TypeMessage.of(message.type) == TypeMessage.SYSTEM
+
     /** Tin liền trước cùng người gửi và trong [MESSAGE_GROUP_GAP_MS]. */
     private fun isGroupedWithPrevious(position: Int): Boolean {
         if (position <= 0) return false
         val prev = messages[position - 1]
         val curr = messages[position]
+        if (isSystemMessage(prev) || isSystemMessage(curr)) return false
         if (prev.sender != curr.sender) return false
         val tPrev = messageTimeMillis(prev) ?: return false
         val tCurr = messageTimeMillis(curr) ?: return false
@@ -593,6 +624,7 @@ class ChatAdapter(
         if (position >= messages.lastIndex) return false
         val curr = messages[position]
         val next = messages[position + 1]
+        if (isSystemMessage(curr) || isSystemMessage(next)) return false
         if (curr.sender != next.sender) return false
         val tCurr = messageTimeMillis(curr) ?: return false
         val tNext = messageTimeMillis(next) ?: return false
@@ -868,6 +900,7 @@ class ChatAdapter(
      */
     override fun getItemViewType(position: Int): Int {
         val msg = messages[position]
+        if (isSystemMessage(msg)) return VIEW_SYSTEM
         return if (!isGroup) {
             if (msg.sender != friendId) VIEW_SENDER else VIEW_RECEIVER
         } else {

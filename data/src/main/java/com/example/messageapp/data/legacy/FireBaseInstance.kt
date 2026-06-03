@@ -264,6 +264,264 @@ object FireBaseInstance {
             .addOnFailureListener { failure.invoke(it.message.toString()) }
     }
 
+    fun addGroupMembers(
+        groupId: String,
+        inviterId: String,
+        newMemberIds: List<String>,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        val toAdd = newMemberIds.filter { it.isNotBlank() }.distinct()
+        if (toAdd.isEmpty()) {
+            failure.invoke("Chọn ít nhất một thành viên")
+            return
+        }
+        getGroup(
+            groupId = groupId,
+            success = { group ->
+                val existing = group.memberIds.distinct().filter { it.isNotBlank() }
+                val newcomers = toAdd.filter { it !in existing }
+                if (newcomers.isEmpty()) {
+                    failure.invoke("Các thành viên đã có trong nhóm")
+                    return@getGroup
+                }
+                val merged = (existing + newcomers).distinct()
+                val inboxRow = Conversation(
+                    friendId = groupId,
+                    friendImage = "",
+                    message = "",
+                    name = group.name,
+                    person = "",
+                    sender = inviterId,
+                    time = "",
+                    seen = "0",
+                    numberUnSeen = 0,
+                    typing = false,
+                    isGroup = true,
+                )
+                val batch = db.batch()
+                batch.update(
+                    db.collection(PATH_GROUPS).document(groupId),
+                    mapOf("memberIds" to merged, "photoUrl" to ""),
+                )
+                newcomers.forEach { memberId ->
+                    batch.set(db.collection("Conversation$memberId").document(groupId), inboxRow)
+                }
+                batch.commit()
+                    .addOnSuccessListener {
+                        resetGroupInboxAvatars(groupId, merged)
+                        fetchDisplayNames(listOf(inviterId) + newcomers) { names ->
+                            val actorName = displayNameFor(inviterId, names)
+                            val targetNames = newcomers.map { displayNameFor(it, names) }
+                            val text = buildGroupEventAddedText(actorName, targetNames)
+                            postGroupSystemMessage(
+                                groupId = groupId,
+                                text = text,
+                                memberIdsForInbox = merged,
+                                actorId = inviterId,
+                                groupName = group.name,
+                            )
+                            success.invoke()
+                        }
+                    }
+                    .addOnFailureListener { e -> failure.invoke(e.message ?: "Lỗi thêm thành viên") }
+            },
+            failure = failure,
+        )
+    }
+
+    fun removeGroupMember(
+        groupId: String,
+        memberId: String,
+        actorId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        if (groupId.isBlank() || memberId.isBlank()) {
+            failure.invoke("Dữ liệu không hợp lệ")
+            return
+        }
+        getGroup(
+            groupId = groupId,
+            success = { group ->
+                val current = group.memberIds.distinct().filter { it.isNotBlank() }
+                if (memberId !in current) {
+                    failure.invoke("Thành viên không có trong nhóm")
+                    return@getGroup
+                }
+                val updated = current.filter { it != memberId }
+                if (updated.size < 2) {
+                    failure.invoke("Nhóm cần ít nhất 2 thành viên")
+                    return@getGroup
+                }
+                val batch = db.batch()
+                batch.update(
+                    db.collection(PATH_GROUPS).document(groupId),
+                    mapOf("memberIds" to updated, "photoUrl" to ""),
+                )
+                batch.delete(db.collection("Conversation$memberId").document(groupId))
+                batch.commit()
+                    .addOnSuccessListener {
+                        resetGroupInboxAvatars(groupId, updated)
+                        val idsToResolve = if (actorId == memberId) {
+                            listOf(memberId)
+                        } else {
+                            listOf(actorId, memberId)
+                        }
+                        fetchDisplayNames(idsToResolve) { names ->
+                            val text = if (actorId == memberId) {
+                                buildGroupEventLeftText(displayNameFor(memberId, names))
+                            } else {
+                                buildGroupEventRemovedText(
+                                    displayNameFor(actorId, names),
+                                    displayNameFor(memberId, names),
+                                )
+                            }
+                            postGroupSystemMessage(
+                                groupId = groupId,
+                                text = text,
+                                memberIdsForInbox = updated,
+                                actorId = actorId,
+                                groupName = group.name,
+                            )
+                            success.invoke()
+                        }
+                    }
+                    .addOnFailureListener { e -> failure.invoke(e.message ?: "Lỗi xóa thành viên") }
+            },
+            failure = failure,
+        )
+    }
+
+    fun leaveGroup(
+        groupId: String,
+        userId: String,
+        actorId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        removeGroupMember(
+            groupId = groupId,
+            memberId = userId,
+            actorId = actorId,
+            success = success,
+            failure = failure,
+        )
+    }
+
+    private const val GROUP_INBOX_PERSON_SYSTEM = "Thông báo"
+
+    private fun formatDisplayNameList(names: List<String>): String {
+        val cleaned = names.map { it.trim() }.filter { it.isNotBlank() }
+        return when (cleaned.size) {
+            0 -> ""
+            1 -> cleaned[0]
+            2 -> "${cleaned[0]} và ${cleaned[1]}"
+            else -> cleaned.dropLast(1).joinToString(", ") + " và ${cleaned.last()}"
+        }
+    }
+
+    private fun displayNameFor(userId: String, names: Map<String, String>): String =
+        names[userId]?.takeIf { it.isNotBlank() } ?: userId
+
+    private fun fetchDisplayNames(
+        userIds: List<String>,
+        onComplete: (Map<String, String>) -> Unit,
+    ) {
+        val ids = userIds.distinct().filter { it.isNotBlank() }
+        if (ids.isEmpty()) {
+            onComplete(emptyMap())
+            return
+        }
+        val result = hashMapOf<String, String>()
+        var remaining = ids.size
+        ids.forEach { id ->
+            getUserById(
+                userId = id,
+                success = { user ->
+                    result[id] = user.name.orEmpty().ifBlank { id }
+                    remaining -= 1
+                    if (remaining == 0) onComplete(result)
+                },
+                failure = {
+                    result[id] = id
+                    remaining -= 1
+                    if (remaining == 0) onComplete(result)
+                },
+            )
+        }
+    }
+
+    private fun buildGroupEventAddedText(actorName: String, targetNames: List<String>): String =
+        "$actorName đã thêm ${formatDisplayNameList(targetNames)} vào nhóm"
+
+    private fun buildGroupEventRemovedText(actorName: String, targetName: String): String =
+        "$actorName đã xóa $targetName khỏi nhóm"
+
+    private fun buildGroupEventLeftText(memberName: String): String =
+        "$memberName đã rời nhóm"
+
+    /**
+     * Clears static group photo on inbox rows so the client reloads composite member avatars.
+     */
+    private fun resetGroupInboxAvatars(groupId: String, memberIds: List<String>) {
+        val ids = memberIds.distinct().filter { it.isNotBlank() }
+        if (groupId.isBlank() || ids.isEmpty()) return
+        val batch = db.batch()
+        ids.forEach { mid ->
+            batch.update(
+                db.collection("Conversation$mid").document(groupId),
+                mapOf("friendImage" to ""),
+            )
+        }
+        batch.commit().addOnFailureListener {
+            Log.e("resetGroupInboxAvatars", it.message.orEmpty())
+        }
+    }
+
+    private fun postGroupSystemMessage(
+        groupId: String,
+        text: String,
+        memberIdsForInbox: List<String>,
+        actorId: String,
+        groupName: String,
+    ) {
+        if (groupId.isBlank() || text.isBlank()) return
+        val time = DateUtils.getTimeCurrent()
+        val chatMessage = Message(
+            message = text,
+            receiver = groupId,
+            sender = "",
+            time = time,
+            type = TypeMessage.SYSTEM.rawValue,
+        )
+        val batch = db.batch()
+        batch.set(
+            db.collection(PATH_MESSAGE).document(groupId).collection(PATH_CHAT).document(time),
+            chatMessage,
+        )
+        memberIdsForInbox.distinct().filter { it.isNotBlank() }.forEach { mid ->
+            val isActor = mid == actorId
+            val conv = Conversation(
+                friendId = groupId,
+                friendImage = "",
+                message = text,
+                name = groupName,
+                person = GROUP_INBOX_PERSON_SYSTEM,
+                sender = "",
+                time = time,
+                seen = if (isActor) "1" else "0",
+                numberUnSeen = if (isActor) 0 else 1,
+                typing = false,
+                isGroup = true,
+            )
+            batch.set(db.collection("Conversation$mid").document(groupId), conv, SetOptions.merge())
+        }
+        batch.commit().addOnFailureListener {
+            Log.e("postGroupSystemMessage", it.message.orEmpty())
+        }
+    }
+
     /**
      * Marks the current user's group inbox row as read.
      */
@@ -540,7 +798,7 @@ object FireBaseInstance {
         message: Message,
         nameSender: String,
     ): String = when (type) {
-        TypeMessage.MESSAGE -> message.message
+        TypeMessage.MESSAGE, TypeMessage.SYSTEM -> message.message
         TypeMessage.PHOTOS -> "$nameSender đã gửi ảnh cho bạn"
         TypeMessage.SINGLE_PHOTO -> "$nameSender đã gửi 1 ảnh cho bạn"
         TypeMessage.AUDIO -> "$nameSender đã gửi 1 file ghi âm cho bạn"
@@ -551,7 +809,7 @@ object FireBaseInstance {
         message: Message,
         conversationName: String,
     ): String = when (type) {
-        TypeMessage.MESSAGE -> message.message
+        TypeMessage.MESSAGE, TypeMessage.SYSTEM -> message.message
         TypeMessage.PHOTOS -> "Bạn đã gửi ảnh cho $conversationName"
         TypeMessage.SINGLE_PHOTO -> "Bạn đã gửi 1 ảnh cho $conversationName"
         TypeMessage.AUDIO -> "Bạn đã gửi 1 file ghi âm cho $conversationName"
@@ -562,7 +820,7 @@ object FireBaseInstance {
         message: Message,
         nameSender: String,
     ): String = when (type) {
-        TypeMessage.MESSAGE -> message.message
+        TypeMessage.MESSAGE, TypeMessage.SYSTEM -> message.message
         TypeMessage.PHOTOS -> "$nameSender đã gửi ảnh cho bạn"
         TypeMessage.SINGLE_PHOTO -> "$nameSender đã gửi 1 ảnh cho bạn"
         TypeMessage.AUDIO -> "$nameSender đã gửi 1 file ghi âm cho bạn"

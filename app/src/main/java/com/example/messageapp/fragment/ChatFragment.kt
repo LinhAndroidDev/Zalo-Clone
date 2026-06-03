@@ -25,9 +25,11 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.navigation.fragment.findNavController
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -46,8 +48,10 @@ import com.example.messageapp.adapter.ReceiverViewHolder
 import com.example.messageapp.adapter.SenderViewHolder
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
+import com.example.messageapp.bottom_sheet.BottomSheetAddGroupMembers
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.bottom_sheet.BottomSheetRecord
+import com.example.messageapp.bottom_sheet.BottomSheetRemoveGroupMembers
 import com.example.messageapp.bottom_sheet.BottomSheetSticker
 import com.example.messageapp.databinding.FragmentChatBinding
 import com.example.messageapp.helper.screenHeight
@@ -234,9 +238,13 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             binding?.header?.setTitleChatView(cvt.name)
             if (cvt.isGroupThread()) {
                 binding?.header?.setFriendStatusVisible(false)
+                binding?.header?.setChatMenuVisible(true)
+                binding?.header?.onChatMenuClick = { showGroupMenuPopup() }
                 setupMentionPicker()
             } else {
                 binding?.header?.setFriendStatusVisible(true)
+                binding?.header?.setChatMenuVisible(false)
+                binding?.header?.onChatMenuClick = null
                 viewModel?.startObservingFriendPresence(cvt.friendId)
             }
             binding?.header?.showInfoFriend = if (cvt.isGroupThread()) {
@@ -280,6 +288,62 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         binding?.btnCancelReply?.setOnClickListener { clearReply() }
+    }
+
+    @SuppressLint("InflateParams")
+    private fun showGroupMenuPopup() {
+        val groupId = conversation?.friendId.orEmpty()
+        if (groupId.isBlank() || conversation?.isGroupThread() != true) return
+
+        val anchor = binding?.header?.getChatMenuAnchor() ?: return
+        val inflater = requireActivity().getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        val popupView = inflater.inflate(R.layout.popup_group_menu, null)
+
+        val popupWindow = PopupWindow(
+            popupView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true,
+        ).apply {
+            setBackgroundDrawable(
+                ContextCompat.getDrawable(requireActivity(), android.R.color.transparent),
+            )
+        }
+
+        binding?.viewCoverPopupOptions?.isVisible = true
+        popupWindow.setOnDismissListener {
+            binding?.viewCoverPopupOptions?.isVisible = false
+        }
+
+        popupView.findViewById<View>(R.id.btnAddMembers).setOnClickListener {
+            popupWindow.dismiss()
+            BottomSheetAddGroupMembers.newInstance(groupId)
+                .show(childFragmentManager, BottomSheetAddGroupMembers.TAG)
+        }
+        popupView.findViewById<View>(R.id.btnRemoveMembers).setOnClickListener {
+            popupWindow.dismiss()
+            BottomSheetRemoveGroupMembers.newInstance(groupId)
+                .show(childFragmentManager, BottomSheetRemoveGroupMembers.TAG)
+        }
+        popupView.findViewById<View>(R.id.btnLeaveGroup).setOnClickListener {
+            popupWindow.dismiss()
+            showLeaveGroupConfirmDialog(groupId)
+        }
+
+        popupWindow.showAsDropDown(anchor, 0, 0)
+    }
+
+    private fun showLeaveGroupConfirmDialog(groupId: String) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.group_leave_confirm_title)
+            .setMessage(R.string.group_leave_confirm_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.group_leave_confirm_ok) { _, _ ->
+                viewModel?.leaveGroup(groupId) {
+                    findNavController().popBackStack()
+                }
+            }
+            .show()
     }
 
     /**

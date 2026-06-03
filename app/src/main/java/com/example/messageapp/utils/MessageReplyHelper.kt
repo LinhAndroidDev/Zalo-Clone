@@ -105,7 +105,7 @@ object MessageReplyHelper {
 
     fun buildPreviewText(context: Context, message: Message): String {
         return when (resolveMessageType(message)) {
-            TypeMessage.MESSAGE -> truncate(message.message)
+            TypeMessage.MESSAGE, TypeMessage.SYSTEM -> truncate(message.message)
             TypeMessage.SINGLE_PHOTO -> {
                 val url = message.singlePhoto.firstOrNull().orEmpty()
                 if (isLikelyVideoUrl(url)) {

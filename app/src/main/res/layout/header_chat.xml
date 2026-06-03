@@ -49,6 +49,7 @@
     </LinearLayout>
 
     <ImageView
+        android:id="@+id/btnChatContact"
         android:layout_width="20dp"
         android:layout_height="20dp"
         android:importantForAccessibility="no"
@@ -56,17 +57,22 @@
         app:tint="@color/white" />
 
     <ImageView
+        android:id="@+id/btnChatVideoCall"
         android:layout_width="25dp"
         android:layout_height="25dp"
         android:layout_marginStart="20dp"
-        android:importantForAccessibility="no" android:src="@drawable/ic_call_video"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_call_video"
         app:tint="@color/white" />
 
     <ImageView
+        android:id="@+id/btnChatMenu"
         android:layout_width="25dp"
         android:layout_height="25dp"
         android:layout_marginHorizontal="20dp"
+        android:contentDescription="@string/cd_group_menu"
         android:importantForAccessibility="no"
         android:src="@drawable/ic_menu"
+        android:visibility="gone"
         app:tint="@color/white" />
 </LinearLayout>

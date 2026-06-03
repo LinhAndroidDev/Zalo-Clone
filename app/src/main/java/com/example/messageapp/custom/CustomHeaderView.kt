@@ -3,6 +3,7 @@ package com.example.messageapp.custom
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.view.isVisible
@@ -26,6 +27,7 @@ class CustomHeaderView @JvmOverloads constructor(
     var showMenuOther: (() -> Unit)? = null
     var showInfoFriend: (() -> Unit)? = null
     var addFriend: (() -> Unit)? = null
+    var onChatMenuClick: (() -> Unit)? = null
 
     interface OnTypeSearchListener {
         fun callBackKeySearch(keySearch: String)
@@ -148,6 +150,10 @@ class CustomHeaderView @JvmOverloads constructor(
         binding?.addFriend?.setOnClickListener {
             addFriend?.invoke()
         }
+
+        binding?.viewChat?.btnChatMenu?.setOnClickListener {
+            onChatMenuClick?.invoke()
+        }
     }
 
     private fun hideAllViews() {
@@ -175,4 +181,10 @@ class CustomHeaderView @JvmOverloads constructor(
     fun setFriendStatusVisible(visible: Boolean) {
         binding?.viewChat?.tvFriendStatus?.isVisible = visible
     }
+
+    fun setChatMenuVisible(visible: Boolean) {
+        binding?.viewChat?.btnChatMenu?.isVisible = visible
+    }
+
+    fun getChatMenuAnchor(): View? = binding?.viewChat?.btnChatMenu
 }
