@@ -5,7 +5,6 @@ import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemSearchHistoryBinding
 import com.example.messageapp.model.User
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 
 class SearchHistoryAdapter : BaseAdapter<User, ItemSearchHistoryBinding>() {
 
@@ -15,13 +14,11 @@ class SearchHistoryAdapter : BaseAdapter<User, ItemSearchHistoryBinding>() {
 
     override fun onBindViewHolder(holder: BaseViewHolder<ItemSearchHistoryBinding>, position: Int) {
         val user = items[position]
-        FireBaseInstance.getInfoUser(user.keyAuth.toString()) { u ->
-            holder.v.root.context.loadImg(
-                u.avatar.toString(),
-                holder.v.avtHistory,
-                R.drawable.bg_grey_equal
-            )
-        }
+        holder.v.root.context.loadImg(
+            user.avatar.orEmpty(),
+            holder.v.avtHistory,
+            R.drawable.bg_grey_equal
+        )
         holder.v.tvNameHistory.text = user.name
         holder.v.root.setOnClickListener { onItemClick?.invoke(user) }
     }

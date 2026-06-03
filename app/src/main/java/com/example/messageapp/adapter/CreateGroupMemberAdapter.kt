@@ -8,7 +8,6 @@ import com.example.messageapp.R
 import com.example.messageapp.databinding.ItemCreateGroupMemberBinding
 import com.example.messageapp.model.Friend
 import com.example.messageapp.utils.FileUtils.loadImg
-import com.example.messageapp.utils.FireBaseInstance
 
 class CreateGroupMemberAdapter(
     private val onSelectionChanged: () -> Unit = {},
@@ -49,27 +48,11 @@ class CreateGroupMemberAdapter(
         fun bind(friend: Friend) {
             val id = friend.keyAuth
             binding.tvName.text = friend.name
-            if (id.isNotBlank()) {
-                FireBaseInstance.getInfoUser(id) { user ->
-                    if (bindingAdapterPosition == RecyclerView.NO_POSITION) return@getInfoUser
-                    val current =
-                        this@CreateGroupMemberAdapter.items.getOrNull(bindingAdapterPosition)
-                            ?: return@getInfoUser
-                    if (current.keyAuth != id) return@getInfoUser
-                    binding.tvName.text = user.name
-                    binding.root.context.loadImg(
-                        user.avatar.toString(),
-                        binding.avatar,
-                        R.drawable.bg_grey_equal,
-                    )
-                }
-            } else {
-                binding.root.context.loadImg(
-                    friend.avatar,
-                    binding.avatar,
-                    R.drawable.bg_grey_equal,
-                )
-            }
+            binding.root.context.loadImg(
+                friend.avatar,
+                binding.avatar,
+                R.drawable.bg_grey_equal,
+            )
             binding.checkSelect.setOnCheckedChangeListener(null)
             binding.checkSelect.isChecked = selected.contains(id)
             binding.checkSelect.setOnCheckedChangeListener { _, isChecked ->

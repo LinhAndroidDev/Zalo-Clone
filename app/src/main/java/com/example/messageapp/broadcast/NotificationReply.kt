@@ -7,7 +7,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.example.messageapp.R
-import com.example.messageapp.data.mapper.EntityMapper
+import com.example.messageapp.domain.repository.SessionRepository
+import com.example.messageapp.domain.usecase.chat.SendMessageUseCase
+import com.example.messageapp.domain.usecase.social.GetUserInfoUseCase
 import com.example.messageapp.mapper.ChatUiMapper
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.Message
@@ -15,15 +17,14 @@ import com.example.messageapp.model.MessageReply
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.service.ReceiverMessageService
 import com.example.messageapp.utils.DateUtils
-import com.example.messageapp.utils.FireBaseInstance
-import com.example.messageapp.utils.SharePreferenceRepository
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class NotificationReply : BroadcastReceiver() {
-    @Inject
-    lateinit var shared: SharePreferenceRepository
+    @Inject lateinit var sessionRepository: SessionRepository
+    @Inject lateinit var sendMessageUseCase: SendMessageUseCase
+    @Inject lateinit var getUserInfoUseCase: GetUserInfoUseCase
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (context == null || intent == null) return
@@ -37,51 +38,47 @@ class NotificationReply : BroadcastReceiver() {
         val senderId = intent.getStringExtra(ReceiverMessageService.SENDER_ID).orEmpty()
         val groupId = intent.getStringExtra(ReceiverMessageService.GROUP_ID)?.trim().orEmpty()
         val groupName = intent.getStringExtra(ReceiverMessageService.GROUP_NAME).orEmpty()
-        val userId = shared.getAuth()
         val time = DateUtils.getTimeCurrent()
         val replyTo = buildReplyToFromIntent(intent, senderId)
 
         val message = Message(
             message = repliedText,
             receiver = groupId.ifEmpty { senderId },
-            sender = userId,
+            sender = sessionRepository.getAuth(),
             time = time,
             replyTo = replyTo,
         )
 
         if (groupId.isNotEmpty()) {
-            val uiConversation = Conversation(
-                friendId = groupId,
-                name = groupName,
-                isGroup = true,
-            )
-            FireBaseInstance.sendMessage(
-                message = EntityMapper.toFirestore(ChatUiMapper.toDomain(message)),
-                userId = userId,
+            sendMessageUseCase(
+                message = ChatUiMapper.toDomain(message),
                 time = time,
-                conversation = EntityMapper.toFirestore(ChatUiMapper.toDomain(uiConversation)),
-                nameSender = shared.getNameUser(),
+                conversation = ChatUiMapper.toDomain(
+                    Conversation(
+                        friendId = groupId,
+                        name = groupName,
+                        isGroup = true,
+                    ),
+                ),
                 sendFirst = false,
-            ) {
-                showRepliedNotification(context, groupName.ifBlank { groupId })
-            }
+            )
+            showRepliedNotification(context, groupName.ifBlank { groupId })
             return
         }
 
-        FireBaseInstance.getInfoUser(userId = senderId) { fsUser ->
-            fsUser.keyAuth = senderId
-            val uiUser = ChatUiMapper.toUi(EntityMapper.toDomain(fsUser))
-            FireBaseInstance.sendMessage(
-                message = EntityMapper.toFirestore(ChatUiMapper.toDomain(message)),
-                userId = userId,
-                time = time,
-                conversation = EntityMapper.toFirestore(ChatUiMapper.toDomain(Conversation(uiUser))),
-                nameSender = shared.getNameUser(),
-                sendFirst = false,
-            ) {
-                showRepliedNotification(context, uiUser.name.orEmpty().ifBlank { senderId })
-            }
-        }
+        getUserInfoUseCase(
+            userId = senderId,
+            onSuccess = { user ->
+                val peer = ChatUiMapper.toUi(user)
+                sendMessageUseCase(
+                    message = ChatUiMapper.toDomain(message),
+                    time = time,
+                    conversation = ChatUiMapper.toDomain(Conversation(peer)),
+                    sendFirst = false,
+                )
+                showRepliedNotification(context, peer.name.orEmpty().ifBlank { senderId })
+            },
+        )
     }
 
     private fun buildReplyToFromIntent(intent: Intent, senderId: String): MessageReply? {
@@ -114,6 +111,6 @@ class NotificationReply : BroadcastReceiver() {
                     String.format(context.getString(R.string.replied_to_message_of), targetName),
                 )
                 .build()
-        notificationManager.notify(shared.getChannelId(), repliedNotification)
+        notificationManager.notify(sessionRepository.getChannelId(), repliedNotification)
     }
 }

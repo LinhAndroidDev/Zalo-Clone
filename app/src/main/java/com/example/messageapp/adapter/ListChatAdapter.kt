@@ -14,7 +14,9 @@ import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.GroupAvatarLoader
 
-class ListChatAdapter :
+class ListChatAdapter(
+    private val groupAvatarLoader: GroupAvatarLoader,
+) :
     BaseAdapter<Conversation, ItemListChatBinding>() {
 
     private val binderHelper = ViewBinderHelper()
@@ -35,7 +37,7 @@ class ListChatAdapter :
     }
 
     override fun onViewRecycled(holder: BaseViewHolder<ItemListChatBinding>) {
-        GroupAvatarLoader.cancel(holder.v.groupAvatar.tag as? String)
+        groupAvatarLoader.cancel(holder.v.groupAvatar.tag as? String)
         holder.v.groupAvatar.reset()
         super.onViewRecycled(holder)
     }
@@ -121,7 +123,7 @@ class ListChatAdapter :
                 v.groupAvatar.showSinglePhoto(conversation.friendImage)
             } else {
                 v.groupAvatar.showPlaceholder()
-                GroupAvatarLoader.load(
+                groupAvatarLoader.load(
                     groupId = friendId,
                     onReady = { data ->
                         if (v.groupAvatar.tag != friendId) return@load
