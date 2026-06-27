@@ -9,6 +9,7 @@ import com.example.messageapp.domain.model.DiaryPostComment as DomainDiaryPostCo
 import com.example.messageapp.model.DiaryLinkPreview
 import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.model.DiaryPostComment
+import com.example.messageapp.model.EmotionType
 
 object DiaryUiMapper {
 
@@ -52,6 +53,12 @@ object DiaryUiMapper {
         authorAvatarUrl = comment.authorAvatarUrl,
         text = comment.text,
         createdAtMillis = comment.createdAtMillis,
+        likeCount = comment.likeCount,
+        likedByMe = comment.likedByMe,
+        replyCount = comment.replyCount,
+        parentCommentId = comment.parentCommentId,
+        mentionedUserId = comment.mentionedUserId,
+        mentionedName = comment.mentionedName,
     )
 
     fun toUi(comment: FsDiaryPostComment): DiaryPostComment = DiaryPostComment(
@@ -62,6 +69,12 @@ object DiaryUiMapper {
         authorAvatarUrl = comment.authorAvatarUrl,
         text = comment.text,
         createdAtMillis = comment.createdAtMillis,
+        likeCount = comment.likeCount,
+        likedByMe = comment.likedByMe,
+        replyCount = comment.replyCount,
+        parentCommentId = comment.parentCommentId,
+        mentionedUserId = comment.mentionedUserId,
+        mentionedName = comment.mentionedName,
     )
 
     fun toUi(post: DomainDiaryPost): DiaryPost = DiaryPost(
@@ -76,6 +89,8 @@ object DiaryUiMapper {
         likeCount = post.likeCount,
         commentCount = post.commentCount,
         likedByMe = post.likedByMe,
+        myReactionType = post.myReactionType?.let { EmotionType.valueOf(it.name) },
+        emotionCounts = post.emotionCounts.mapKeys { EmotionType.valueOf(it.key.name) },
     )
 
     fun toUi(post: FsDiaryPost): DiaryPost = DiaryPost(
@@ -90,6 +105,11 @@ object DiaryUiMapper {
         likeCount = post.likeCount,
         commentCount = post.commentCount,
         likedByMe = post.likedByMe,
+        myReactionType = post.myReactionType.takeIf { it.isNotBlank() }
+            ?.let { runCatching { EmotionType.valueOf(it) }.getOrNull() },
+        emotionCounts = post.emotionCounts.mapNotNull { (k, v) ->
+            runCatching { EmotionType.valueOf(k) to v }.getOrNull()
+        }.toMap(),
     )
 
     fun toUiPosts(posts: List<DomainDiaryPost>): List<DiaryPost> = posts.map { toUi(it) }
@@ -108,5 +128,11 @@ object DiaryUiMapper {
         likeCount = post.likeCount,
         commentCount = post.commentCount,
         likedByMe = post.likedByMe,
+        myReactionType = post.myReactionType?.let {
+            com.example.messageapp.domain.model.EmotionType.valueOf(it.name)
+        },
+        emotionCounts = post.emotionCounts.mapKeys {
+            com.example.messageapp.domain.model.EmotionType.valueOf(it.key.name)
+        },
     )
 }

@@ -5,10 +5,12 @@ import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.domain.repository.SessionRepository
 import com.example.messageapp.domain.usecase.diary.GetDiaryAuthorUseCase
 import com.example.messageapp.domain.usecase.diary.ObserveDiaryFeedUseCase
-import com.example.messageapp.domain.usecase.diary.ToggleDiaryPostLikeUseCase
+import com.example.messageapp.domain.usecase.diary.ObserveDiaryNotificationUnreadCountUseCase
+import com.example.messageapp.domain.usecase.diary.SetDiaryPostReactionUseCase
 import com.example.messageapp.mapper.DiaryUiMapper
 import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.model.DiaryPost
+import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +22,8 @@ class DiaryFragmentViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val getDiaryAuthorUseCase: GetDiaryAuthorUseCase,
     private val observeDiaryFeedUseCase: ObserveDiaryFeedUseCase,
-    private val toggleDiaryPostLikeUseCase: ToggleDiaryPostLikeUseCase,
+    private val setDiaryPostReactionUseCase: SetDiaryPostReactionUseCase,
+    private val observeDiaryNotificationUnreadCountUseCase: ObserveDiaryNotificationUnreadCountUseCase,
     private val deleteDiaryPostUseCase: com.example.messageapp.domain.usecase.diary.DeleteDiaryPostUseCase,
 ) : BaseViewModel() {
 
@@ -30,7 +33,11 @@ class DiaryFragmentViewModel @Inject constructor(
     private val _diaryPosts = MutableStateFlow<List<DiaryPost>>(emptyList())
     val diaryPosts = _diaryPosts.asStateFlow()
 
+    private val _unreadNotificationCount = MutableStateFlow(0)
+    val unreadNotificationCount = _unreadNotificationCount.asStateFlow()
+
     private var stopFeed: (() -> Unit)? = null
+    private var stopUnread: (() -> Unit)? = null
     private var lastDiaryFeedErrorAtMs = 0L
 
     fun currentUserId(): String = sessionRepository.getAuth()
@@ -57,12 +64,27 @@ class DiaryFragmentViewModel @Inject constructor(
         )
     }
 
-    fun toggleDiaryPostLike(post: DiaryPost) {
-        toggleDiaryPostLikeUseCase(
+    fun startNotificationBadge() {
+        sessionRepository.getAuth().ifBlank { return }
+        stopUnread?.invoke()
+        stopUnread = observeDiaryNotificationUnreadCountUseCase(
+            onUpdate = { _unreadNotificationCount.value = it },
+            onError = {},
+        )
+    }
+
+    fun setDiaryPostReaction(post: DiaryPost, type: EmotionType) {
+        setDiaryPostReactionUseCase(
             post = DiaryUiMapper.toDomain(post),
+            reactionType = com.example.messageapp.domain.model.EmotionType.valueOf(type.name),
             onSuccess = {},
             onFailure = { showError(it) },
         )
+    }
+
+    fun toggleDiaryPostLike(post: DiaryPost) {
+        val type = post.myReactionType ?: EmotionType.LIKE
+        setDiaryPostReaction(post, type)
     }
 
     fun deleteDiaryPost(postId: String, onSuccess: () -> Unit) {
@@ -77,5 +99,7 @@ class DiaryFragmentViewModel @Inject constructor(
         super.onCleared()
         stopFeed?.invoke()
         stopFeed = null
+        stopUnread?.invoke()
+        stopUnread = null
     }
 }

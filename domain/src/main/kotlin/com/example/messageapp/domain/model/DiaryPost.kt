@@ -15,6 +15,12 @@ data class DiaryPostComment(
     val authorAvatarUrl: String = "",
     val text: String = "",
     val createdAtMillis: Long = 0L,
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val replyCount: Int = 0,
+    val parentCommentId: String = "",
+    val mentionedUserId: String = "",
+    val mentionedName: String = "",
 )
 
 data class DiaryPost(
@@ -29,4 +35,6 @@ data class DiaryPost(
     val likeCount: Int = 0,
     val commentCount: Int = 0,
     val likedByMe: Boolean = false,
+    val myReactionType: EmotionType? = null,
+    val emotionCounts: Map<EmotionType, Int> = emptyMap(),
 )

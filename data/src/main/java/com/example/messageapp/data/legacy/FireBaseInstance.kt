@@ -15,7 +15,11 @@ import com.example.messageapp.data.firestore.TypeMessage
 import com.example.messageapp.data.firestore.DiaryLinkPreview
 import com.example.messageapp.data.firestore.DiaryPost
 import com.example.messageapp.data.firestore.DiaryPostComment
+import com.example.messageapp.data.firestore.DiaryNotificationFirestore
 import com.example.messageapp.data.firestore.DiaryPostFirestore
+import com.example.messageapp.domain.model.DiaryNotification
+import com.example.messageapp.domain.model.DiaryNotificationType
+import com.example.messageapp.domain.model.EmotionType as DomainEmotionType
 import com.example.messageapp.data.firestore.GroupChat
 import com.example.messageapp.data.firestore.User
 import com.example.messageapp.data.remote.ApiClient
@@ -2138,8 +2142,9 @@ object FireBaseInstance {
     ): () -> Unit {
         val postsCol = db.collection(DiaryPostFirestore.COLLECTION)
         val chunkPosts = mutableMapOf<Int, Map<String, DiaryPost>>()
-        val likedByMe = mutableMapOf<String, Boolean>()
-        val likeRegs = mutableMapOf<String, ListenerRegistration>()
+        val myReactionTypes = mutableMapOf<String, String>()
+        val reactionRegs = mutableMapOf<String, ListenerRegistration>()
+        val legacyLikeRegs = mutableMapOf<String, ListenerRegistration>()
         val postChunkRegs = mutableListOf<ListenerRegistration>()
         var friendsReg: ListenerRegistration? = null
 
@@ -2149,27 +2154,52 @@ object FireBaseInstance {
                 map.forEach { (id, post) -> merged[id] = post }
             }
             val list = merged.values
-                .map { p -> p.copy(likedByMe = likedByMe[p.id] ?: false) }
+                .map { p ->
+                    val typeName = myReactionTypes[p.id].orEmpty()
+                    p.copy(
+                        likedByMe = typeName.isNotBlank(),
+                        myReactionType = typeName,
+                    )
+                }
                 .sortedByDescending { it.createdAtMillis }
                 .take(DIARY_FEED_MAX_DISPLAY)
             onPosts(list)
         }
 
-        fun syncMyLikeListeners(visiblePostIds: Set<String>) {
-            val toRemove = likeRegs.keys - visiblePostIds
+        fun syncMyReactionListeners(visiblePostIds: Set<String>) {
+            val toRemove = reactionRegs.keys - visiblePostIds
             toRemove.forEach { pid ->
-                likeRegs.remove(pid)?.remove()
+                reactionRegs.remove(pid)?.remove()
+                legacyLikeRegs.remove(pid)?.remove()
+                myReactionTypes.remove(pid)
             }
-            val toAdd = visiblePostIds - likeRegs.keys
+            val toAdd = visiblePostIds - reactionRegs.keys
             toAdd.forEach { postId ->
-                val reg = postsCol.document(postId)
+                val postRef = postsCol.document(postId)
+                val reactionReg = postRef
+                    .collection(DiaryPostFirestore.SUB_REACTIONS)
+                    .document(userId)
+                    .addSnapshotListener { snap, _ ->
+                        val type = snap?.getString(DiaryPostFirestore.REACTION_FIELD_TYPE).orEmpty()
+                        if (type.isNotBlank()) {
+                            myReactionTypes[postId] = type
+                            mergeAndEmit()
+                        } else {
+                            myReactionTypes.remove(postId)
+                            mergeAndEmit()
+                        }
+                    }
+                reactionRegs[postId] = reactionReg
+                val legacyReg = postRef
                     .collection(DiaryPostFirestore.SUB_LIKES)
                     .document(userId)
                     .addSnapshotListener { snap, _ ->
-                        likedByMe[postId] = snap?.exists() == true
-                        mergeAndEmit()
+                        if (myReactionTypes[postId].isNullOrBlank() && snap?.exists() == true) {
+                            myReactionTypes[postId] = EmotionType.LIKE.name
+                            mergeAndEmit()
+                        }
                     }
-                likeRegs[postId] = reg
+                legacyLikeRegs[postId] = legacyReg
             }
         }
 
@@ -2185,7 +2215,7 @@ object FireBaseInstance {
             chunkPosts.clear()
             if (authorIds.isEmpty()) {
                 mergeAndEmit()
-                syncMyLikeListeners(emptySet())
+                syncMyReactionListeners(emptySet())
                 return
             }
             // whereIn tối đa 10 giá trị — chunk theo authorId.
@@ -2208,12 +2238,12 @@ object FireBaseInstance {
                         }?.toMap().orEmpty()
                         chunkPosts[chunkIndex] = map
                         mergeAndEmit()
-                        syncMyLikeListeners(mergeKeys())
+                        syncMyReactionListeners(mergeKeys())
                     }
                     postChunkRegs.add(reg)
             }
             mergeAndEmit()
-            syncMyLikeListeners(mergeKeys())
+            syncMyReactionListeners(mergeKeys())
         }
 
         friendsReg = db.collection(PATH_USER).document(userId)
@@ -2227,9 +2257,11 @@ object FireBaseInstance {
                 }
                 val friendIds = value?.documents?.map { it.id }.orEmpty()
                 val authorIds = (listOf(userId) + friendIds).distinct().filter { it.isNotBlank() }
-                likeRegs.values.forEach { it.remove() }
-                likeRegs.clear()
-                likedByMe.clear()
+                reactionRegs.values.forEach { it.remove() }
+                reactionRegs.clear()
+                legacyLikeRegs.values.forEach { it.remove() }
+                legacyLikeRegs.clear()
+                myReactionTypes.clear()
                 attachPostListeners(authorIds)
             }
 
@@ -2238,11 +2270,92 @@ object FireBaseInstance {
             friendsReg = null
             postChunkRegs.forEach { it.remove() }
             postChunkRegs.clear()
-            likeRegs.values.forEach { it.remove() }
-            likeRegs.clear()
+            reactionRegs.values.forEach { it.remove() }
+            reactionRegs.clear()
+            legacyLikeRegs.values.forEach { it.remove() }
+            legacyLikeRegs.clear()
             chunkPosts.clear()
-            likedByMe.clear()
+            myReactionTypes.clear()
         }
+    }
+
+    fun setDiaryPostReaction(
+        postId: String,
+        userId: String,
+        reactionType: DomainEmotionType,
+        currentReaction: DomainEmotionType?,
+        actorName: String,
+        actorAvatarUrl: String,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        val reactionRef = postRef.collection(DiaryPostFirestore.SUB_REACTIONS).document(userId)
+        val legacyLikeRef = postRef.collection(DiaryPostFirestore.SUB_LIKES).document(userId)
+        postRef.get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    failure("Error")
+                    return@addOnSuccessListener
+                }
+                val authorId = snap.getString(DiaryPostFirestore.FIELD_AUTHOR_ID).orEmpty()
+                val summary = DiaryPostFirestore.parseEmotionSummary(
+                    snap.get(DiaryPostFirestore.FIELD_EMOTION_SUMMARY),
+                ).toMutableMap()
+                val batch = db.batch()
+                val typeKey = reactionType.name
+                val isRemoving = currentReaction == reactionType
+
+                if (isRemoving) {
+                    batch.delete(reactionRef)
+                    batch.delete(legacyLikeRef)
+                    decrementSummary(summary, currentReaction!!.name)
+                    batch.update(postRef, DiaryPostFirestore.FIELD_LIKE_COUNT, FieldValue.increment(-1))
+                } else {
+                    if (currentReaction != null) {
+                        decrementSummary(summary, currentReaction.name)
+                    } else {
+                        batch.update(postRef, DiaryPostFirestore.FIELD_LIKE_COUNT, FieldValue.increment(1))
+                    }
+                    incrementSummary(summary, typeKey)
+                    batch.set(
+                        reactionRef,
+                        mapOf(
+                            DiaryPostFirestore.REACTION_FIELD_TYPE to typeKey,
+                            "createdAt" to FieldValue.serverTimestamp(),
+                        ),
+                    )
+                    if (reactionType == DomainEmotionType.LIKE) {
+                        batch.set(legacyLikeRef, mapOf("createdAt" to FieldValue.serverTimestamp()))
+                    } else {
+                        batch.delete(legacyLikeRef)
+                    }
+                }
+                batch.update(postRef, DiaryPostFirestore.FIELD_EMOTION_SUMMARY, summary)
+                batch.commit()
+                    .addOnSuccessListener {
+                        if (!isRemoving && currentReaction == null && authorId.isNotBlank() && authorId != userId) {
+                            val preview = snap.getString(DiaryPostFirestore.FIELD_CONTENT).orEmpty()
+                            @Suppress("UNCHECKED_CAST")
+                            val images = snap.get(DiaryPostFirestore.FIELD_IMAGE_URLS) as? List<*>
+                            val thumb = images?.firstOrNull()?.toString().orEmpty()
+                            createDiaryNotification(
+                                recipientId = authorId,
+                                type = DiaryNotificationType.POST_REACTION,
+                                actorId = userId,
+                                actorName = actorName,
+                                actorAvatarUrl = actorAvatarUrl,
+                                postId = postId,
+                                reactionType = reactionType,
+                                postPreviewText = preview,
+                                postThumbnailUrl = thumb,
+                            )
+                        }
+                        success()
+                    }
+                    .addOnFailureListener { failure(it.message ?: "Error") }
+            }
+            .addOnFailureListener { failure(it.message ?: "Error") }
     }
 
     fun toggleDiaryPostLike(
@@ -2252,23 +2365,16 @@ object FireBaseInstance {
         success: () -> Unit,
         failure: (String) -> Unit
     ) {
-        val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
-        val likeRef = postRef.collection(DiaryPostFirestore.SUB_LIKES).document(userId)
-        val batch = db.batch()
-        if (currentlyLiked) {
-            batch.delete(likeRef)
-            batch.update(postRef, DiaryPostFirestore.FIELD_LIKE_COUNT, FieldValue.increment(-1))
-        } else {
-            batch.set(likeRef, mapOf("createdAt" to FieldValue.serverTimestamp()))
-            batch.update(postRef, DiaryPostFirestore.FIELD_LIKE_COUNT, FieldValue.increment(1))
-        }
-        batch.commit()
-            .addOnSuccessListener { success() }
-            .addOnFailureListener {
-                failure(
-                    it.message ?: "Error"
-                )
-            }
+        setDiaryPostReaction(
+            postId = postId,
+            userId = userId,
+            reactionType = DomainEmotionType.LIKE,
+            currentReaction = if (currentlyLiked) DomainEmotionType.LIKE else null,
+            actorName = "",
+            actorAvatarUrl = "",
+            success = success,
+            failure = failure,
+        )
     }
 
     fun addDiaryComment(
@@ -2293,7 +2399,28 @@ object FireBaseInstance {
         batch.set(newRef, data)
         batch.update(postRef, DiaryPostFirestore.FIELD_COMMENT_COUNT, FieldValue.increment(1))
         batch.commit()
-            .addOnSuccessListener { success(newRef.id) }
+            .addOnSuccessListener {
+                success(newRef.id)
+                postRef.get().addOnSuccessListener { postSnap ->
+                    val postAuthorId = postSnap.getString(DiaryPostFirestore.FIELD_AUTHOR_ID).orEmpty()
+                    if (postAuthorId.isNotBlank() && postAuthorId != authorId) {
+                        val preview = postSnap.getString(DiaryPostFirestore.FIELD_CONTENT).orEmpty()
+                        @Suppress("UNCHECKED_CAST")
+                        val images = postSnap.get(DiaryPostFirestore.FIELD_IMAGE_URLS) as? List<*>
+                        createDiaryNotification(
+                            recipientId = postAuthorId,
+                            type = DiaryNotificationType.POST_COMMENT,
+                            actorId = authorId,
+                            actorName = authorName,
+                            actorAvatarUrl = authorAvatarUrl,
+                            postId = postId,
+                            postPreviewText = preview,
+                            postThumbnailUrl = images?.firstOrNull()?.toString().orEmpty(),
+                            commentPreviewText = text.trim(),
+                        )
+                    }
+                }
+            }
             .addOnFailureListener {
                 failure(
                     it.message ?: "Error"
@@ -2303,25 +2430,546 @@ object FireBaseInstance {
 
     fun observeDiaryComments(
         postId: String,
+        userId: String,
         onUpdate: (List<DiaryPostComment>) -> Unit,
         onError: (String) -> Unit
-    ): ListenerRegistration {
-        return db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+    ): () -> Unit {
+        val commentsCol = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
             .collection(DiaryPostFirestore.SUB_COMMENTS)
+        var comments = emptyList<DiaryPostComment>()
+        val likedByMe = mutableMapOf<String, Boolean>()
+        val likeRegs = mutableMapOf<String, ListenerRegistration>()
+
+        fun emit() {
+            onUpdate(comments.map { it.copy(likedByMe = likedByMe[it.id] ?: false) })
+        }
+
+        fun syncLikeListeners(visibleIds: Set<String>) {
+            (likeRegs.keys - visibleIds).forEach { id -> likeRegs.remove(id)?.remove() }
+            (visibleIds - likeRegs.keys).forEach { id ->
+                if (userId.isBlank()) return@forEach
+                likeRegs[id] = commentsCol.document(id)
+                    .collection(DiaryPostFirestore.SUB_COMMENT_LIKES)
+                    .document(userId)
+                    .addSnapshotListener { snap, _ ->
+                        likedByMe[id] = snap?.exists() == true
+                        emit()
+                    }
+            }
+        }
+
+        val commentsReg = commentsCol
             .orderBy(DiaryPostFirestore.COMMENT_FIELD_CREATED_AT, Query.Direction.ASCENDING)
             .limit(100)
             .addSnapshotListener { snap, err ->
                 if (err != null) {
-                    onError(
-                        err.message ?: "Error"
-                    )
+                    onError(err.message ?: "Error")
+                    return@addSnapshotListener
+                }
+                comments = snap?.documents?.mapNotNull { doc ->
+                    DiaryPostFirestore.commentFromDocument(postId, doc)
+                }.orEmpty()
+                syncLikeListeners(comments.map { it.id }.toSet())
+                emit()
+            }
+
+        return {
+            commentsReg.remove()
+            likeRegs.values.forEach { it.remove() }
+            likeRegs.clear()
+        }
+    }
+
+    fun editDiaryComment(
+        postId: String,
+        commentId: String,
+        newText: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+            .collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
+            .update(DiaryPostFirestore.COMMENT_FIELD_TEXT, newText.trim())
+            .addOnSuccessListener { success() }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun deleteDiaryComment(
+        postId: String,
+        commentId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        val commentRef = postRef.collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
+        val batch = db.batch()
+        batch.delete(commentRef)
+        batch.update(postRef, DiaryPostFirestore.FIELD_COMMENT_COUNT, FieldValue.increment(-1))
+        batch.commit()
+            .addOnSuccessListener { success() }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun editDiaryReply(
+        postId: String,
+        commentId: String,
+        replyId: String,
+        newText: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+            .collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
+            .collection(DiaryPostFirestore.SUB_REPLIES).document(replyId)
+            .update(DiaryPostFirestore.COMMENT_FIELD_TEXT, newText.trim())
+            .addOnSuccessListener { success() }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun deleteDiaryReply(
+        postId: String,
+        commentId: String,
+        replyId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val commentRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+            .collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
+        val replyRef = commentRef.collection(DiaryPostFirestore.SUB_REPLIES).document(replyId)
+        val batch = db.batch()
+        batch.delete(replyRef)
+        batch.update(commentRef, DiaryPostFirestore.COMMENT_FIELD_REPLY_COUNT, FieldValue.increment(-1))
+        batch.commit()
+            .addOnSuccessListener { success() }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun toggleDiaryCommentLike(
+        postId: String,
+        commentId: String,
+        userId: String,
+        currentlyLiked: Boolean,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+        val commentRef = postRef.collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
+        val likeRef = commentRef.collection(DiaryPostFirestore.SUB_COMMENT_LIKES).document(userId)
+        val batch = db.batch()
+        if (currentlyLiked) {
+            batch.delete(likeRef)
+            batch.update(commentRef, DiaryPostFirestore.COMMENT_FIELD_LIKE_COUNT, FieldValue.increment(-1))
+        } else {
+            batch.set(likeRef, mapOf("createdAt" to FieldValue.serverTimestamp()))
+            batch.update(commentRef, DiaryPostFirestore.COMMENT_FIELD_LIKE_COUNT, FieldValue.increment(1))
+        }
+        batch.commit()
+            .addOnSuccessListener {
+                if (!currentlyLiked) {
+                    commentRef.get().addOnSuccessListener { commentSnap ->
+                        val commentAuthorId = commentSnap.getString(DiaryPostFirestore.COMMENT_FIELD_AUTHOR_ID).orEmpty()
+                        if (commentAuthorId.isNotBlank() && commentAuthorId != userId) {
+                            postRef.get().addOnSuccessListener { postSnap ->
+                                val preview = postSnap.getString(DiaryPostFirestore.FIELD_CONTENT).orEmpty()
+                                @Suppress("UNCHECKED_CAST")
+                                val images = postSnap.get(DiaryPostFirestore.FIELD_IMAGE_URLS) as? List<*>
+                                createDiaryNotification(
+                                    recipientId = commentAuthorId,
+                                    type = DiaryNotificationType.COMMENT_LIKE,
+                                    actorId = userId,
+                                    actorName = "",
+                                    actorAvatarUrl = "",
+                                    postId = postId,
+                                    commentId = commentId,
+                                    postPreviewText = preview,
+                                    postThumbnailUrl = images?.firstOrNull()?.toString().orEmpty(),
+                                    commentPreviewText = commentSnap.getString(DiaryPostFirestore.COMMENT_FIELD_TEXT).orEmpty(),
+                                )
+                            }
+                        }
+                    }
+                }
+                success()
+            }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun addDiaryReply(
+        postId: String,
+        commentId: String,
+        authorId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        text: String,
+        mentionedUserId: String,
+        mentionedName: String,
+        success: (replyId: String) -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val commentRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+            .collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
+        val newRef = commentRef.collection(DiaryPostFirestore.SUB_REPLIES).document()
+        val data = hashMapOf<String, Any>(
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_ID to authorId,
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_NAME to authorName,
+            DiaryPostFirestore.COMMENT_FIELD_AUTHOR_AVATAR to authorAvatarUrl,
+            DiaryPostFirestore.COMMENT_FIELD_TEXT to text.trim(),
+            DiaryPostFirestore.COMMENT_FIELD_PARENT_ID to commentId,
+            DiaryPostFirestore.COMMENT_FIELD_MENTIONED_ID to mentionedUserId,
+            DiaryPostFirestore.COMMENT_FIELD_MENTIONED_NAME to mentionedName,
+            DiaryPostFirestore.COMMENT_FIELD_CREATED_AT to FieldValue.serverTimestamp()
+        )
+        val batch = db.batch()
+        batch.set(newRef, data)
+        batch.update(commentRef, DiaryPostFirestore.COMMENT_FIELD_REPLY_COUNT, FieldValue.increment(1))
+        batch.commit()
+            .addOnSuccessListener {
+                success(newRef.id)
+                val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+                postRef.get().addOnSuccessListener { postSnap ->
+                    val preview = postSnap.getString(DiaryPostFirestore.FIELD_CONTENT).orEmpty()
+                    @Suppress("UNCHECKED_CAST")
+                    val images = postSnap.get(DiaryPostFirestore.FIELD_IMAGE_URLS) as? List<*>
+                    val thumb = images?.firstOrNull()?.toString().orEmpty()
+                    commentRef.get().addOnSuccessListener { commentSnap ->
+                        val commentAuthorId = commentSnap.getString(DiaryPostFirestore.COMMENT_FIELD_AUTHOR_ID).orEmpty()
+                        val recipients = linkedSetOf<String>()
+                        if (commentAuthorId.isNotBlank() && commentAuthorId != authorId) {
+                            recipients.add(commentAuthorId)
+                        }
+                        if (mentionedUserId.isNotBlank() && mentionedUserId != authorId) {
+                            recipients.add(mentionedUserId)
+                        }
+                        recipients.forEach { recipientId ->
+                            createDiaryNotification(
+                                recipientId = recipientId,
+                                type = DiaryNotificationType.COMMENT_REPLY,
+                                actorId = authorId,
+                                actorName = authorName,
+                                actorAvatarUrl = authorAvatarUrl,
+                                postId = postId,
+                                commentId = commentId,
+                                replyId = newRef.id,
+                                postPreviewText = preview,
+                                postThumbnailUrl = thumb,
+                                commentPreviewText = text.trim(),
+                            )
+                        }
+                    }
+                }
+            }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun observeDiaryReplies(
+        postId: String,
+        commentId: String,
+        userId: String,
+        onUpdate: (List<DiaryPostComment>) -> Unit,
+        onError: (String) -> Unit
+    ): () -> Unit {
+        val repliesCol = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+            .collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
+            .collection(DiaryPostFirestore.SUB_REPLIES)
+        var replies = emptyList<DiaryPostComment>()
+        val likedByMe = mutableMapOf<String, Boolean>()
+        val likeRegs = mutableMapOf<String, ListenerRegistration>()
+
+        fun emit() {
+            onUpdate(replies.map { it.copy(likedByMe = likedByMe[it.id] ?: false) })
+        }
+
+        fun syncLikeListeners(visibleIds: Set<String>) {
+            (likeRegs.keys - visibleIds).forEach { id -> likeRegs.remove(id)?.remove() }
+            (visibleIds - likeRegs.keys).forEach { id ->
+                if (userId.isBlank()) return@forEach
+                likeRegs[id] = repliesCol.document(id)
+                    .collection(DiaryPostFirestore.SUB_COMMENT_LIKES)
+                    .document(userId)
+                    .addSnapshotListener { snap, _ ->
+                        likedByMe[id] = snap?.exists() == true
+                        emit()
+                    }
+            }
+        }
+
+        val repliesReg = repliesCol
+            .orderBy(DiaryPostFirestore.COMMENT_FIELD_CREATED_AT, Query.Direction.ASCENDING)
+            .limit(100)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    onError(err.message ?: "Error")
+                    return@addSnapshotListener
+                }
+                replies = snap?.documents?.mapNotNull { doc ->
+                    DiaryPostFirestore.replyFromDocument(postId, commentId, doc)
+                }.orEmpty()
+                syncLikeListeners(replies.map { it.id }.toSet())
+                emit()
+            }
+
+        return {
+            repliesReg.remove()
+            likeRegs.values.forEach { it.remove() }
+            likeRegs.clear()
+        }
+    }
+
+    fun toggleDiaryReplyLike(
+        postId: String,
+        commentId: String,
+        replyId: String,
+        userId: String,
+        currentlyLiked: Boolean,
+        success: () -> Unit,
+        failure: (String) -> Unit
+    ) {
+        val replyRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+            .collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
+            .collection(DiaryPostFirestore.SUB_REPLIES).document(replyId)
+        val likeRef = replyRef.collection(DiaryPostFirestore.SUB_COMMENT_LIKES).document(userId)
+        val batch = db.batch()
+        if (currentlyLiked) {
+            batch.delete(likeRef)
+            batch.update(replyRef, DiaryPostFirestore.COMMENT_FIELD_LIKE_COUNT, FieldValue.increment(-1))
+        } else {
+            batch.set(likeRef, mapOf("createdAt" to FieldValue.serverTimestamp()))
+            batch.update(replyRef, DiaryPostFirestore.COMMENT_FIELD_LIKE_COUNT, FieldValue.increment(1))
+        }
+        batch.commit()
+            .addOnSuccessListener {
+                if (!currentlyLiked) {
+                    val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
+                    replyRef.get().addOnSuccessListener { replySnap ->
+                        val replyAuthorId = replySnap.getString(DiaryPostFirestore.COMMENT_FIELD_AUTHOR_ID).orEmpty()
+                        if (replyAuthorId.isNotBlank() && replyAuthorId != userId) {
+                            postRef.get().addOnSuccessListener { postSnap ->
+                                val preview = postSnap.getString(DiaryPostFirestore.FIELD_CONTENT).orEmpty()
+                                @Suppress("UNCHECKED_CAST")
+                                val images = postSnap.get(DiaryPostFirestore.FIELD_IMAGE_URLS) as? List<*>
+                                createDiaryNotification(
+                                    recipientId = replyAuthorId,
+                                    type = DiaryNotificationType.REPLY_LIKE,
+                                    actorId = userId,
+                                    actorName = "",
+                                    actorAvatarUrl = "",
+                                    postId = postId,
+                                    commentId = commentId,
+                                    replyId = replyId,
+                                    postPreviewText = preview,
+                                    postThumbnailUrl = images?.firstOrNull()?.toString().orEmpty(),
+                                    commentPreviewText = replySnap.getString(DiaryPostFirestore.COMMENT_FIELD_TEXT).orEmpty(),
+                                )
+                            }
+                        }
+                    }
+                }
+                success()
+            }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun observeDiaryNotifications(
+        userId: String,
+        onUpdate: (List<DiaryNotification>) -> Unit,
+        onError: (String) -> Unit,
+    ): () -> Unit {
+        if (userId.isBlank()) {
+            onUpdate(emptyList())
+            return {}
+        }
+        val reg = db.collection(PATH_USER).document(userId)
+            .collection(DiaryNotificationFirestore.SUB_COLLECTION)
+            .orderBy(DiaryNotificationFirestore.FIELD_CREATED_AT, Query.Direction.DESCENDING)
+            .limit(100)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    onError(err.message ?: "Error")
                     return@addSnapshotListener
                 }
                 val list = snap?.documents?.mapNotNull { doc ->
-                    DiaryPostFirestore.commentFromDocument(postId, doc)
+                    DiaryNotificationFirestore.fromDocument(doc)
                 }.orEmpty()
                 onUpdate(list)
             }
+        return { reg.remove() }
+    }
+
+    fun markDiaryNotificationRead(
+        userId: String,
+        notificationId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        if (userId.isBlank() || notificationId.isBlank()) {
+            failure("Error")
+            return
+        }
+        db.collection(PATH_USER).document(userId)
+            .collection(DiaryNotificationFirestore.SUB_COLLECTION)
+            .document(notificationId)
+            .update(DiaryNotificationFirestore.FIELD_READ, true)
+            .addOnSuccessListener { success() }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun markAllDiaryNotificationsRead(
+        userId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        if (userId.isBlank()) {
+            failure("Error")
+            return
+        }
+        db.collection(PATH_USER).document(userId)
+            .collection(DiaryNotificationFirestore.SUB_COLLECTION)
+            .whereEqualTo(DiaryNotificationFirestore.FIELD_READ, false)
+            .get()
+            .addOnSuccessListener { snap ->
+                if (snap.isEmpty) {
+                    success()
+                    return@addOnSuccessListener
+                }
+                val batch = db.batch()
+                snap.documents.forEach { doc ->
+                    batch.update(doc.reference, DiaryNotificationFirestore.FIELD_READ, true)
+                }
+                batch.commit()
+                    .addOnSuccessListener { success() }
+                    .addOnFailureListener { failure(it.message ?: "Error") }
+            }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    private fun incrementSummary(summary: MutableMap<String, Int>, typeKey: String) {
+        summary[typeKey] = (summary[typeKey] ?: 0) + 1
+    }
+
+    private fun decrementSummary(summary: MutableMap<String, Int>, typeKey: String) {
+        val next = (summary[typeKey] ?: 0) - 1
+        if (next <= 0) summary.remove(typeKey) else summary[typeKey] = next
+    }
+
+    private fun resolveActorProfile(
+        actorId: String,
+        actorName: String,
+        actorAvatarUrl: String,
+        onReady: (name: String, avatar: String) -> Unit,
+    ) {
+        if (actorName.isNotBlank()) {
+            onReady(actorName, actorAvatarUrl)
+            return
+        }
+        if (actorId.isBlank()) {
+            onReady("", "")
+            return
+        }
+        db.collection(PATH_USER).document(actorId).get()
+            .addOnSuccessListener { doc ->
+                val user = doc.toObject(User::class.java)
+                onReady(user?.name.orEmpty(), user?.avatar.orEmpty())
+            }
+            .addOnFailureListener { onReady("", "") }
+    }
+
+    private fun createDiaryNotification(
+        recipientId: String,
+        type: DiaryNotificationType,
+        actorId: String,
+        actorName: String,
+        actorAvatarUrl: String,
+        postId: String,
+        commentId: String = "",
+        replyId: String = "",
+        reactionType: DomainEmotionType? = null,
+        postPreviewText: String = "",
+        postThumbnailUrl: String = "",
+        commentPreviewText: String = "",
+    ) {
+        if (recipientId.isBlank() || actorId.isBlank() || recipientId == actorId || postId.isBlank()) return
+        resolveActorProfile(actorId, actorName, actorAvatarUrl) { resolvedName, resolvedAvatar ->
+            val ref = db.collection(PATH_USER).document(recipientId)
+                .collection(DiaryNotificationFirestore.SUB_COLLECTION)
+                .document()
+            val data = hashMapOf<String, Any>(
+                DiaryNotificationFirestore.FIELD_TYPE to type.name,
+                DiaryNotificationFirestore.FIELD_ACTOR_ID to actorId,
+                DiaryNotificationFirestore.FIELD_ACTOR_NAME to resolvedName,
+                DiaryNotificationFirestore.FIELD_ACTOR_AVATAR to resolvedAvatar,
+                DiaryNotificationFirestore.FIELD_POST_ID to postId,
+                DiaryNotificationFirestore.FIELD_READ to false,
+                DiaryNotificationFirestore.FIELD_CREATED_AT to FieldValue.serverTimestamp(),
+            )
+            if (commentId.isNotBlank()) data[DiaryNotificationFirestore.FIELD_COMMENT_ID] = commentId
+            if (replyId.isNotBlank()) data[DiaryNotificationFirestore.FIELD_REPLY_ID] = replyId
+            if (reactionType != null) {
+                data[DiaryNotificationFirestore.FIELD_REACTION_TYPE] = reactionType.name
+            }
+            if (postPreviewText.isNotBlank()) {
+                data[DiaryNotificationFirestore.FIELD_POST_PREVIEW] = postPreviewText.take(200)
+            }
+            if (postThumbnailUrl.isNotBlank()) {
+                data[DiaryNotificationFirestore.FIELD_POST_THUMBNAIL] = postThumbnailUrl
+            }
+            if (commentPreviewText.isNotBlank()) {
+                data[DiaryNotificationFirestore.FIELD_COMMENT_PREVIEW] = commentPreviewText.take(200)
+            }
+            ref.set(data)
+                .addOnSuccessListener {
+                    sendDiaryPushNotification(
+                        recipientId = recipientId,
+                        actorId = actorId,
+                        actorName = resolvedName.ifBlank { "Người dùng" },
+                        type = type,
+                        postId = postId,
+                        commentId = commentId,
+                        replyId = replyId,
+                        reactionType = reactionType,
+                        previewText = commentPreviewText.ifBlank { postPreviewText },
+                    )
+                }
+        }
+    }
+
+    private fun sendDiaryPushNotification(
+        recipientId: String,
+        actorId: String,
+        actorName: String,
+        type: DiaryNotificationType,
+        postId: String,
+        commentId: String = "",
+        replyId: String = "",
+        reactionType: DomainEmotionType? = null,
+        previewText: String = "",
+    ) {
+        getTokenMessage(
+            recipientId,
+            success = { token ->
+                val body = when (type) {
+                    DiaryNotificationType.POST_REACTION -> "$actorName đã bày tỏ cảm xúc với bài viết của bạn"
+                    DiaryNotificationType.POST_COMMENT -> "$actorName đã bình luận về bài viết của bạn"
+                    DiaryNotificationType.COMMENT_LIKE -> "$actorName đã thích bình luận của bạn"
+                    DiaryNotificationType.COMMENT_REPLY -> "$actorName đã trả lời bình luận của bạn"
+                    DiaryNotificationType.REPLY_LIKE -> "$actorName đã thích câu trả lời của bạn"
+                }
+                val notification = NotificationData(
+                    token = token,
+                    data = Data(
+                        title = actorName,
+                        body = if (previewText.isNotBlank()) previewText else body,
+                        senderId = actorId,
+                        diaryNotificationType = type.name,
+                        postId = postId,
+                        commentId = commentId.ifBlank { null },
+                        replyId = replyId.ifBlank { null },
+                        reactionType = reactionType?.name,
+                    ),
+                )
+                enqueueSendMessageApi(notification)
+            },
+            failure = { Log.e("DiaryNotification", "Push token failed: $it") },
+        )
     }
 
     // endregion Diary posts

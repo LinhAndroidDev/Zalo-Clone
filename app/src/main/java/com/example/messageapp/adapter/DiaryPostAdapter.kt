@@ -2,33 +2,35 @@ package com.example.messageapp.adapter
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.widget.PopupWindow
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
 import com.example.messageapp.databinding.ItemDiaryPostBinding
 import com.example.messageapp.helper.StatusMediaGridLayout
 import com.example.messageapp.model.DiaryPost
+import com.example.messageapp.model.EmotionType
+import com.example.messageapp.utils.EmotionBurstEffect
 import com.example.messageapp.utils.FileUtils.loadImg
 import androidx.core.net.toUri
 
 class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
 
-    /** Opens full-screen image preview (same dialog as Status). */
     var onOpenImagePreview: ((uris: List<Uri>, startIndex: Int) -> Unit)? = null
-
     var onToggleLike: ((DiaryPost) -> Unit)? = null
+    var onSetReaction: ((DiaryPost, EmotionType) -> Unit)? = null
     var onOpenComments: ((DiaryPost) -> Unit)? = null
-
-    /** Chỉ chủ bài thấy menu (chỉnh sửa / xoá). */
     var currentUserId: String = ""
-
     var onEditPost: ((DiaryPost) -> Unit)? = null
     var onDeletePost: ((DiaryPost) -> Unit)? = null
-
-    /** Mở trang cá nhân theo [DiaryPost.authorUserId]. */
     var onOpenAuthorProfile: ((authorUserId: String) -> Unit)? = null
 
     private companion object {
@@ -79,8 +81,7 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
             }
             linkWrap.setOnClickListener {
                 try {
-                    ctx.startActivity(Intent(Intent.ACTION_VIEW,
-                        link.url.toUri()))
+                    ctx.startActivity(Intent(Intent.ACTION_VIEW, link.url.toUri()))
                 } catch (_: Exception) {
                 }
             }
@@ -106,20 +107,34 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
                 onRemove = null,
                 onOpenPreview = { index ->
                     onOpenImagePreview?.invoke(uris, index)
-                }
+                },
             )
         }
 
-        val likeIcon = if (post.likedByMe) {
-            AppCompatResources.getDrawable(ctx, R.drawable.emotion_favourite)
+        if (post.emotionCounts.values.any { it > 0 }) {
+            holder.v.viewReleaseEmotion.isVisible = true
+            holder.v.viewReleaseEmotion.updateFromCounts(post.emotionCounts)
         } else {
-            AppCompatResources.getDrawable(ctx, R.drawable.ic_favourite_not_fill)
+            holder.v.viewReleaseEmotion.isVisible = false
         }
-        holder.v.ivLike.setImageDrawable(likeIcon)
+
+        val reactionIcon = reactionDrawable(ctx, post.myReactionType)
+        holder.v.ivLike.setImageDrawable(reactionIcon)
+        holder.v.tvLikeLabel.text = if (post.myReactionType != null) {
+            ""
+        } else {
+            ctx.getString(R.string.diary_like_label)
+        }
+        holder.v.tvLikeLabel.isVisible = post.myReactionType == null
         holder.v.ivLikeSmall.isVisible = post.likeCount > 0
         holder.v.tvLikeCount.text = post.likeCount.toString()
         holder.v.tvCommentCount.text = post.commentCount.toString()
+
         holder.v.layoutLike.setOnClickListener { onToggleLike?.invoke(post) }
+        holder.v.layoutLike.setOnLongClickListener { anchor ->
+            showReactionPopup(ctx, anchor, post)
+            true
+        }
         holder.v.layoutComment.setOnClickListener { onOpenComments?.invoke(post) }
 
         val isOwner = post.authorUserId == currentUserId && currentUserId.isNotBlank()
@@ -146,6 +161,40 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
         }
     }
 
+    private fun reactionDrawable(ctx: Context, type: EmotionType?) = when (type) {
+        EmotionType.FAVOURITE -> AppCompatResources.getDrawable(ctx, R.drawable.emotion_favourite)
+        EmotionType.LIKE -> AppCompatResources.getDrawable(ctx, R.drawable.emotion_like)
+        EmotionType.LAUGH -> AppCompatResources.getDrawable(ctx, R.drawable.emotion_laugh)
+        EmotionType.CRY -> AppCompatResources.getDrawable(ctx, R.drawable.emotion_cry)
+        EmotionType.ANGRY -> AppCompatResources.getDrawable(ctx, R.drawable.emotion_angry)
+        null -> AppCompatResources.getDrawable(ctx, R.drawable.ic_favourite_not_fill)
+    }
+
+    private fun showReactionPopup(ctx: Context, anchor: View, post: DiaryPost) {
+        val popupView = LayoutInflater.from(ctx).inflate(R.layout.popup_diary_reaction, null)
+        val popup = PopupWindow(
+            popupView,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            true,
+        ).apply {
+            setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+            elevation = 12f
+        }
+        val activity = anchor.context as? android.app.Activity
+        val pick: (EmotionType) -> Unit = { type ->
+            onSetReaction?.invoke(post, type)
+            activity?.let { EmotionBurstEffect.play(it, anchor, type) }
+            popup.dismiss()
+        }
+        popupView.findViewById<View>(R.id.imgFavourite).setOnClickListener { pick(EmotionType.FAVOURITE) }
+        popupView.findViewById<View>(R.id.imgLike).setOnClickListener { pick(EmotionType.LIKE) }
+        popupView.findViewById<View>(R.id.imgLaugh).setOnClickListener { pick(EmotionType.LAUGH) }
+        popupView.findViewById<View>(R.id.imgCry).setOnClickListener { pick(EmotionType.CRY) }
+        popupView.findViewById<View>(R.id.imgAngry).setOnClickListener { pick(EmotionType.ANGRY) }
+        popup.showAsDropDown(anchor, 0, -anchor.height * 2, Gravity.START)
+    }
+
     private fun formatRelativeTime(context: Context, createdAtMillis: Long): String {
         val diff = System.currentTimeMillis() - createdAtMillis
         val sec = diff / 1000
@@ -161,7 +210,7 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
         updateDiffList(
             newList,
             compareItem = { a, b -> a.id == b.id },
-            compareContent = { a, b -> a == b }
+            compareContent = { a, b -> a == b },
         )
     }
 }

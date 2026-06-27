@@ -105,6 +105,8 @@ private class FakeSessionRepository(
     override fun getStatusLoggedIn() = true
     override fun saveLastSeenFriendRequestAt(time: Long) {}
     override fun getLastSeenFriendRequestAt() = 0L
+    override fun saveLastSeenDiaryNotificationAt(time: Long) {}
+    override fun getLastSeenDiaryNotificationAt() = 0L
 }
 
 private class FakeChatRepository : ChatRepository {

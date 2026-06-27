@@ -106,18 +106,39 @@ class DiaryRepositoryImpl @Inject constructor() : DiaryRepository {
         )
     }
 
+    override fun setPostReaction(
+        postId: String,
+        userId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        reactionType: com.example.messageapp.domain.model.EmotionType,
+        currentReaction: com.example.messageapp.domain.model.EmotionType?,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.setDiaryPostReaction(
+            postId = postId,
+            userId = userId,
+            reactionType = reactionType,
+            currentReaction = currentReaction,
+            actorName = authorName,
+            actorAvatarUrl = authorAvatarUrl,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
+
     override fun observeComments(
         postId: String,
+        userId: String,
         onUpdate: (List<DiaryPostComment>) -> Unit,
         onError: (String) -> Unit,
-    ): () -> Unit {
-        val registration = FireBaseInstance.observeDiaryComments(
-            postId = postId,
-            onUpdate = { comments -> onUpdate(comments.map { EntityMapper.toDomain(it) }) },
-            onError = onError,
-        )
-        return { registration.remove() }
-    }
+    ): () -> Unit = FireBaseInstance.observeDiaryComments(
+        postId = postId,
+        userId = userId,
+        onUpdate = { comments -> onUpdate(comments.map { EntityMapper.toDomain(it) }) },
+        onError = onError,
+    )
 
     override fun addComment(
         postId: String,
@@ -134,6 +155,96 @@ class DiaryRepositoryImpl @Inject constructor() : DiaryRepository {
             authorName = authorName,
             authorAvatarUrl = authorAvatarUrl,
             text = text,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
+
+    override fun editComment(postId: String, commentId: String, newText: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) =
+        FireBaseInstance.editDiaryComment(postId, commentId, newText, onSuccess, onFailure)
+
+    override fun deleteComment(postId: String, commentId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) =
+        FireBaseInstance.deleteDiaryComment(postId, commentId, onSuccess, onFailure)
+
+    override fun editReply(postId: String, commentId: String, replyId: String, newText: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) =
+        FireBaseInstance.editDiaryReply(postId, commentId, replyId, newText, onSuccess, onFailure)
+
+    override fun deleteReply(postId: String, commentId: String, replyId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) =
+        FireBaseInstance.deleteDiaryReply(postId, commentId, replyId, onSuccess, onFailure)
+
+    override fun toggleCommentLike(
+        postId: String,
+        commentId: String,
+        userId: String,
+        currentlyLiked: Boolean,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.toggleDiaryCommentLike(
+            postId = postId,
+            commentId = commentId,
+            userId = userId,
+            currentlyLiked = currentlyLiked,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
+
+    override fun observeReplies(
+        postId: String,
+        commentId: String,
+        userId: String,
+        onUpdate: (List<DiaryPostComment>) -> Unit,
+        onError: (String) -> Unit,
+    ): () -> Unit = FireBaseInstance.observeDiaryReplies(
+        postId = postId,
+        commentId = commentId,
+        userId = userId,
+        onUpdate = { replies -> onUpdate(replies.map { EntityMapper.toDomain(it) }) },
+        onError = onError,
+    )
+
+    override fun addReply(
+        postId: String,
+        commentId: String,
+        authorId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        text: String,
+        mentionedUserId: String,
+        mentionedName: String,
+        onSuccess: (String) -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.addDiaryReply(
+            postId = postId,
+            commentId = commentId,
+            authorId = authorId,
+            authorName = authorName,
+            authorAvatarUrl = authorAvatarUrl,
+            text = text,
+            mentionedUserId = mentionedUserId,
+            mentionedName = mentionedName,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
+
+    override fun toggleReplyLike(
+        postId: String,
+        commentId: String,
+        replyId: String,
+        userId: String,
+        currentlyLiked: Boolean,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.toggleDiaryReplyLike(
+            postId = postId,
+            commentId = commentId,
+            replyId = replyId,
+            userId = userId,
+            currentlyLiked = currentlyLiked,
             success = onSuccess,
             failure = onFailure,
         )

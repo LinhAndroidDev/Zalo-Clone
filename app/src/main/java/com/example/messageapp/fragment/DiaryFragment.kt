@@ -7,6 +7,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.messageapp.MainActivity
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryPostAdapter
@@ -68,6 +69,16 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
         viewModel?.getInfoUser()
         viewModel?.startDiaryFeed()
+        viewModel?.startNotificationBadge()
+
+        binding?.header?.onDiaryNotificationClick = {
+            findNavController().navigate(R.id.action_diaryFragment_to_diaryNotificationFragment)
+        }
+
+        diaryPostAdapter.onSetReaction = { post, type ->
+            viewModel?.setDiaryPostReaction(post, type)
+        }
+
         lifecycleScope.launch(Dispatchers.Main) {
             viewModel?.user?.collect { user ->
                 binding?.let { binding ->
@@ -80,12 +91,25 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
         AnimatorUtils.scaleNews(binding?.iconNews, TypeNews.Camera)
     }
 
+    override fun onResume() {
+        super.onResume()
+        (activity as? MainActivity)?.consumePendingDiaryPostId()?.let { postId ->
+            BottomSheetDiaryComments.newInstance(postId)
+                .show(childFragmentManager, "BottomSheetDiaryComments")
+        }
+    }
+
     override fun bindData() {
         super.bindData()
         lifecycleScope.launch {
             viewModel?.diaryPosts?.collect { posts ->
                 diaryPostAdapter.submitList(posts)
                 binding?.tvFeedEmpty?.isVisible = posts.isEmpty()
+            }
+        }
+        lifecycleScope.launch {
+            viewModel?.unreadNotificationCount?.collect { count ->
+                binding?.header?.setNotificationBadge(count)
             }
         }
         // Lỗi: BaseFragment.initView() đã collect errorState + Toast — không collect lại ở đây (tránh toast trùng/spam).

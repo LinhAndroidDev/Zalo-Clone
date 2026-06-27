@@ -185,10 +185,38 @@
     <string name="diary_enter_comment_body">Nhập nội dung bình luận</string>
     <string name="diary_not_logged_in">Chưa đăng nhập</string>
     <string name="diary_default_user_name">Người dùng</string>
+    <string name="copy_success">Đã sao chép</string>
+    <string name="diary_comment_menu_copy">Sao chép</string>
+    <string name="diary_comment_menu_edit">Chỉnh sửa</string>
+    <string name="diary_comment_menu_delete">Xoá</string>
+    <string name="diary_comment_delete_title">Xoá bình luận?</string>
+    <string name="diary_comment_delete_message">Bình luận sẽ bị xoá và không thể khôi phục.</string>
+    <string name="diary_comment_edit_hint">Nhập nội dung mới…</string>
+    <string name="diary_comment_like">Thích</string>
+    <string name="diary_comment_reply">Trả lời</string>
+    <string name="diary_view_replies">Xem %1$d câu trả lời</string>
+    <string name="diary_hide_replies">Ẩn câu trả lời</string>
+    <string name="diary_replying_to">Đang trả lời %1$s</string>
+    <string name="diary_reply_cancel_cd">Huỷ trả lời</string>
     <string name="time_just_now">Vừa xong</string>
     <string name="time_minutes_ago">%d phút trước</string>
     <string name="time_hours_ago">%d giờ trước</string>
     <string name="time_days_ago">%d ngày trước</string>
+
+    <!-- Nhật ký: thông báo -->
+    <string name="diary_notifications_title">Thông báo</string>
+    <string name="diary_notifications_empty">Chưa có thông báo nào</string>
+    <string name="diary_notif_post_reaction">đã bày tỏ cảm xúc %1$s với bài viết của bạn</string>
+    <string name="diary_notif_post_comment">đã bình luận về bài viết của bạn</string>
+    <string name="diary_notif_comment_like">đã thích bình luận của bạn</string>
+    <string name="diary_notif_comment_reply">đã trả lời bình luận của bạn</string>
+    <string name="diary_notif_reply_like">đã thích câu trả lời của bạn</string>
+    <string name="diary_reaction_favourite">Yêu thích</string>
+    <string name="diary_reaction_like">Thích</string>
+    <string name="diary_reaction_laugh">Haha</string>
+    <string name="diary_reaction_cry">Buồn</string>
+    <string name="diary_reaction_angry">Phẫn nộ</string>
+    <string name="diary_notification_channel">Nhật ký</string>
 
     <!-- Lỗi Firestore / diary (fallback khi không có message từ server) -->
     <string name="error_upload_image">Upload ảnh thất bại</string>

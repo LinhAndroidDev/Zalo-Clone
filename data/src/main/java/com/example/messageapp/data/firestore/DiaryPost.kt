@@ -15,5 +15,7 @@ data class DiaryPost(
     val createdAtMillis: Long = System.currentTimeMillis(),
     val likeCount: Int = 0,
     val commentCount: Int = 0,
-    val likedByMe: Boolean = false
+    val likedByMe: Boolean = false,
+    val myReactionType: String = "",
+    val emotionCounts: Map<String, Int> = emptyMap(),
 )

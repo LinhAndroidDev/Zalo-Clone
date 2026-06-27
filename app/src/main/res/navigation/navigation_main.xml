@@ -110,6 +110,13 @@
         <action
             android:id="@+id/action_diaryFragment_to_statusFragment"
             app:destination="@id/statusFragment" />
+        <action
+            android:id="@+id/action_diaryFragment_to_diaryNotificationFragment"
+            app:destination="@id/diaryNotificationFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
     <fragment
         android:id="@+id/personalFragment"
@@ -193,6 +200,11 @@
         android:name="com.example.messageapp.fragment.FriendRequestFragment"
         android:label="FriendRequestFragment"
         tools:layout="@layout/fragment_friend_request"/>
+    <fragment
+        android:id="@+id/diaryNotificationFragment"
+        android:name="com.example.messageapp.fragment.DiaryNotificationFragment"
+        android:label="DiaryNotificationFragment"
+        tools:layout="@layout/fragment_diary_notification" />
     <fragment
         android:id="@+id/settingFragment"
         android:name="com.example.messageapp.fragment.SettingFragment"

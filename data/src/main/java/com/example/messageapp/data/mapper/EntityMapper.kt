@@ -210,6 +210,11 @@ object EntityMapper {
         likeCount = post.likeCount,
         commentCount = post.commentCount,
         likedByMe = post.likedByMe,
+        myReactionType = post.myReactionType.takeIf { it.isNotBlank() }
+            ?.let { runCatching { EmotionType.valueOf(it) }.getOrNull() },
+        emotionCounts = post.emotionCounts.mapNotNull { (k, v) ->
+            runCatching { EmotionType.valueOf(k) to v }.getOrNull()
+        }.toMap(),
     )
 
     fun toDomain(preview: FsDiaryLinkPreview): DiaryLinkPreview = DiaryLinkPreview(
@@ -234,6 +239,12 @@ object EntityMapper {
         authorAvatarUrl = comment.authorAvatarUrl,
         text = comment.text,
         createdAtMillis = comment.createdAtMillis,
+        likeCount = comment.likeCount,
+        likedByMe = comment.likedByMe,
+        replyCount = comment.replyCount,
+        parentCommentId = comment.parentCommentId,
+        mentionedUserId = comment.mentionedUserId,
+        mentionedName = comment.mentionedName,
     )
 
     fun toFirestore(type: EmotionType): FsEmotionType = FsEmotionType.valueOf(type.name)
