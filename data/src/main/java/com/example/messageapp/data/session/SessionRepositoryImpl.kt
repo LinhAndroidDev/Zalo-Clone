@@ -54,6 +54,12 @@ class SessionRepositoryImpl @Inject constructor(
 
     override fun getLastSeenFriendRequestAt(): Long = prefs[LAST_SEEN_FRIEND_REQUEST_AT] ?: 0L
 
+    override fun saveLastSeenDiaryNotificationAt(time: Long) {
+        prefs[LAST_SEEN_DIARY_NOTIFICATION_AT] = time
+    }
+
+    override fun getLastSeenDiaryNotificationAt(): Long = prefs[LAST_SEEN_DIARY_NOTIFICATION_AT] ?: 0L
+
     companion object {
         const val LANGUAGE_SELECTED = "LANGUAGE_SELECTED"
         const val KEY_AUTH = "KEY_AUTH"
@@ -61,5 +67,6 @@ class SessionRepositoryImpl @Inject constructor(
         const val CHANNEL_ID = "CHANNEL_ID"
         const val STATUS_LOGGED_IN = "STATUS_LOGGED_IN"
         const val LAST_SEEN_FRIEND_REQUEST_AT = "LAST_SEEN_FRIEND_REQUEST_AT"
+        const val LAST_SEEN_DIARY_NOTIFICATION_AT = "LAST_SEEN_DIARY_NOTIFICATION_AT"
     }
 }

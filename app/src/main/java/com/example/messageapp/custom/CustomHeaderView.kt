@@ -28,6 +28,7 @@ class CustomHeaderView @JvmOverloads constructor(
     var showInfoFriend: (() -> Unit)? = null
     var addFriend: (() -> Unit)? = null
     var onChatMenuClick: (() -> Unit)? = null
+    var onDiaryNotificationClick: (() -> Unit)? = null
 
     interface OnTypeSearchListener {
         fun callBackKeySearch(keySearch: String)
@@ -151,6 +152,10 @@ class CustomHeaderView @JvmOverloads constructor(
             addFriend?.invoke()
         }
 
+        binding?.notification?.setOnClickListener {
+            onDiaryNotificationClick?.invoke()
+        }
+
         binding?.viewChat?.btnChatMenu?.setOnClickListener {
             onChatMenuClick?.invoke()
         }
@@ -187,4 +192,11 @@ class CustomHeaderView @JvmOverloads constructor(
     }
 
     fun getChatMenuAnchor(): View? = binding?.viewChat?.btnChatMenu
+
+    fun setNotificationBadge(count: Int) {
+        binding?.tvNotificationBadge?.let { badge ->
+            badge.isVisible = count > 0
+            badge.text = if (count <= 9) count.toString() else "9+"
+        }
+    }
 }

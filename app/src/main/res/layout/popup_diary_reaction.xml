@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_white_corner_10"
+    android:elevation="6dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="8dp">
+
+    <ImageView
+        android:id="@+id/imgFavourite"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:contentDescription="@string/diary_reaction_favourite"
+        android:src="@drawable/emotion_favourite" />
+
+    <ImageView
+        android:id="@+id/imgLike"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:layout_marginStart="12dp"
+        android:contentDescription="@string/diary_reaction_like"
+        android:src="@drawable/emotion_like" />
+
+    <ImageView
+        android:id="@+id/imgLaugh"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="10dp"
+        android:contentDescription="@string/diary_reaction_laugh"
+        android:src="@drawable/emotion_laugh" />
+
+    <ImageView
+        android:id="@+id/imgCry"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="10dp"
+        android:contentDescription="@string/diary_reaction_cry"
+        android:src="@drawable/emotion_cry" />
+
+    <ImageView
+        android:id="@+id/imgAngry"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="10dp"
+        android:contentDescription="@string/diary_reaction_angry"
+        android:src="@drawable/emotion_angry" />
+</LinearLayout>

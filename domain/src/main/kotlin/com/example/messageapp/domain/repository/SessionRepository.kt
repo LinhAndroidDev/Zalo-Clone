@@ -15,4 +15,6 @@ interface SessionRepository {
     fun getStatusLoggedIn(): Boolean
     fun saveLastSeenFriendRequestAt(time: Long)
     fun getLastSeenFriendRequestAt(): Long
+    fun saveLastSeenDiaryNotificationAt(time: Long)
+    fun getLastSeenDiaryNotificationAt(): Long
 }

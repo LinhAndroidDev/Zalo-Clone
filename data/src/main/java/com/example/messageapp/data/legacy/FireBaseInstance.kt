@@ -2960,6 +2960,7 @@ object FireBaseInstance {
                         body = if (previewText.isNotBlank()) previewText else body,
                         senderId = actorId,
                         diaryNotificationType = type.name,
+                        recipientUserId = recipientId,
                         postId = postId,
                         commentId = commentId.ifBlank { null },
                         replyId = replyId.ifBlank { null },

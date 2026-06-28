@@ -34,4 +34,21 @@ class ReleaseEmotionView@JvmOverloads constructor(
             binding?.tvQuantityEmotion?.text = dataEmotion.totalQuantityEmotion().toString()
         }
     }
+
+    fun updateFromCounts(counts: Map<com.example.messageapp.model.EmotionType, Int>) {
+        binding?.emotionFavourite?.isVisible = (counts[com.example.messageapp.model.EmotionType.FAVOURITE] ?: 0) > 0
+        binding?.emotionLaugh?.isVisible = (counts[com.example.messageapp.model.EmotionType.LAUGH] ?: 0) > 0
+        binding?.emotionLike?.isVisible = (counts[com.example.messageapp.model.EmotionType.LIKE] ?: 0) > 0
+        binding?.emotionCry?.isVisible = (counts[com.example.messageapp.model.EmotionType.CRY] ?: 0) > 0
+        binding?.emotionAngry?.isVisible = (counts[com.example.messageapp.model.EmotionType.ANGRY] ?: 0) > 0
+        val total = counts.values.sum()
+        if (total <= 0) {
+            binding?.tvQuantityEmotion?.isVisible = false
+            isVisible = false
+        } else {
+            isVisible = true
+            binding?.tvQuantityEmotion?.isVisible = true
+            binding?.tvQuantityEmotion?.text = total.toString()
+        }
+    }
 }

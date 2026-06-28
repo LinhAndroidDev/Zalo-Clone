@@ -45,6 +45,26 @@ class ReceiverMessageService : FirebaseMessagingService() {
             Log.d(TAG, "Message data payload: $data")
             val title = data["title"]
             val body = data["body"]
+            val diaryNotificationType = data["diaryNotificationType"]?.trim().orEmpty()
+            if (diaryNotificationType.isNotEmpty()) {
+                val currentUserId = sessionRepository.getAuth().trim()
+                val senderId = data["senderId"]?.trim().orEmpty()
+                if (currentUserId.isNotBlank() && senderId.isNotBlank() && senderId == currentUserId) {
+                    Log.d(TAG, "Skip diary push triggered by current user ($currentUserId)")
+                    return
+                }
+                val recipientUserId = data["recipientUserId"]?.trim().orEmpty()
+                if (recipientUserId.isNotBlank() && currentUserId.isNotBlank() && recipientUserId != currentUserId) {
+                    Log.d(TAG, "Skip diary push for $recipientUserId (logged in as $currentUserId)")
+                    return
+                }
+                sendDiaryNotification(
+                    title = title,
+                    messageBody = body,
+                    postId = data["postId"].orEmpty(),
+                )
+                return
+            }
             val senderId = data["senderId"] ?: ""
             val groupId = data["groupId"]?.trim().orEmpty()
             val isMention = data["isMention"] == "1"
@@ -91,6 +111,49 @@ class ReceiverMessageService : FirebaseMessagingService() {
                 )
             }
         }
+    }
+
+    @SuppressLint("ServiceCast")
+    private fun sendDiaryNotification(
+        title: String?,
+        messageBody: String?,
+        postId: String,
+    ) {
+        val channelId = Random().nextInt()
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra(EXTRA_DIARY_POST_ID, postId)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            channelId,
+            intent,
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val notificationBuilder = NotificationCompat.Builder(this, getString(R.string.diary_notification_channel))
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title ?: getString(R.string.diary_notifications_title))
+            .setContentText(messageBody)
+            .setAutoCancel(true)
+            .setSound(defaultSoundUri)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+        showDiaryNotificationChannel(channelId, notificationBuilder)
+    }
+
+    private fun showDiaryNotificationChannel(channelId: Int, notificationBuilder: NotificationCompat.Builder) {
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                getString(R.string.diary_notification_channel),
+                getString(R.string.diary_notification_channel),
+                NotificationManager.IMPORTANCE_HIGH,
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+        sessionRepository.saveChannelId(channelId)
+        notificationManager.notify(channelId, notificationBuilder.build())
     }
 
     @SuppressLint("ServiceCast")
@@ -268,5 +331,6 @@ class ReceiverMessageService : FirebaseMessagingService() {
         const val REPLY_PHOTO_URL = "REPLY_PHOTO_URL"
         const val OBJECT_FRIEND = "OBJECT_FRIEND"
         const val OBJECT_GROUP_CONVERSATION = "OBJECT_GROUP_CONVERSATION"
+        const val EXTRA_DIARY_POST_ID = "EXTRA_DIARY_POST_ID"
     }
 }

@@ -25,11 +25,20 @@ class MainActivity : AppCompatActivity() {
     private var binding: ActivityMainBinding? = null
     private var isDoubleTab = false
     val mainViewModel: MainViewModel by viewModels()
+    private var pendingDiaryPostId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingDiaryPostId = intent.getStringExtra(ReceiverMessageService.EXTRA_DIARY_POST_ID)?.trim()
+            ?.takeIf { it.isNotBlank() }
         initView()
         observeBadge()
+    }
+
+    fun consumePendingDiaryPostId(): String? {
+        val id = pendingDiaryPostId
+        pendingDiaryPostId = null
+        return id
     }
 
     private fun initView() {
@@ -53,6 +62,10 @@ class MainActivity : AppCompatActivity() {
         navController.setGraph(navGraph, bundle)
 
         binding?.bottomNav?.setupWithNavController(navController)
+
+        pendingDiaryPostId?.let {
+            binding?.bottomNav?.selectedItemId = R.id.diaryFragment
+        }
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
