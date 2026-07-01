@@ -11,6 +11,7 @@ import com.example.messageapp.MainActivity
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryPostAdapter
+import com.example.messageapp.model.DiaryNavigationTarget
 import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.bottom_sheet.BottomSheetDiaryComments
 import com.example.messageapp.dialog.StatusImagePreviewDialog
@@ -22,7 +23,10 @@ import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.DiaryFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 enum class TypeNews {
     Camera, Video, Edit
@@ -93,10 +97,31 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
     override fun onResume() {
         super.onResume()
-        (activity as? MainActivity)?.consumePendingDiaryPostId()?.let { postId ->
-            BottomSheetDiaryComments.newInstance(postId)
-                .show(childFragmentManager, "BottomSheetDiaryComments")
+        (activity as? MainActivity)?.consumePendingDiaryTarget()?.let { target ->
+            handleDiaryNavigationTarget(target)
         }
+    }
+
+    private fun handleDiaryNavigationTarget(target: DiaryNavigationTarget) {
+        lifecycleScope.launch {
+            val posts = withTimeoutOrNull(5_000L) {
+                viewModel?.diaryPosts?.first { list -> list.any { it.id == target.postId } }
+            }
+            val index = posts?.indexOfFirst { it.id == target.postId } ?: -1
+            if (index >= 0) {
+                binding?.rcvDiaryFeed?.smoothScrollToPosition(index)
+                delay(300L)
+            }
+            openCommentsSheet(target)
+        }
+    }
+
+    private fun openCommentsSheet(target: DiaryNavigationTarget) {
+        BottomSheetDiaryComments.newInstance(
+            postId = target.postId,
+            commentId = target.commentId,
+            replyId = target.replyId,
+        ).show(childFragmentManager, "BottomSheetDiaryComments")
     }
 
     override fun bindData() {

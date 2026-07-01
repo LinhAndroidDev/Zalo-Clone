@@ -44,6 +44,8 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
     private val viewModel by viewModels<BottomSheetDiaryCommentsViewModel>()
 
     private val postId: String by lazy { requireArguments().getString(ARG_POST_ID).orEmpty() }
+    private val commentId: String by lazy { requireArguments().getString(ARG_COMMENT_ID).orEmpty() }
+    private val replyId: String by lazy { requireArguments().getString(ARG_REPLY_ID).orEmpty() }
     private var currentMentionToken: String? = null
     private var isStylingMention = false
     private val adapter by lazy {
@@ -97,8 +99,23 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
         binding.rvComments.adapter = adapter
 
         viewModel.startComments(postId)
+        if (commentId.isNotBlank()) {
+            viewModel.focusTarget(commentId, replyId)
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.rows.collect { adapter.submitList(it) }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.scrollToRowId.collect { rowId ->
+                if (rowId.isNullOrBlank()) return@collect
+                val index = viewModel.rows.value.indexOfFirst { it.rowId == rowId }
+                if (index >= 0) {
+                    binding.rvComments.post {
+                        binding.rvComments.smoothScrollToPosition(index)
+                        viewModel.clearScrollTarget()
+                    }
+                }
+            }
         }
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.replyingTo.collect { target ->
@@ -292,9 +309,19 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
 
     companion object {
         private const val ARG_POST_ID = "postId"
+        private const val ARG_COMMENT_ID = "commentId"
+        private const val ARG_REPLY_ID = "replyId"
 
-        fun newInstance(postId: String) = BottomSheetDiaryComments().apply {
-            arguments = bundleOf(ARG_POST_ID to postId)
+        fun newInstance(
+            postId: String,
+            commentId: String = "",
+            replyId: String = "",
+        ) = BottomSheetDiaryComments().apply {
+            arguments = bundleOf(
+                ARG_POST_ID to postId,
+                ARG_COMMENT_ID to commentId,
+                ARG_REPLY_ID to replyId,
+            )
         }
     }
 }

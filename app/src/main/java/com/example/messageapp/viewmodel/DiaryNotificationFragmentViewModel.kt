@@ -1,10 +1,8 @@
 package com.example.messageapp.viewmodel
 
 import android.content.Context
-import androidx.lifecycle.viewModelScope
 import com.example.messageapp.base.BaseViewModel
-import com.example.messageapp.domain.repository.SessionRepository
-import com.example.messageapp.domain.usecase.diary.MarkAllDiaryNotificationsReadUseCase
+import com.example.messageapp.domain.usecase.diary.MarkDiaryNotificationReadUseCase
 import com.example.messageapp.domain.usecase.diary.ObserveDiaryNotificationsUseCase
 import com.example.messageapp.mapper.DiaryNotificationUiMapper
 import com.example.messageapp.model.DiaryNotificationItem
@@ -18,8 +16,7 @@ import javax.inject.Inject
 class DiaryNotificationFragmentViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val observeDiaryNotificationsUseCase: ObserveDiaryNotificationsUseCase,
-    private val markAllDiaryNotificationsReadUseCase: MarkAllDiaryNotificationsReadUseCase,
-    private val sessionRepository: SessionRepository,
+    private val markDiaryNotificationReadUseCase: MarkDiaryNotificationReadUseCase,
 ) : BaseViewModel() {
 
     private val _notifications = MutableStateFlow<List<DiaryNotificationItem>>(emptyList())
@@ -28,7 +25,6 @@ class DiaryNotificationFragmentViewModel @Inject constructor(
     private var stopObserve: (() -> Unit)? = null
 
     fun startObserving() {
-        sessionRepository.getAuth().ifBlank { return }
         stopObserve?.invoke()
         stopObserve = observeDiaryNotificationsUseCase(
             onUpdate = { list ->
@@ -38,11 +34,11 @@ class DiaryNotificationFragmentViewModel @Inject constructor(
         )
     }
 
-    fun markAllAsRead() {
-        markAllDiaryNotificationsReadUseCase(
-            onSuccess = {
-                sessionRepository.saveLastSeenDiaryNotificationAt(System.currentTimeMillis())
-            },
+    fun markAsRead(notificationId: String) {
+        if (notificationId.isBlank()) return
+        markDiaryNotificationReadUseCase(
+            notificationId = notificationId,
+            onSuccess = {},
             onFailure = { showError(it) },
         )
     }

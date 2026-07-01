@@ -2414,6 +2414,7 @@ object FireBaseInstance {
                             actorName = authorName,
                             actorAvatarUrl = authorAvatarUrl,
                             postId = postId,
+                            commentId = newRef.id,
                             postPreviewText = preview,
                             postThumbnailUrl = images?.firstOrNull()?.toString().orEmpty(),
                             commentPreviewText = text.trim(),

@@ -51,8 +51,15 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
     private val expandedCommentIds = mutableSetOf<String>()
     private val loadingReplyIds = mutableSetOf<String>()
 
+    private var focusCommentId: String = ""
+    private var focusReplyId: String = ""
+    private var scrollTargetEmitted = false
+
     private val _rows = MutableStateFlow<List<DiaryCommentRow>>(emptyList())
     val rows = _rows.asStateFlow()
+
+    private val _scrollToRowId = MutableStateFlow<String?>(null)
+    val scrollToRowId = _scrollToRowId.asStateFlow()
 
     private val _replyingTo = MutableStateFlow<ReplyingTo?>(null)
     val replyingTo = _replyingTo.asStateFlow()
@@ -90,14 +97,43 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
             }
         }
         _rows.value = result
+        tryEmitScrollTarget()
     }
 
-    fun toggleReplies(commentId: String) {
+    fun focusTarget(commentId: String, replyId: String) {
+        focusCommentId = commentId.trim()
+        focusReplyId = replyId.trim()
+        scrollTargetEmitted = false
+        if (focusCommentId.isBlank()) return
+        if (focusReplyId.isNotBlank()) {
+            expandReplies(focusCommentId)
+        } else {
+            tryEmitScrollTarget()
+        }
+    }
+
+    fun clearScrollTarget() {
+        _scrollToRowId.value = null
+    }
+
+    private fun tryEmitScrollTarget() {
+        if (scrollTargetEmitted || focusCommentId.isBlank()) return
+        val targetRowId = if (focusReplyId.isNotBlank()) {
+            val replies = repliesByComment[focusCommentId].orEmpty()
+            if (replies.none { it.id == focusReplyId }) return
+            "reply:$focusCommentId:$focusReplyId"
+        } else {
+            if (comments.none { it.id == focusCommentId }) return
+            "comment:$focusCommentId"
+        }
+        if (_rows.value.none { it.rowId == targetRowId }) return
+        scrollTargetEmitted = true
+        _scrollToRowId.value = targetRowId
+    }
+
+    private fun expandReplies(commentId: String) {
         if (commentId in expandedCommentIds) {
-            expandedCommentIds.remove(commentId)
-            replyListeners.remove(commentId)?.invoke()
-            loadingReplyIds.remove(commentId)
-            rebuildRows()
+            tryEmitScrollTarget()
             return
         }
         expandedCommentIds.add(commentId)
@@ -116,6 +152,17 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
                 showError(it)
             },
         )
+    }
+
+    fun toggleReplies(commentId: String) {
+        if (commentId in expandedCommentIds) {
+            expandedCommentIds.remove(commentId)
+            replyListeners.remove(commentId)?.invoke()
+            loadingReplyIds.remove(commentId)
+            rebuildRows()
+            return
+        }
+        expandReplies(commentId)
     }
 
     fun toggleCommentLike(comment: DiaryPostComment) {
@@ -189,7 +236,7 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
     fun send(text: String, onSuccess: () -> Unit) {
         val target = _replyingTo.value
         if (target != null) {
-            if (target.commentId !in expandedCommentIds) toggleReplies(target.commentId)
+            if (target.commentId !in expandedCommentIds) expandReplies(target.commentId)
             addDiaryReplyUseCase(
                 postId = postId,
                 commentId = target.commentId,

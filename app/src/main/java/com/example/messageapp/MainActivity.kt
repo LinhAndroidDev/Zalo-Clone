@@ -14,6 +14,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.messageapp.databinding.ActivityMainBinding
 import com.example.messageapp.fragment.SplashFragment
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.model.DiaryNavigationTarget
 import com.example.messageapp.model.User
 import com.example.messageapp.service.ReceiverMessageService
 import com.example.messageapp.viewmodel.MainViewModel
@@ -25,20 +26,26 @@ class MainActivity : AppCompatActivity() {
     private var binding: ActivityMainBinding? = null
     private var isDoubleTab = false
     val mainViewModel: MainViewModel by viewModels()
-    private var pendingDiaryPostId: String? = null
+    private var pendingDiaryTarget: DiaryNavigationTarget? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        pendingDiaryPostId = intent.getStringExtra(ReceiverMessageService.EXTRA_DIARY_POST_ID)?.trim()
+        intent.getStringExtra(ReceiverMessageService.EXTRA_DIARY_POST_ID)?.trim()
             ?.takeIf { it.isNotBlank() }
+            ?.let { pendingDiaryTarget = DiaryNavigationTarget(postId = it) }
         initView()
         observeBadge()
     }
 
-    fun consumePendingDiaryPostId(): String? {
-        val id = pendingDiaryPostId
-        pendingDiaryPostId = null
-        return id
+    fun setPendingDiaryTarget(target: DiaryNavigationTarget) {
+        if (target.postId.isBlank()) return
+        pendingDiaryTarget = target
+    }
+
+    fun consumePendingDiaryTarget(): DiaryNavigationTarget? {
+        val target = pendingDiaryTarget
+        pendingDiaryTarget = null
+        return target
     }
 
     private fun initView() {
@@ -63,7 +70,7 @@ class MainActivity : AppCompatActivity() {
 
         binding?.bottomNav?.setupWithNavController(navController)
 
-        pendingDiaryPostId?.let {
+        pendingDiaryTarget?.let {
             binding?.bottomNav?.selectedItemId = R.id.diaryFragment
         }
 

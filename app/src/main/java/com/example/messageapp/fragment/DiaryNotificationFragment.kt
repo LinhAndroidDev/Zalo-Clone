@@ -3,11 +3,12 @@ package com.example.messageapp.fragment
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryNotificationAdapter
 import com.example.messageapp.base.BaseFragment
-import com.example.messageapp.bottom_sheet.BottomSheetDiaryComments
 import com.example.messageapp.databinding.FragmentDiaryNotificationBinding
+import com.example.messageapp.model.DiaryNavigationTarget
 import com.example.messageapp.viewmodel.DiaryNotificationFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -21,10 +22,18 @@ class DiaryNotificationFragment :
     private val adapter by lazy {
         DiaryNotificationAdapter().apply {
             onItemClick = { item ->
+                if (!item.read) {
+                    viewModel?.markAsRead(item.id)
+                }
                 if (item.postId.isNotBlank()) {
+                    (activity as? MainActivity)?.setPendingDiaryTarget(
+                        DiaryNavigationTarget(
+                            postId = item.postId,
+                            commentId = item.commentId,
+                            replyId = item.replyId,
+                        ),
+                    )
                     findNavController().popBackStack()
-                    BottomSheetDiaryComments.newInstance(item.postId)
-                        .show(requireActivity().supportFragmentManager, "BottomSheetDiaryComments")
                 }
             }
         }
@@ -34,11 +43,6 @@ class DiaryNotificationFragment :
         super.initView()
         binding?.rvNotifications?.adapter = adapter
         viewModel?.startObserving()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        viewModel?.markAllAsRead()
     }
 
     override fun bindData() {
