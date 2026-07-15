@@ -26,6 +26,15 @@
                 android:layout_marginStart="5dp"
                 android:orientation="vertical">
 
+                <include
+                    android:id="@+id/layoutForwardLabel"
+                    layout="@layout/layout_message_forward_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
                 <LinearLayout
                     android:id="@+id/viewMessage"
                     android:minWidth="100dp"
@@ -38,7 +47,7 @@
                     android:paddingVertical="7dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/layoutForwardLabel"
                     app:layout_constrainedWidth="true"
                     android:visibility="gone">
 
@@ -79,7 +88,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/layoutForwardLabel"
                     android:layout_marginStart="5dp"
                     android:visibility="gone">
 
@@ -124,6 +133,7 @@
                     android:layout_marginStart="5dp"
                     android:visibility="gone"
                     app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/layoutForwardLabel"
                     app:type="receiver" />
 
                 <LinearLayout

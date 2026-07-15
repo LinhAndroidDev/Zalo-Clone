@@ -359,6 +359,7 @@ class ChatAdapter(
 
                     TypeMessage.SYSTEM -> Unit
                 }
+                holder.bindForwardLabel(context, message, replyNameContext())
                 checkShowSeenMessage(holder, position)
                 holder.v.optionMenuPhoto.setOnClickListener {
                     mCallBack?.onOptionMenuClick(message)
@@ -409,6 +410,7 @@ class ChatAdapter(
 
                     TypeMessage.SYSTEM -> Unit
                 }
+                holder.bindForwardLabel(context, message, replyNameContext())
                 holder.v.optionMenuPhoto.setOnClickListener {
                     mCallBack?.onOptionMenuClick(message)
                 }

@@ -14,6 +14,7 @@ import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
 import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.ForwardMessageHelper
 import com.example.messageapp.utils.MentionHelper
 import com.example.messageapp.utils.MessageReplyHelper
 
@@ -104,6 +105,19 @@ class ReceiverViewHolder(val v: ItemChatReceiverBinding) : RecyclerView.ViewHold
             reply = message.replyTo,
             nameContext = nameContext,
             onQuoteClick = onQuoteClick,
+        )
+    }
+
+    fun bindForwardLabel(
+        context: Context,
+        message: Message,
+        nameContext: MessageReplyHelper.ReplyNameContext,
+    ) {
+        ForwardMessageHelper.bindForwardLabel(
+            context = context,
+            labelRoot = v.root.findViewById(R.id.layoutForwardLabel),
+            message = message,
+            nameContext = nameContext,
         )
     }
 

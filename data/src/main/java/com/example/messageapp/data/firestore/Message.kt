@@ -35,6 +35,8 @@ data class Message(
     val audio: String? = null,
     val type: Int = 0, // 0: message, 1: photos, 2: single photo, 3: audio, 4: system event
     val replyTo: MessageReply? = null,
+    val forwardFromId: String = "",
+    val forwardFromName: String = "",
     /** Group system event: add | remove | leave */
     val systemEvent: String = "",
     val systemActorId: String = "",

@@ -28,6 +28,8 @@ data class Message(
     val audio: String? = null,
     val type: Int = 0,
     val replyTo: MessageReply? = null,
+    val forwardFromId: String = "",
+    val forwardFromName: String = "",
     val systemEvent: String = "",
     val systemActorId: String = "",
     val systemActorName: String = "",

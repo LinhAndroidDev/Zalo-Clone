@@ -77,6 +77,14 @@
     <string name="reply_audio">Tin thoại</string>
     <string name="reply_original_not_found">Tin nhắn gốc không còn</string>
     <string name="forward">Chuyển tiếp</string>
+    <string name="forward_label">Đã chuyển tiếp</string>
+    <string name="forward_from_format">Chuyển tiếp từ %1$s</string>
+    <string name="forward_select_title">Chuyển tiếp tin nhắn</string>
+    <string name="forward_select_hint">Chọn hội thoại</string>
+    <string name="forward_confirm">Gửi</string>
+    <string name="forward_confirm_count">Gửi (%1$d)</string>
+    <string name="forward_success">Đã chuyển tiếp</string>
+    <string name="forward_no_conversations">Không có hội thoại để chuyển tiếp</string>
     <string name="copy">Sao chép</string>
     <string name="pin">Ghim</string>
     <string name="appointment_reminder">Nhắc hẹn</string>

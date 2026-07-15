@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingBottom="4dp"
+    android:visibility="gone">
+
+    <ImageView
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_share"
+        app:tint="@color/color_primary" />
+
+    <TextView
+        android:id="@+id/tvForwardLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:fontFamily="@font/font_noto_sans"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp"
+        android:textStyle="italic"
+        tools:text="Chuyển tiếp từ Nguyễn A" />
+</LinearLayout>

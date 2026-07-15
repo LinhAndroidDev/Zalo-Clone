@@ -33,6 +33,58 @@ class SendMessageUseCase @Inject constructor(
     }
 }
 
+class ForwardMessageUseCase @Inject constructor(
+    private val sendMessageUseCase: SendMessageUseCase,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(
+        source: Message,
+        targets: List<Conversation>,
+        timeProvider: () -> String,
+    ) {
+        if (targets.isEmpty() || source.type == SYSTEM_MESSAGE_TYPE) return
+        val userId = sessionRepository.getAuth()
+        targets.forEach { conversation ->
+            val time = timeProvider()
+            val forwarded = buildForwardedMessage(source, conversation, userId, time)
+            val sendFirst = conversation.message.isBlank()
+            sendMessageUseCase(forwarded, time, conversation, sendFirst)
+        }
+    }
+
+    private fun buildForwardedMessage(
+        source: Message,
+        conversation: Conversation,
+        userId: String,
+        time: String,
+    ): Message {
+        val forwardFromId = source.sender
+        val forwardFromName = when {
+            forwardFromId == userId -> sessionRepository.getNameUser()
+            else -> ""
+        }
+        return Message(
+            message = source.message,
+            receiver = conversation.friendId,
+            sender = userId,
+            time = time,
+            mentions = source.mentions,
+            photos = source.photos,
+            photoSizes = source.photoSizes,
+            singlePhoto = source.singlePhoto,
+            audio = source.audio,
+            type = source.type,
+            replyTo = source.replyTo,
+            forwardFromId = forwardFromId,
+            forwardFromName = forwardFromName,
+        )
+    }
+
+    companion object {
+        private const val SYSTEM_MESSAGE_TYPE = 4
+    }
+}
+
 class ToggleMessageReactionUseCase @Inject constructor(
     private val chatRepository: ChatRepository,
     private val sessionRepository: SessionRepository,

@@ -49,6 +49,7 @@ import com.example.messageapp.adapter.SenderViewHolder
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetAddGroupMembers
+import com.example.messageapp.bottom_sheet.BottomSheetForwardMessage
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
 import com.example.messageapp.bottom_sheet.BottomSheetRecord
 import com.example.messageapp.bottom_sheet.BottomSheetRemoveGroupMembers
@@ -367,6 +368,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val popupView = inflater.inflate(R.layout.popup_option_chat, null)
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
         val btnReply: LinearLayout = popupView.findViewById(R.id.btnReply)
+        val btnForward: LinearLayout = popupView.findViewById(R.id.btnForward)
         val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
         val layoutEmotion: LinearLayout = popupView.findViewById(R.id.layoutEmotion)
         val imgFavourite: ImageView = popupView.findViewById(R.id.imgFavourite)
@@ -389,6 +391,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             photoIntrinsicHeight = photoIntrinsicHeight,
         )
         btnCopy.isVisible = photoPreviewUrl == null
+        btnForward.isVisible = TypeMessage.of(message.type) != TypeMessage.SYSTEM
 
         // Tạo PopupWindow với chiều rộng và chiều cao
         val popupWindow = PopupWindow(
@@ -432,6 +435,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         btnReply.setOnClickListener {
             startReply(message)
             popupWindow.dismiss()
+        }
+
+        btnForward.setOnClickListener {
+            popupWindow.dismiss()
+            BottomSheetForwardMessage.newInstance(
+                message = message,
+                excludeConversationId = conversation?.friendId.orEmpty(),
+            ).show(parentFragmentManager, BottomSheetForwardMessage.TAG)
         }
 
         btnRemoveMessage.setOnClickListener {
