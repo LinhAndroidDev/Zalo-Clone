@@ -49,7 +49,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/font_noto_sans"
-                        android:textColor="@color/text_common"
+                        android:textColor="@color/text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         tools:text="Nguyễn Văn A" />
@@ -59,7 +59,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:textColor="@color/text_grey"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         tools:text="Vừa xong" />
                 </LinearLayout>
@@ -81,7 +81,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:fontFamily="@font/font_noto_sans"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:visibility="gone"
                 tools:text="Nội dung bài đăng"
@@ -144,7 +144,7 @@
                         android:layout_marginStart="5dp"
                         android:text="@string/diary_like_label"
                         android:textSize="12sp"
-                        android:textColor="@color/grey"
+                        android:textColor="@color/icon_default"
                         android:fontFamily="@font/font_noto_sans"
                         android:textStyle="bold"
                         android:layout_width="wrap_content"
@@ -153,7 +153,7 @@
                     <View
                         android:layout_marginVertical="5dp"
                         android:layout_marginHorizontal="10dp"
-                        android:background="@color/grey_bg"
+                        android:background="@color/surface_divider"
                         android:layout_width="1dp"
                         android:layout_height="24dp"/>
 
@@ -168,7 +168,7 @@
                         android:id="@+id/tvLikeCount"
                         android:text="0"
                         android:textSize="12sp"
-                        android:textColor="@color/grey"
+                        android:textColor="@color/icon_default"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
                 </LinearLayout>
@@ -192,7 +192,7 @@
                         android:layout_marginStart="6dp"
                         android:text="0"
                         android:textSize="12sp"
-                        android:textColor="@color/grey"
+                        android:textColor="@color/icon_default"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
                 </LinearLayout>

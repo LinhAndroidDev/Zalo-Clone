@@ -25,7 +25,7 @@
             android:fontFamily="@font/font_noto_sans"
             android:gravity="center"
             android:maxLines="1"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="12sp"
             tools:text="Nguyen Van A" />
 

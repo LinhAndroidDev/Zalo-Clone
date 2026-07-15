@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Sender đầu nhóm: góc dưới phải bo nhẹ 3dp -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/color_sender" />
+    <solid android:color="@color/chat_bubble_sender" />
     <corners
         android:bottomLeftRadius="8dp"
         android:bottomRightRadius="3dp"
@@ -9,5 +9,5 @@
         android:topRightRadius="8dp" />
     <stroke
         android:width="0.8dp"
-        android:color="@color/stroke_sender" />
+        android:color="@color/chat_stroke_sender" />
 </shape>

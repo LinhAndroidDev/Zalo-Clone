@@ -19,7 +19,7 @@
         android:minHeight="36dp"
         android:paddingHorizontal="14dp"
         android:text="@string/diary_comment_menu_copy"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
     <TextView
@@ -32,7 +32,7 @@
         android:minHeight="36dp"
         android:paddingHorizontal="14dp"
         android:text="@string/diary_comment_menu_edit"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:textSize="14sp"
         android:visibility="gone"
         tools:visibility="visible" />
@@ -47,7 +47,7 @@
         android:minHeight="36dp"
         android:paddingHorizontal="14dp"
         android:text="@string/diary_comment_menu_delete"
-        android:textColor="@color/red"
+        android:textColor="@color/color_error"
         android:textSize="14sp"
         android:visibility="gone"
         tools:visibility="visible" />

@@ -102,8 +102,8 @@ class MainActivity : AppCompatActivity() {
         val badge = binding?.bottomNav?.getOrCreateBadge(R.id.homeFragment)
         badge?.isVisible = num > 0
         badge?.text = if (num <= 5) num.toString() else "+5"
-        badge?.backgroundColor = getColor(R.color.red)
-        badge?.badgeTextColor = getColor(R.color.text_white)
+        badge?.backgroundColor = getColor(R.color.color_error)
+        badge?.badgeTextColor = getColor(R.color.text_on_color)
         badge?.horizontalOffset = 10
     }
 
@@ -111,8 +111,8 @@ class MainActivity : AppCompatActivity() {
         val badge = binding?.bottomNav?.getOrCreateBadge(R.id.phoneBookFragment)
         badge?.isVisible = num > 0
         badge?.number = num
-        badge?.backgroundColor = getColor(R.color.red)
-        badge?.badgeTextColor = getColor(R.color.text_white)
+        badge?.backgroundColor = getColor(R.color.color_error)
+        badge?.badgeTextColor = getColor(R.color.text_on_color)
         badge?.horizontalOffset = 10
     }
 

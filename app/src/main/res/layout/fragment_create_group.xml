@@ -6,7 +6,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/grey_bg"
+        android:background="@color/surface_divider"
         android:orientation="vertical"
         tools:context=".fragment.CreateGroupFragment">
 
@@ -32,7 +32,7 @@
                 android:layout_weight="1"
                 android:fontFamily="@font/font_noto_sans"
                 android:text="@string/create_group_title"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -59,7 +59,7 @@
             android:layout_marginTop="12dp"
             android:fontFamily="@font/font_noto_sans"
             android:text="@string/select_group_members"
-            android:textColor="@color/text_grey"
+            android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
         <androidx.recyclerview.widget.RecyclerView

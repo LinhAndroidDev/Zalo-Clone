@@ -13,7 +13,7 @@
             android:id="@+id/layoutHeaderStatus"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="@color/grey_emotion"
+            android:background="@color/surface_emotion"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingTop="30dp"
@@ -29,7 +29,7 @@
                 android:layout_marginHorizontal="15dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_close"
-                app:tint="@color/grey" />
+                app:tint="@color/icon_default" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -43,7 +43,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/font_noto_sans"
                     android:text="@string/status_title_create_post"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -73,7 +73,7 @@
                         android:layout_marginStart="4dp"
                         android:fontFamily="@font/font_noto_sans"
                         android:text="@string/status_audience_friends"
-                        android:textColor="@color/text_common"
+                        android:textColor="@color/text_primary"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
@@ -93,7 +93,7 @@
                 android:layout_width="38dp"
                 android:layout_height="38dp"
                 android:layout_marginEnd="15dp"
-                app:cardBackgroundColor="@color/blue"
+                app:cardBackgroundColor="@color/color_accent"
                 app:cardCornerRadius="30dp"
                 app:cardElevation="0dp">
 
@@ -111,7 +111,7 @@
             android:id="@+id/viewLineHeader"
             android:layout_width="0dp"
             android:layout_height="1dp"
-            android:background="@color/grey_bg"
+            android:background="@color/surface_divider"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/layoutHeaderStatus" />
@@ -137,8 +137,8 @@
                 android:hint="@string/status_hint_what_thinking"
                 android:maxLines="8"
                 android:minLines="4"
-                android:textColor="@color/text_common"
-                android:textColorHint="@color/text_grey"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
                 android:textSize="17sp" />
 
             <LinearLayout
@@ -181,7 +181,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="@color/grey_bg" />
+                android:background="@color/surface_divider" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -200,7 +200,7 @@
                     android:focusable="true"
                     android:importantForAccessibility="yes"
                     android:src="@drawable/ic_sticker_smile"
-                    app:tint="@color/grey" />
+                    app:tint="@color/icon_default" />
 
                 <View
                     android:layout_width="0dp"
@@ -218,7 +218,7 @@
                     android:focusable="true"
                     android:importantForAccessibility="yes"
                     android:src="@drawable/ic_image"
-                    app:tint="@color/grey" />
+                    app:tint="@color/icon_default" />
 
                 <ImageView
                     android:id="@+id/btnPickVideo"
@@ -231,7 +231,7 @@
                     android:focusable="true"
                     android:importantForAccessibility="yes"
                     android:src="@drawable/ic_video"
-                    app:tint="@color/grey" />
+                    app:tint="@color/icon_default" />
 
                 <ImageView
                     android:id="@+id/btnAttachLink"
@@ -244,7 +244,7 @@
                     android:focusable="true"
                     android:importantForAccessibility="yes"
                     android:src="@drawable/ic_attach"
-                    app:tint="@color/grey" />
+                    app:tint="@color/icon_default" />
 
                 <ImageView
                     android:id="@+id/btnPickLocation"
@@ -257,7 +257,7 @@
                     android:focusable="true"
                     android:importantForAccessibility="yes"
                     android:src="@drawable/ic_map"
-                    app:tint="@color/grey" />
+                    app:tint="@color/icon_default" />
             </LinearLayout>
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>

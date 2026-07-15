@@ -54,7 +54,7 @@
             <TextView
                 android:id="@+id/tvName"
                 android:textSize="14sp"
-                android:textColor="@color/text_white"
+                android:textColor="@color/text_on_color"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
@@ -62,7 +62,7 @@
                 android:id="@+id/tvTimeSend"
                 tools:text="Hom qua • 01:03"
                 android:textSize="10sp"
-                android:textColor="@color/text_white"
+                android:textColor="@color/text_on_color"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 tools:ignore="SmallSp" />

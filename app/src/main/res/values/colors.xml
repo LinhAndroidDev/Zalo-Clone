@@ -1,40 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- Base -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="back_common">#068BFF</color>
-    <color name="back_common_end">#01A4FF</color>
-    <color name="blue">#0b8cff</color>
-    <color name="blue1">#0268ff</color>
-    <color name="blue2">#2373ED</color>
-    <color name="color_sender">#d0f2fe</color>
-    <color name="blue_light">#daeaff</color>
-    <color name="reply_scroll_highlight">#664DA3FF</color>
-    <color name="reply_bubble_stroke_highlight">#068BFF</color>
-    <color name="blue_dark">#0a4197</color>
-    <color name="grey">#4C4C4C</color>
-    <color name="grey_1">#9f9f9f</color>
-    <color name="grey_2">#77787a</color>
-    <color name="grey_emotion">#F8F7F7</color>
-    <color name="stroke_sender">#bbced7</color>
-    <color name="stroke_receiver">#d7dbde</color>
-    <color name="grey_bg">#dfe3e6</color>
-    <color name="red">#fb534f</color>
-    <color name="grey_light">#F0F0F0</color>
-    <color name="transparent_popup_options">#CF000000</color>
-    <color name="green">#4CAF50</color>
-    <color name="green_light">#93b738</color>
-    <color name="orange_dark">#F6BA5F</color>
-    <color name="red_light">#f2594d</color>
-    <color name="blue_3">#4672fd</color>
-    <color name="blue_4">#1893ef</color>
+    <color name="overlay_scrim">#CF000000</color>
 
-    //Text Color
-    <color name="text_common">#FF000000</color>
-    <color name="text_white">#FFFFFFFF</color>
-    <color name="text_icon">#1c77e4</color>
-    <color name="text_blue">#0268ff</color>
-    <color name="text_hint">#dfe3e6</color>
-    <color name="text_grey">#626365</color>
-    <color name="text_sender">#a7a7a7</color>
+    <!-- Brand / primary -->
+    <color name="color_primary">#068BFF</color>
+    <color name="color_primary_variant">#01A4FF</color>
+    <color name="color_accent">#0B8CFF</color>
+    <color name="color_link">#0268FF</color>
+    <color name="color_nav_active">#2373ED</color>
+    <color name="color_blue_tint">#DAEAFF</color>
+    <color name="color_blue_dark">#0A4197</color>
+
+    <!-- Feature / discover icon accents -->
+    <color name="color_icon_indigo">#4672FD</color>
+    <color name="color_icon_sky">#1893EF</color>
+    <color name="color_icon_olive">#93B738</color>
+    <color name="color_icon_amber">#F6BA5F</color>
+    <color name="color_icon_coral">#F2594D</color>
+
+    <!-- Semantic status -->
+    <color name="color_success">#4CAF50</color>
+    <color name="color_error">#FB534F</color>
+
+    <!-- Text -->
+    <color name="text_primary">#FF000000</color>
+    <color name="text_on_color">#FFFFFFFF</color>
+    <color name="text_secondary">#626365</color>
+    <color name="text_muted">#9F9F9F</color>
+    <color name="text_subtle">#77787A</color>
+    <color name="text_meta">#A7A7A7</color>
+    <color name="text_hint">#DFE3E6</color>
+    <color name="text_icon">#1C77E4</color>
+
+    <!-- Surfaces & borders -->
+    <color name="surface_subtle">#F0F0F0</color>
+    <color name="surface_emotion">#F8F7F7</color>
+    <color name="surface_divider">#DFE3E6</color>
+    <color name="icon_default">#4C4C4C</color>
+
+    <!-- Chat -->
+    <color name="chat_bubble_sender">#D0F2FE</color>
+    <color name="chat_stroke_sender">#BBCED7</color>
+    <color name="chat_stroke_receiver">#D7DBDE</color>
+    <color name="chat_reply_highlight">#664DA3FF</color>
+
 </resources>

@@ -184,7 +184,7 @@ object MentionHelper {
     ): CharSequence {
         if (text.isEmpty() || mentions.isEmpty()) return text
         val spannable = SpannableString(text)
-        val color = ContextCompat.getColor(context, R.color.text_blue)
+        val color = ContextCompat.getColor(context, R.color.color_link)
         mentions.forEach { mention ->
             val needles = buildList {
                 if (mention.token.isNotBlank()) add("@${mention.token}")

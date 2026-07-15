@@ -9,7 +9,7 @@
     android:paddingStart="62dp"
     android:paddingEnd="16dp"
     android:paddingVertical="6dp"
-    android:textColor="@color/text_grey"
+    android:textColor="@color/text_secondary"
     android:textSize="12sp"
     android:textStyle="bold"
     tools:text="Xem 2 câu trả lời" />

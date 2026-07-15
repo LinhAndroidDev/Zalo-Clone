@@ -16,7 +16,7 @@
 
             <LinearLayout
                 android:id="@+id/seeMore"
-                android:background="@color/grey_2"
+                android:background="@color/text_subtle"
                 android:layout_width="80dp"
                 android:layout_height="match_parent"
                 android:gravity="center"
@@ -64,7 +64,7 @@
             </LinearLayout>
 
             <LinearLayout
-                android:background="@color/blue2"
+                android:background="@color/color_nav_active"
                 android:layout_width="80dp"
                 android:layout_height="match_parent"
                 android:gravity="center"
@@ -180,7 +180,7 @@
                             android:ellipsize="end"
                             android:maxLines="1"
                             tools:text="Chúc một ngày tốt lành, thời tiết Hà Nội hôm nay 23/10: Mây dải rác"
-                            android:textColor="@color/text_common"
+                            android:textColor="@color/text_primary"
                             android:textSize="14sp" />
 
                         <LinearLayout
@@ -199,7 +199,7 @@
                                 android:layout_marginHorizontal="7dp"
                                 android:layout_marginVertical="1dp"
                                 android:text="2"
-                                android:textColor="@color/text_white"
+                                android:textColor="@color/text_on_color"
                                 android:textSize="10sp"
                                 android:visibility="gone"
                                 tools:ignore="SmallSp" />

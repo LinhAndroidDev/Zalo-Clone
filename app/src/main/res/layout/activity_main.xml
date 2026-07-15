@@ -35,7 +35,7 @@
             app:menu="@menu/menu_bottom_nav"
             app:backgroundTint="@color/white"
             app:itemIconTint="@color/item_bottom_nav_color"
-            app:itemTextColor="@color/blue2"
+            app:itemTextColor="@color/color_nav_active"
             app:itemIconSize="25dp"
             app:itemPaddingTop="12dp"
             app:itemPaddingBottom="12dp"

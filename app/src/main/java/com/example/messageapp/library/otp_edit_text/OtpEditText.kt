@@ -119,7 +119,7 @@ class OtpEditText : AppCompatEditText {
             } else {
                 mLinesPaint!!.strokeWidth = mLineStroke
                 mLinesPaint!!.shader = null
-                mLinesPaint!!.color = context.getColor(R.color.grey)
+                mLinesPaint!!.color = context.getColor(R.color.icon_default)
             }
     }
 

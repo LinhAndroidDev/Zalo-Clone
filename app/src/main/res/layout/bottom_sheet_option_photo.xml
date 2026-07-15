@@ -19,7 +19,7 @@
         android:layout_gravity="center_horizontal"
         android:text="@string/option"
         android:textSize="15sp"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:textStyle="bold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -27,7 +27,7 @@
 
     <View
         android:layout_marginTop="15dp"
-        android:background="@color/grey_bg"
+        android:background="@color/surface_divider"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"/>
 
@@ -37,14 +37,14 @@
         android:paddingVertical="15dp"
         android:text="@string/save_photo_video_audio"
         android:textSize="16sp"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         tools:ignore="RtlSymmetry" />
 
     <View
         android:layout_marginStart="15dp"
-        android:background="@color/grey_bg"
+        android:background="@color/surface_divider"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"/>
 
@@ -54,7 +54,7 @@
         android:paddingVertical="15dp"
         android:text="@string/delete"
         android:textSize="16sp"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         tools:ignore="RtlSymmetry" />
@@ -62,7 +62,7 @@
     <View
         android:layout_marginStart="15dp"
         android:layout_marginBottom="2dp"
-        android:background="@color/grey_bg"
+        android:background="@color/surface_divider"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"/>
 </LinearLayout>

@@ -16,7 +16,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="220dp"
-            android:background="@color/grey_1"
+            android:background="@color/text_muted"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -95,7 +95,7 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="10dp"
         android:fontFamily="@font/font_noto_sans"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:textSize="20sp"
         android:textStyle="bold"
         tools:text="Nguyen Huu Linh" />
@@ -113,13 +113,13 @@
             android:layout_height="20dp"
             android:importantForAccessibility="no"
             android:src="@drawable/ic_edit_personal"
-            app:tint="@color/blue1" />
+            app:tint="@color/color_link" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/update_your_profile"
-            android:textColor="@color/blue1"
+            android:textColor="@color/color_link"
             android:textSize="13sp" />
     </LinearLayout>
 
@@ -131,7 +131,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/friend_profile_empty_activity"
-        android:textColor="@color/text_grey"
+        android:textColor="@color/text_secondary"
         android:textSize="14sp"
         android:visibility="gone"/>
 
@@ -164,7 +164,7 @@
             android:layout_marginTop="20dp"
             android:fontFamily="@font/font_noto_sans"
             android:text="@string/what_happy_today"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -176,7 +176,7 @@
             android:fontFamily="@font/font_noto_sans"
             android:gravity="center"
             android:text="@string/note_happy_today"
-            android:textColor="@color/text_grey"
+            android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
         <TextView
@@ -190,7 +190,7 @@
             android:paddingHorizontal="20dp"
             android:paddingVertical="8dp"
             android:text="@string/post_to_diary"
-            android:textColor="@color/text_white"
+            android:textColor="@color/text_on_color"
             android:textSize="14sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"

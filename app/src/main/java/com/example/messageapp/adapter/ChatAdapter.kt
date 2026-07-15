@@ -434,7 +434,7 @@ class ChatAdapter(
         val highlightState = buildReplyHighlightState(holder, message, position)
         row.setTag(HIGHLIGHT_STATE_TAG, highlightState)
 
-        val rowDrawable = ContextCompat.getColor(context, R.color.reply_scroll_highlight).toDrawable()
+        val rowDrawable = ContextCompat.getColor(context, R.color.chat_reply_highlight).toDrawable()
         row.background = rowDrawable
 
         highlightState.bubbleView?.let { bubble ->
@@ -477,17 +477,17 @@ class ChatAdapter(
                 TypeMessage.MESSAGE -> ReplyHighlightState(
                     bubbleView = holder.v.viewMessage,
                     bubbleDrawableRes = senderGroupedTextBubbleDrawable(position),
-                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.chat_stroke_sender),
                 )
                 TypeMessage.SINGLE_PHOTO, TypeMessage.PHOTOS -> ReplyHighlightState(
                     bubbleView = photoHighlightTarget(holder.v.layoutPhoto),
-                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.chat_stroke_receiver),
                     foregroundCornerRadiusPx = photoCornerRadiusPx,
                 )
                 TypeMessage.AUDIO -> ReplyHighlightState(
                     bubbleView = holder.v.viewRecordWave.findViewById(R.id.viewRecord),
                     bubbleDrawableRes = R.drawable.bg_sender,
-                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_sender),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.chat_stroke_sender),
                 )
                 TypeMessage.SYSTEM -> ReplyHighlightState(bubbleView = null)
             }
@@ -495,17 +495,17 @@ class ChatAdapter(
                 TypeMessage.MESSAGE -> ReplyHighlightState(
                     bubbleView = holder.v.viewMessage,
                     bubbleDrawableRes = receiverGroupedTextBubbleDrawable(position),
-                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.chat_stroke_receiver),
                 )
                 TypeMessage.SINGLE_PHOTO, TypeMessage.PHOTOS -> ReplyHighlightState(
                     bubbleView = photoHighlightTarget(holder.v.layoutPhoto),
-                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.chat_stroke_receiver),
                     foregroundCornerRadiusPx = photoCornerRadiusPx,
                 )
                 TypeMessage.AUDIO -> ReplyHighlightState(
                     bubbleView = holder.v.viewRecordWave.findViewById(R.id.viewRecord),
                     bubbleDrawableRes = R.drawable.bg_receiver,
-                    normalStrokeColor = ContextCompat.getColor(context, R.color.stroke_receiver),
+                    normalStrokeColor = ContextCompat.getColor(context, R.color.chat_stroke_receiver),
                 )
                 TypeMessage.SYSTEM -> ReplyHighlightState(bubbleView = null)
             }
@@ -545,7 +545,7 @@ class ChatAdapter(
             .coerceAtLeast(normalStrokePx + 1)
         val strokeWidth = (normalStrokePx + (highlightStrokePx - normalStrokePx) * ratio).toInt()
             .coerceAtLeast(normalStrokePx)
-        val highlightStrokeColor = ContextCompat.getColor(context, R.color.reply_bubble_stroke_highlight)
+        val highlightStrokeColor = ContextCompat.getColor(context, R.color.color_primary)
         val strokeColor = blendColors(state.normalStrokeColor, highlightStrokeColor, ratio)
         drawable.setStroke(strokeWidth, strokeColor)
         bubble.background = drawable
@@ -563,7 +563,7 @@ class ChatAdapter(
             .coerceAtLeast(normalStrokePx + 1)
         val strokeWidth = (normalStrokePx + (highlightStrokePx - normalStrokePx) * ratio).toInt()
             .coerceAtLeast(normalStrokePx)
-        val highlightStrokeColor = ContextCompat.getColor(context, R.color.reply_bubble_stroke_highlight)
+        val highlightStrokeColor = ContextCompat.getColor(context, R.color.color_primary)
         val strokeColor = blendColors(state.normalStrokeColor, highlightStrokeColor, ratio)
 
         val overlay = (bubble.foreground as? GradientDrawable)?.mutate() as? GradientDrawable

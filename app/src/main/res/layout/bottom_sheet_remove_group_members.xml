@@ -16,7 +16,7 @@
         android:paddingTop="16dp"
         android:paddingBottom="8dp"
         android:text="@string/group_menu_remove_members"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:textSize="16sp"
         android:textStyle="bold" />
 

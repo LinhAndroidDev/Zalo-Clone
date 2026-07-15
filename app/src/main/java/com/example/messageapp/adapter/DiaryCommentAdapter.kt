@@ -110,7 +110,7 @@ class DiaryCommentAdapter(
         if (!r.text.startsWith(token)) return r.text
         val builder = SpannableStringBuilder(r.text)
         builder.setSpan(
-            ForegroundColorSpan(ContextCompat.getColor(ctx, R.color.text_blue)),
+            ForegroundColorSpan(ContextCompat.getColor(ctx, R.color.color_link)),
             0,
             token.length,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,

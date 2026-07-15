@@ -5,7 +5,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/back_common">
+        android:background="@color/color_primary">
 
         <!-- Header -->
         <LinearLayout
@@ -76,7 +76,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -85,7 +85,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textColor="@color/text_grey"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
                 <View
@@ -107,7 +107,7 @@
                     android:layout_marginTop="16dp"
                     android:gravity="center"
                     android:text="@string/qr_hint"
-                    android:textColor="@color/text_grey"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
             </LinearLayout>

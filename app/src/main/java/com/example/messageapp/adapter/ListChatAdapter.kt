@@ -164,11 +164,11 @@ class ListChatAdapter(
     private fun BaseViewHolder<ItemListChatBinding>.handleWhenConversationIsChanged(conversation: Conversation) {
         if (conversation.isGroupThread()) {
             if (conversation.numberUnSeen > 0) {
-                v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
-                v.tvTime.setTextColor(itemView.context.getColor(R.color.text_common))
+                v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_primary))
+                v.tvTime.setTextColor(itemView.context.getColor(R.color.text_primary))
             } else {
-                v.tvMessage.setTextColor(itemView.context.getColor(R.color.grey_1))
-                v.tvTime.setTextColor(itemView.context.getColor(R.color.grey_1))
+                v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_muted))
+                v.tvTime.setTextColor(itemView.context.getColor(R.color.text_muted))
             }
             if (conversation.numberUnSeen > 0) {
                 v.newMessage.isVisible = true
@@ -181,11 +181,11 @@ class ListChatAdapter(
             return
         }
         if (conversation.numberUnSeen > 0) {
-            v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_common))
-            v.tvTime.setTextColor(itemView.context.getColor(R.color.text_common))
+            v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_primary))
+            v.tvTime.setTextColor(itemView.context.getColor(R.color.text_primary))
         } else {
-            v.tvMessage.setTextColor(itemView.context.getColor(R.color.grey_1))
-            v.tvTime.setTextColor(itemView.context.getColor(R.color.grey_1))
+            v.tvMessage.setTextColor(itemView.context.getColor(R.color.text_muted))
+            v.tvTime.setTextColor(itemView.context.getColor(R.color.text_muted))
         }
 
         if (conversation.isMessageFromFriend()) {

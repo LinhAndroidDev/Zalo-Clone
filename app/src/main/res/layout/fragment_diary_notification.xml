@@ -33,7 +33,7 @@
                 android:layout_gravity="center"
                 android:fontFamily="@font/font_noto_sans"
                 android:text="@string/diary_notifications_empty"
-                android:textColor="@color/text_grey"
+                android:textColor="@color/text_secondary"
                 android:textSize="15sp"
                 android:visibility="gone"
                 tools:visibility="visible" />

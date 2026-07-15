@@ -26,7 +26,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/font_noto_sans"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="13sp"
             android:textStyle="bold"
             tools:text="Tên" />
@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:fontFamily="@font/font_noto_sans"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="13sp"
             tools:text="Nội dung trả lời" />
 
@@ -52,7 +52,7 @@
                 android:id="@+id/tvTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/text_grey"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 tools:text="Vừa xong" />
 
@@ -64,7 +64,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:fontFamily="@font/font_noto_sans"
                 android:text="@string/diary_comment_like"
-                android:textColor="@color/text_grey"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -84,7 +84,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:textColor="@color/text_grey"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 tools:text="1" />
 
@@ -96,7 +96,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:fontFamily="@font/font_noto_sans"
                 android:text="@string/diary_comment_reply"
-                android:textColor="@color/text_grey"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>

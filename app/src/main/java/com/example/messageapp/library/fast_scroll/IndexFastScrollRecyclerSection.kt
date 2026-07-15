@@ -72,7 +72,7 @@ class IndexFastScrollRecyclerSection(
             indexbarPaint.color = indexbarBackgroudColor
             indexbarPaint.alpha = indexbarBackgroudAlpha
             indexbarPaint.isAntiAlias = true
-            indexbarPaint.setShadowLayer(15f, -5f, 2f, ContextCompat.getColor(context, R.color.grey_bg))
+            indexbarPaint.setShadowLayer(15f, -5f, 2f, ContextCompat.getColor(context, R.color.surface_divider))
             val radiusArray = floatArrayOf(
                 setIndexBarCornerRadius * mDensity, setIndexBarCornerRadius * mDensity, // Góc trên trái (bo)
                 0f, 0f,   // Góc trên phải (không bo)

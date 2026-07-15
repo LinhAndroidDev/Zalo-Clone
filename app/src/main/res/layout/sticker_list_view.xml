@@ -13,7 +13,7 @@
         android:layout_marginStart="15dp"
         android:fontFamily="@font/font_noto_sans"
         android:text="Củ hành"
-        android:textColor="@color/grey_2"
+        android:textColor="@color/text_subtle"
         android:textSize="14sp"
         android:textStyle="bold" />
 

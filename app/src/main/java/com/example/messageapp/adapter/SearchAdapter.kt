@@ -34,28 +34,28 @@ class SearchAdapter : BaseAdapter<UserWithStatus, ItemSearchFriendBinding>() {
         when (status) {
             "friend" -> {
                 holder.v.btnAction.text = ctx.getString(R.string.message)
-                holder.v.btnAction.setTextColor(ctx.getColor(R.color.blue1))
+                holder.v.btnAction.setTextColor(ctx.getColor(R.color.color_link))
                 holder.v.btnAction.setBackgroundResource(R.drawable.bg_corner_25_blue_light)
                 holder.v.btnAction.backgroundTintList = null
                 holder.v.btnAction.setOnClickListener { onChat?.invoke(user) }
             }
             "pending_sent" -> {
                 holder.v.btnAction.text = ctx.getString(R.string.cancel_friend_request)
-                holder.v.btnAction.setTextColor(ctx.getColor(R.color.text_grey))
+                holder.v.btnAction.setTextColor(ctx.getColor(R.color.text_secondary))
                 holder.v.btnAction.setBackgroundResource(R.drawable.bg_corner_25_stroke_grey)
                 holder.v.btnAction.backgroundTintList = null
                 holder.v.btnAction.setOnClickListener { onCancelFriend?.invoke(user) }
             }
             "pending_received" -> {
                 holder.v.btnAction.text = ctx.getString(R.string.agree)
-                holder.v.btnAction.setTextColor(ctx.getColor(R.color.blue1))
+                holder.v.btnAction.setTextColor(ctx.getColor(R.color.color_link))
                 holder.v.btnAction.setBackgroundResource(R.drawable.bg_corner_25_blue_light)
                 holder.v.btnAction.backgroundTintList = null
                 holder.v.btnAction.setOnClickListener { onAddFriend?.invoke(user) }
             }
             else -> {
                 holder.v.btnAction.text = ctx.getString(R.string.add_friend)
-                holder.v.btnAction.setTextColor(ctx.getColor(R.color.blue1))
+                holder.v.btnAction.setTextColor(ctx.getColor(R.color.color_link))
                 holder.v.btnAction.setBackgroundResource(R.drawable.bg_corner_25_blue_light)
                 holder.v.btnAction.backgroundTintList = null
                 holder.v.btnAction.setOnClickListener { onAddFriend?.invoke(user) }

@@ -27,7 +27,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/vietnamese"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="15sp" />
 
             <ImageView
@@ -47,7 +47,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="10dp"
             android:text="@string/title_app"
-            android:textColor="@color/text_blue"
+            android:textColor="@color/color_link"
             android:textSize="33sp"
             android:textStyle="bold"
             android:fontFamily="@font/font_noto_sans" />
@@ -69,7 +69,7 @@
             app:ci_margin="5dp"
             app:ci_mode="outside"
             app:ci_radius="4dp"
-            app:ci_selected_background="@color/blue" />
+            app:ci_selected_background="@color/color_accent" />
 
         <TextView
             android:id="@+id/btnLogin"
@@ -81,7 +81,7 @@
             android:textStyle="bold"
             android:gravity="center_horizontal"
             android:background="@drawable/bg_corner_25_blue_light"
-            android:backgroundTint="@color/blue1"
+            android:backgroundTint="@color/color_link"
             android:paddingVertical="15dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -94,7 +94,7 @@
             android:layout_marginHorizontal="20dp"
             android:text="@string/create_new_account"
             android:textSize="14sp"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textStyle="bold"
             android:gravity="center_horizontal"
             android:background="@drawable/bg_corner_25_blue_light"

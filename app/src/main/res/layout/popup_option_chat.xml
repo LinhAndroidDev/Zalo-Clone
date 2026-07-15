@@ -25,7 +25,7 @@
             android:id="@+id/tvSender"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="14sp" />
 
         <androidx.cardview.widget.CardView
@@ -33,7 +33,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone"
-            app:cardBackgroundColor="@color/grey_bg"
+            app:cardBackgroundColor="@color/surface_divider"
             app:cardCornerRadius="8dp"
             app:cardElevation="0dp">
 
@@ -52,7 +52,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:textColor="@color/text_sender"
+            android:textColor="@color/text_meta"
             android:textSize="10sp"
             tools:ignore="SmallSp" />
     </LinearLayout>
@@ -74,7 +74,7 @@
             android:id="@+id/tvReceiver"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="14sp" />
 
         <androidx.cardview.widget.CardView
@@ -82,7 +82,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone"
-            app:cardBackgroundColor="@color/grey_bg"
+            app:cardBackgroundColor="@color/surface_divider"
             app:cardCornerRadius="8dp"
             app:cardElevation="0dp">
 
@@ -101,7 +101,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:textColor="@color/text_sender"
+            android:textColor="@color/text_meta"
             android:textSize="10sp"
             tools:ignore="SmallSp" />
     </LinearLayout>
@@ -190,7 +190,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/reply"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -214,7 +214,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/forward"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -239,7 +239,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/copy"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
             </LinearLayout>
         </LinearLayout>
@@ -270,7 +270,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/pin"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -295,7 +295,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/appointment_reminder"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -319,7 +319,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/detail"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
             </LinearLayout>
         </LinearLayout>
@@ -353,7 +353,7 @@
                     android:layout_marginTop="5dp"
                     android:gravity="center"
                     android:text="@string/read_text"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -378,7 +378,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="@string/delete"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
             </LinearLayout>
 

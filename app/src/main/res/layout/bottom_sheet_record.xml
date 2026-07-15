@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_marginVertical="30dp"
             android:background="@drawable/bg_circle"
-            android:backgroundTint="@color/blue2">
+            android:backgroundTint="@color/color_nav_active">
 
             <ImageView
                 android:id="@+id/imgRecord"
@@ -79,7 +79,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_circle"
-                    android:backgroundTint="@color/grey_bg">
+                    android:backgroundTint="@color/surface_divider">
 
                     <ImageView
                         android:layout_width="30dp"
@@ -95,7 +95,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="Xoá"
-                    android:textColor="@color/text_grey" />
+                    android:textColor="@color/text_secondary" />
             </LinearLayout>
 
             <LinearLayout
@@ -110,7 +110,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_circle"
-                    android:backgroundTint="@color/blue2">
+                    android:backgroundTint="@color/color_nav_active">
 
                     <ImageView
                         android:layout_width="40dp"
@@ -129,7 +129,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="Gửi"
-                    android:textColor="@color/text_grey" />
+                    android:textColor="@color/text_secondary" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

@@ -52,7 +52,7 @@
                         android:id="@+id/tvReceiver"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/text_common"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp" />
 
                     <TextView
@@ -60,7 +60,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="5dp"
-                        android:textColor="@color/text_sender"
+                        android:textColor="@color/text_meta"
                         android:textSize="10sp"
                         tools:ignore="SmallSp" />
                 </LinearLayout>
@@ -87,7 +87,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="13dp"
-                        app:cardBackgroundColor="@color/grey_bg"
+                        app:cardBackgroundColor="@color/surface_divider"
                         app:cardCornerRadius="5dp"
                         app:cardElevation="0dp">
 
@@ -145,7 +145,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
                         android:layout_marginVertical="2dp"
-                        app:cardBackgroundColor="@color/grey_emotion"
+                        app:cardBackgroundColor="@color/surface_emotion"
                         app:cardCornerRadius="45dp"
                         app:cardElevation="2dp">
 

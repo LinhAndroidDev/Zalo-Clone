@@ -32,7 +32,7 @@
             android:importantForAccessibility="no"
             android:padding="2dp"
             android:src="@drawable/ic_image"
-            app:tint="@color/grey" />
+            app:tint="@color/icon_default" />
 
         <TextView
             android:layout_width="0dp"
@@ -40,7 +40,7 @@
             android:layout_marginVertical="15dp"
             android:layout_weight="1"
             android:text="@string/status_pick_media_preview"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -49,7 +49,7 @@
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
         android:layout_marginStart="15dp"
-        android:background="@color/grey_bg"
+        android:background="@color/surface_divider"
         android:visibility="gone" />
 
     <LinearLayout
@@ -65,7 +65,7 @@
             android:layout_marginHorizontal="15dp"
             android:importantForAccessibility="no"
             android:src="@drawable/ic_camera"
-            app:tint="@color/grey" />
+            app:tint="@color/icon_default" />
 
         <TextView
             android:layout_width="0dp"
@@ -73,7 +73,7 @@
             android:layout_marginVertical="15dp"
             android:layout_weight="1"
             android:text="@string/take_a_new_photo"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -81,7 +81,7 @@
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
         android:layout_marginStart="15dp"
-        android:background="@color/grey_bg" />
+        android:background="@color/surface_divider" />
 
     <LinearLayout
         android:id="@+id/selectPhotoOnDevice"
@@ -97,7 +97,7 @@
             android:layout_marginHorizontal="15dp"
             android:importantForAccessibility="no"
             android:src="@drawable/ic_add_photo"
-            app:tint="@color/grey" />
+            app:tint="@color/icon_default" />
 
         <TextView
             android:layout_width="0dp"
@@ -105,7 +105,7 @@
             android:layout_marginVertical="15dp"
             android:layout_weight="1"
             android:text="@string/select_photo_on_device"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 </LinearLayout>

@@ -15,7 +15,7 @@
             android:layout_height="wrap_content"
             app:title_feature="@string/setting_style"
             app:icon_feature="@drawable/ic_style"
-            app:color_icon_feature="@color/blue"/>
+            app:color_icon_feature="@color/color_accent"/>
 
         <com.example.messageapp.custom.ItemFeaturePersonal
             android:layout_marginStart="7.5dp"
@@ -23,7 +23,7 @@
             android:layout_height="wrap_content"
             app:title_feature="@string/my_photo"
             app:icon_feature="@drawable/ic_image_news"
-            app:color_icon_feature="@color/blue1"/>
+            app:color_icon_feature="@color/color_link"/>
 
         <com.example.messageapp.custom.ItemFeaturePersonal
             android:layout_marginStart="7.5dp"
@@ -31,7 +31,7 @@
             android:layout_height="wrap_content"
             app:title_feature="@string/archive"
             app:icon_feature="@drawable/ic_store"
-            app:color_icon_feature="@color/blue_4"/>
+            app:color_icon_feature="@color/color_icon_sky"/>
 
         <com.example.messageapp.custom.ItemFeaturePersonal
             android:layout_marginStart="7.5dp"
@@ -39,7 +39,7 @@
             android:layout_height="wrap_content"
             app:title_feature="@string/memories_of_the_past"
             app:icon_feature="@drawable/ic_diary_fill"
-            app:color_icon_feature="@color/orange_dark"/>
+            app:color_icon_feature="@color/color_icon_amber"/>
 
         <com.example.messageapp.custom.ItemFeaturePersonal
             android:layout_marginStart="7.5dp"
@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             app:title_feature="@string/my_video"
             app:icon_feature="@drawable/ic_video_news"
-            app:color_icon_feature="@color/green"/>
+            app:color_icon_feature="@color/color_success"/>
 
         <com.example.messageapp.custom.ItemFeaturePersonal
             android:layout_marginStart="7.5dp"
@@ -56,6 +56,6 @@
             android:layout_height="wrap_content"
             app:title_feature="@string/import_from_facebook"
             app:icon_feature="@drawable/ic_export"
-            app:color_icon_feature="@color/blue1"/>
+            app:color_icon_feature="@color/color_link"/>
     </LinearLayout>
 </HorizontalScrollView>

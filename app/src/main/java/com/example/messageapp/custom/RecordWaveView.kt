@@ -106,7 +106,7 @@ class RecordWaveView @JvmOverloads constructor(
             TypeRecord.SENDER -> {
                 binding?.viewRecord?.setBackgroundResource(R.drawable.bg_sender)
                 binding?.btnPlayAudio?.backgroundTintList =
-                    ContextCompat.getColorStateList(context, R.color.blue)
+                    ContextCompat.getColorStateList(context, R.color.color_accent)
                 binding?.icPlay?.backgroundTintList =
                     ContextCompat.getColorStateList(context, R.color.white)
                 binding?.txtDuration?.isVisible = true
@@ -116,23 +116,23 @@ class RecordWaveView @JvmOverloads constructor(
             TypeRecord.PREVIEW -> {
                 binding?.viewRecord?.setBackgroundResource(R.drawable.bg_corner_25_stroke_grey)
                 binding?.btnPlayAudio?.backgroundTintList =
-                    ContextCompat.getColorStateList(context, R.color.grey_bg)
+                    ContextCompat.getColorStateList(context, R.color.surface_divider)
                 binding?.icPlay?.imageTintList =
                     ContextCompat.getColorStateList(context, R.color.black)
                 binding?.txtDuration?.isVisible = false
                 binding?.txtDurationListenAgain?.isVisible = true
-                binding?.audioWaveView?.wavePaint = ContextCompat.getColor(context, R.color.grey)
+                binding?.audioWaveView?.wavePaint = ContextCompat.getColor(context, R.color.icon_default)
             }
 
             TypeRecord.RECEIVER -> {
                 binding?.viewRecord?.setBackgroundResource(R.drawable.bg_receiver)
                 binding?.btnPlayAudio?.backgroundTintList =
-                    ContextCompat.getColorStateList(context, R.color.grey_bg)
+                    ContextCompat.getColorStateList(context, R.color.surface_divider)
                 binding?.icPlay?.imageTintList =
                     ContextCompat.getColorStateList(context, R.color.black)
                 binding?.txtDuration?.isVisible = true
                 binding?.txtDurationListenAgain?.isVisible = false
-                binding?.audioWaveView?.wavePaint = ContextCompat.getColor(context, R.color.grey)
+                binding?.audioWaveView?.wavePaint = ContextCompat.getColor(context, R.color.icon_default)
             }
         }
 

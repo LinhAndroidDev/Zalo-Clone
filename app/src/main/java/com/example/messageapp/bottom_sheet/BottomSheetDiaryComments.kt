@@ -138,7 +138,7 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
             val token = currentMentionToken
             if (token != null && editable.toString().startsWith(token)) {
                 editable.setSpan(
-                    ForegroundColorSpan(ContextCompat.getColor(requireContext(), R.color.text_blue)),
+                    ForegroundColorSpan(ContextCompat.getColor(requireContext(), R.color.color_link)),
                     0,
                     token.trimEnd().length,
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,

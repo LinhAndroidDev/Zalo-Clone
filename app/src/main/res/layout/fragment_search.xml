@@ -33,7 +33,7 @@
                     android:layout_marginTop="12dp"
                     android:fontFamily="@font/font_noto_sans"
                     android:text="@string/recently_searched"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
@@ -52,7 +52,7 @@
                     android:id="@+id/dividerHistory"
                     android:layout_width="match_parent"
                     android:layout_height="8dp"
-                    android:background="@color/grey_bg"
+                    android:background="@color/surface_divider"
                     android:visibility="gone" />
 
                 <!-- Search results section -->
@@ -61,7 +61,7 @@
                     android:layout_marginTop="10dp"
                     android:layout_marginStart="15dp"
                     android:text="@string/you_may_be_familiar_with"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:visibility="gone" />

@@ -21,7 +21,7 @@
             android:layout_gravity="center_vertical"
             tools:text="Anh Hội"
             android:textSize="14sp"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:layout_width="0dp"
             android:layout_height="wrap_content"/>
 
@@ -31,7 +31,7 @@
             android:layout_height="20dp"
             android:importantForAccessibility="no"
             android:src="@drawable/ic_contact"
-            app:tint="@color/grey_1" />
+            app:tint="@color/text_muted" />
 
         <ImageView
             android:layout_marginHorizontal="30dp"
@@ -40,6 +40,6 @@
             android:layout_height="20dp"
             android:importantForAccessibility="no"
             android:src="@drawable/ic_call_video"
-            app:tint="@color/grey_1" />
+            app:tint="@color/text_muted" />
     </LinearLayout>
 </layout>

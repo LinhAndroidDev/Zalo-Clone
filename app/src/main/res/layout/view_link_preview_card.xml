@@ -5,10 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    app:cardBackgroundColor="@color/grey_light"
+    app:cardBackgroundColor="@color/surface_subtle"
     app:cardCornerRadius="5dp"
     app:cardElevation="0dp"
-    app:strokeColor="@color/grey_bg"
+    app:strokeColor="@color/surface_divider"
     app:strokeWidth="0.5dp">
 
     <LinearLayout
@@ -20,7 +20,7 @@
             android:id="@+id/imgLinkPreview"
             android:layout_width="match_parent"
             android:layout_height="200dp"
-            android:background="@color/grey_bg"
+            android:background="@color/surface_divider"
             android:importantForAccessibility="no"
             android:scaleType="centerCrop"
             tools:ignore="ContentDescription" />
@@ -45,7 +45,7 @@
                     android:ellipsize="end"
                     android:fontFamily="@font/font_noto_sans"
                     android:maxLines="1"
-                    android:textColor="@color/blue1"
+                    android:textColor="@color/color_link"
                     android:textSize="11sp"
                     tools:text="example.com" />
 
@@ -57,7 +57,7 @@
                     android:ellipsize="end"
                     android:fontFamily="@font/font_noto_sans"
                     android:maxLines="1"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     tools:text="Tiêu đề trang" />
@@ -71,7 +71,7 @@
                     android:ellipsize="end"
                     android:fontFamily="@font/font_noto_sans"
                     android:maxLines="1"
-                    android:textColor="@color/text_grey"
+                    android:textColor="@color/text_secondary"
                     android:textSize="14sp"
                     tools:text="Lin Chi on TikTok da vu chieu tinh quan ok pho ban lafjnfj v" />
             </LinearLayout>

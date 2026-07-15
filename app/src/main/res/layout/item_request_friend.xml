@@ -25,14 +25,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tuyển Sinh Nhật Ngữ"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <TextView
                 android:layout_marginTop="2dp"
                 android:text="@string/want_to_make_friends"
                 android:textSize="14sp"
-                android:textColor="@color/grey_1"
+                android:textColor="@color/text_muted"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
@@ -48,10 +48,10 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:background="@drawable/bg_corner_25_blue_light"
-                    android:backgroundTint="@color/grey_light"
+                    android:backgroundTint="@color/surface_subtle"
                     android:paddingVertical="6dp"
                     android:text="@string/refuse"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:fontFamily="@font/font_noto_sans"/>
@@ -67,7 +67,7 @@
                     android:background="@drawable/bg_corner_25_blue_light"
                     android:paddingVertical="6dp"
                     android:text="@string/agree"
-                    android:textColor="@color/blue1"
+                    android:textColor="@color/color_link"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:fontFamily="@font/font_noto_sans"/>

@@ -22,7 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/group_menu_add_members"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="14sp" />
     </LinearLayout>
 
@@ -41,7 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/group_menu_remove_members"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="14sp" />
     </LinearLayout>
 
@@ -60,7 +60,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/group_menu_leave"
-            android:textColor="@color/red"
+            android:textColor="@color/color_error"
             android:textSize="14sp" />
     </LinearLayout>
 </LinearLayout>

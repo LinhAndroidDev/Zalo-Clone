@@ -47,7 +47,7 @@
                     android:layout_marginHorizontal="15dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_add_friend_thin"
-                    app:tint="@color/grey_1" />
+                    app:tint="@color/text_muted" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -73,7 +73,7 @@
                     android:layout_marginHorizontal="15dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_group"
-                    app:tint="@color/grey_1" />
+                    app:tint="@color/text_muted" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -95,7 +95,7 @@
                     android:layout_marginHorizontal="15dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_cloud"
-                    app:tint="@color/grey_1" />
+                    app:tint="@color/text_muted" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -117,7 +117,7 @@
                     android:layout_marginHorizontal="15dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_calendar"
-                    app:tint="@color/grey_1" />
+                    app:tint="@color/text_muted" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -139,7 +139,7 @@
                     android:layout_marginHorizontal="15dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_call_video"
-                    app:tint="@color/grey_1" />
+                    app:tint="@color/text_muted" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -161,7 +161,7 @@
                     android:layout_marginHorizontal="15dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/ic_device"
-                    app:tint="@color/grey_1" />
+                    app:tint="@color/text_muted" />
 
                 <TextView
                     android:layout_width="wrap_content"

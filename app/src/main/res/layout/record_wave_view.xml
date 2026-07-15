@@ -39,7 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:background="@drawable/bg_circle"
-            android:backgroundTint="@color/blue">
+            android:backgroundTint="@color/color_accent">
 
             <ImageView
                 android:id="@+id/icPlay"
@@ -79,7 +79,7 @@
             app:chunkWidth="3dp"
             app:minChunkHeight="2dp"
             app:touchable="true"
-            app:waveColor="@color/blue1"
+            app:waveColor="@color/color_link"
             app:wavePaint="#DDBFBFBF"/>
 
         <TextView
@@ -89,7 +89,7 @@
             android:layout_marginTop="3dp"
             android:fontFamily="@font/font_noto_sans"
             android:text="00:00"
-            android:textColor="@color/text_grey"
+            android:textColor="@color/text_secondary"
             android:textSize="10sp"
             android:textStyle="bold"
             tools:ignore="SmallSp" />
@@ -105,7 +105,7 @@
         android:layout_marginEnd="20dp"
         android:fontFamily="@font/font_noto_sans"
         android:text="00:00"
-        android:textColor="@color/text_grey"
+        android:textColor="@color/text_secondary"
         android:textSize="14sp"
         android:textStyle="bold"
         android:visibility="gone"

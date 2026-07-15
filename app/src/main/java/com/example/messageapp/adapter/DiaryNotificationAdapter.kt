@@ -64,7 +64,7 @@ class DiaryNotificationAdapter : BaseAdapter<DiaryNotificationItem, ItemDiaryNot
         holder.v.rootRow.setBackgroundColor(
             ContextCompat.getColor(
                 ctx,
-                if (!item.read) R.color.blue_light else android.R.color.transparent,
+                if (!item.read) R.color.color_blue_tint else android.R.color.transparent,
             ),
         )
         holder.v.viewUnreadDot.isVisible = !item.read

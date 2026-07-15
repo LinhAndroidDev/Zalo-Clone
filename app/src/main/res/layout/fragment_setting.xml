@@ -41,7 +41,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="10dp"
-                    android:background="@color/grey_bg" />
+                    android:background="@color/surface_divider" />
 
                 <com.example.messageapp.custom.ItemViewProfile
                     android:layout_width="match_parent"
@@ -61,7 +61,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="10dp"
-                    android:background="@color/grey_bg" />
+                    android:background="@color/surface_divider" />
 
                 <com.example.messageapp.custom.ItemViewProfile
                     android:layout_width="match_parent"
@@ -107,7 +107,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="10dp"
-                    android:background="@color/grey_bg" />
+                    android:background="@color/surface_divider" />
 
                 <com.example.messageapp.custom.ItemViewProfile
                     android:layout_width="match_parent"
@@ -127,7 +127,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="10dp"
-                    android:background="@color/grey_bg" />
+                    android:background="@color/surface_divider" />
 
                 <com.example.messageapp.custom.ItemViewProfile
                     android:layout_width="match_parent"
@@ -162,7 +162,7 @@
                         android:layout_marginStart="10dp"
                         android:fontFamily="@font/font_noto_sans"
                         android:text="@string/log_out"
-                        android:textColor="@color/text_common"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -170,7 +170,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
-                    android:background="@color/grey_bg" />
+                    android:background="@color/surface_divider" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 

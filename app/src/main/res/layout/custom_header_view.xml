@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/back_common_end">
+    android:background="@color/color_primary_variant">
 
     <LinearLayout
         android:id="@+id/viewCommon"
@@ -26,7 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:text="@string/text_search"
-            android:textColor="@color/text_white"
+            android:textColor="@color/text_on_color"
             android:textSize="16sp" />
 
         <ImageView
@@ -84,10 +84,10 @@
                     android:layout_height="16dp"
                     android:layout_gravity="top|end"
                     android:background="@drawable/bg_corner_circle_grey_light"
-                    android:backgroundTint="@color/red"
+                    android:backgroundTint="@color/color_error"
                     android:fontFamily="@font/font_noto_sans"
                     android:gravity="center"
-                    android:textColor="@color/text_white"
+                    android:textColor="@color/text_on_color"
                     android:textSize="9sp"
                     android:textStyle="bold"
                     android:visibility="gone" />

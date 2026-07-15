@@ -30,14 +30,14 @@
             android:padding="2dp"
             android:layout_width="25dp"
             android:layout_height="25dp"
-            app:tint="@color/grey"/>
+            app:tint="@color/icon_default"/>
 
         <TextView
             android:id="@+id/tvShowImage"
             android:layout_marginVertical="15dp"
             android:text="@string/view_cover_photo"
             android:textSize="16sp"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"/>
@@ -45,7 +45,7 @@
 
     <View
         android:layout_marginStart="15dp"
-        android:background="@color/grey_bg"
+        android:background="@color/surface_divider"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"/>
 
@@ -62,14 +62,14 @@
             android:src="@drawable/ic_camera"
             android:layout_width="25dp"
             android:layout_height="25dp"
-            app:tint="@color/grey"
+            app:tint="@color/icon_default"
             android:visibility="visible"/>
 
         <TextView
             android:layout_marginVertical="15dp"
             android:text="@string/take_a_new_photo"
             android:textSize="16sp"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"/>
@@ -78,7 +78,7 @@
     <View
         android:layout_marginStart="15dp"
         android:layout_marginBottom="2dp"
-        android:background="@color/grey_bg"
+        android:background="@color/surface_divider"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"/>
 
@@ -96,14 +96,14 @@
             android:src="@drawable/ic_add_photo"
             android:layout_width="25dp"
             android:layout_height="25dp"
-            app:tint="@color/grey"
+            app:tint="@color/icon_default"
             android:visibility="visible"/>
 
         <TextView
             android:layout_marginVertical="15dp"
             android:text="@string/select_photo_on_device"
             android:textSize="16sp"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"/>

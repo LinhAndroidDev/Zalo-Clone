@@ -48,7 +48,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/font_noto_sans"
                         android:text="@string/zalo_video"
-                        android:textColor="@color/text_common"
+                        android:textColor="@color/text_primary"
                         android:textSize="15sp" />
 
                     <TextView
@@ -57,7 +57,7 @@
                         android:layout_marginTop="2dp"
                         android:fontFamily="@font/font_noto_sans"
                         android:text="@string/note_zalo_video"
-                        android:textColor="@color/text_grey"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -82,12 +82,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="0.5dp"
                 android:layout_marginStart="50dp"
-                android:background="@color/grey_light" />
+                android:background="@color/surface_subtle" />
 
             <com.example.messageapp.custom.ItemViewProfile
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:color_icon="@color/green_light"
+                app:color_icon="@color/color_icon_olive"
                 app:icon="@drawable/ic_game"
                 app:show_according="true"
                 app:title="@string/game_center" />
@@ -99,7 +99,7 @@
             <com.example.messageapp.custom.ItemViewProfile
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:color_icon="@color/orange_dark"
+                app:color_icon="@color/color_icon_amber"
                 app:detail="@string/detail_life_utilities"
                 app:icon="@drawable/ic_calendar"
                 app:show_according="true"
@@ -109,7 +109,7 @@
             <com.example.messageapp.custom.ItemViewProfile
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:color_icon="@color/red_light"
+                app:color_icon="@color/color_icon_coral"
                 app:icon="@drawable/ic_application"
                 app:show_according="false"
                 app:show_divider="true"
@@ -118,7 +118,7 @@
             <com.example.messageapp.custom.ItemViewProfile
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:color_icon="@color/blue_3"
+                app:color_icon="@color/color_icon_indigo"
                 app:icon="@drawable/ic_public_service"
                 app:show_according="false"
                 app:title="@string/public_services" />
@@ -130,7 +130,7 @@
             <com.example.messageapp.custom.ItemViewProfile
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:color_icon="@color/blue_4"
+                app:color_icon="@color/color_icon_sky"
                 app:icon="@drawable/ic_stack"
                 app:show_according="true"
                 app:title="@string/mini_app" />
@@ -151,7 +151,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:background="@color/grey_bg" />
+                android:background="@color/surface_divider" />
         </LinearLayout>
     </LinearLayout>
 </layout>

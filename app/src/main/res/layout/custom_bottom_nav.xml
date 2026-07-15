@@ -7,7 +7,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:background="@color/grey_1" />
+        android:background="@color/text_muted" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -30,7 +30,7 @@
 
             <TextView
                 android:id="@+id/tvMessage"
-                style="@style/text_common"
+                style="@style/text_primary"
                 android:text="@string/message"
                 android:textColor="@color/text_icon"
                 android:textSize="12sp" />
@@ -52,9 +52,9 @@
 
             <TextView
                 android:id="@+id/tvPhoneBook"
-                style="@style/text_common"
+                style="@style/text_primary"
                 android:text="@string/phone_book"
-                android:textColor="@color/grey_1"
+                android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -74,9 +74,9 @@
 
             <TextView
                 android:id="@+id/tvDiscover"
-                style="@style/text_common"
+                style="@style/text_primary"
                 android:text="@string/discover"
-                android:textColor="@color/grey_1"
+                android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -96,9 +96,9 @@
 
             <TextView
                 android:id="@+id/tvDiary"
-                style="@style/text_common"
+                style="@style/text_primary"
                 android:text="@string/diary"
-                android:textColor="@color/grey_1"
+                android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -118,9 +118,9 @@
 
             <TextView
                 android:id="@+id/tvPersonal"
-                style="@style/text_common"
+                style="@style/text_primary"
                 android:text="@string/personal"
-                android:textColor="@color/grey_1"
+                android:textColor="@color/text_muted"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>

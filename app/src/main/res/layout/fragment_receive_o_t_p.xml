@@ -16,7 +16,7 @@
             android:layout_marginTop="40dp"
             android:fontFamily="@font/font_noto_sans"
             android:text="@string/title_app"
-            android:textColor="@color/blue1"
+            android:textColor="@color/color_link"
             android:textSize="35sp"
             android:textStyle="bold" />
 
@@ -28,7 +28,7 @@
             android:layout_marginTop="30dp"
             android:gravity="center"
             android:text="@string/note_receive_otp"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="12sp" />
 
         <TextView
@@ -38,7 +38,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginVertical="15dp"
             android:text="(+84) 123 456 789"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -48,7 +48,7 @@
             android:layout_gravity="center_horizontal"
             android:text="@string/enter_activation_code"
             android:textAllCaps="true"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="14sp" />
 
         <RelativeLayout
@@ -71,18 +71,18 @@
                 android:focusable="true"
                 android:focusableInTouchMode="true"
                 android:inputType="number"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                app:dashColor="@color/grey_1"
+                app:dashColor="@color/text_muted"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:lineCount="6"
-                app:lineEndColor="@color/grey_1"
-                app:lineStartColor="@color/grey_1"
+                app:lineEndColor="@color/text_muted"
+                app:lineStartColor="@color/text_muted"
                 app:showDash="false" />
         </RelativeLayout>
 
@@ -95,7 +95,7 @@
         <!--                android:id="@+id/edtEnterOTP"-->
         <!--                android:gravity="center_horizontal"-->
         <!--                android:textSize="20sp"-->
-        <!--                android:textColor="@color/text_common"-->
+        <!--                android:textColor="@color/text_primary"-->
         <!--                android:textStyle="bold"-->
         <!--                android:paddingVertical="12dp"-->
         <!--                android:paddingHorizontal="10dp"-->
@@ -111,7 +111,7 @@
         <!--                android:textSize="20sp"-->
         <!--                android:paddingTop="16dp"-->
         <!--                android:letterSpacing="0.6"-->
-        <!--                android:textColor="@color/grey_1"-->
+        <!--                android:textColor="@color/text_muted"-->
         <!--                android:textStyle="bold"-->
         <!--                android:layout_width="match_parent"-->
         <!--                android:layout_height="wrap_content"/>-->
@@ -124,13 +124,13 @@
             android:layout_marginHorizontal="40dp"
             android:layout_marginTop="20dp"
             android:background="@drawable/bg_corner_25_blue_light"
-            android:backgroundTint="@color/blue1"
+            android:backgroundTint="@color/color_link"
             android:fontFamily="@font/font_noto_sans"
             android:gravity="center_horizontal"
             android:paddingVertical="12dp"
             android:text="@string/confirm"
             android:textAllCaps="true"
-            android:textColor="@color/text_white"
+            android:textColor="@color/text_on_color"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -142,7 +142,7 @@
             android:layout_marginTop="10dp"
             android:gravity="center"
             android:text="@string/receive_otp_in_time"
-            android:textColor="@color/grey_2"
+            android:textColor="@color/text_subtle"
             android:textSize="12sp" />
     </LinearLayout>
 </layout>

@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:gravity="center"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:textSize="16sp"
         android:textStyle="bold"
         tools:text="Chat nhom tien ich"
@@ -31,7 +31,7 @@
         android:layout_marginHorizontal="20dp"
         android:layout_marginTop="5dp"
         android:gravity="center"
-        android:textColor="@color/grey_1"
+        android:textColor="@color/text_muted"
         android:textSize="14sp"
         tools:text="Noi cung nhau trao doi, giu lien lac voi gia dinh, ban be, dong nghiep" />
 </LinearLayout>

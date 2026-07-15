@@ -36,7 +36,7 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
             binding?.viewEnterPhone?.isSelected = b
             binding?.imgDown?.imageTintList = ContextCompat.getColorStateList(
                 requireActivity(),
-                if (b) R.color.blue else R.color.black
+                if (b) R.color.color_accent else R.color.black
             )
         }
 
@@ -127,13 +127,13 @@ class RegisterFragment : BaseFragment<FragmentRegisterBinding, RegisterFragmentV
     private fun TextView.enableBtnContinue() {
         isEnabled = true
         setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
-        backgroundTintList = ContextCompat.getColorStateList(requireContext(), R.color.blue)
+        backgroundTintList = ContextCompat.getColorStateList(requireContext(), R.color.color_accent)
     }
 
     private fun TextView.disableBtnContinue() {
         isEnabled = false
-        setTextColor(ContextCompat.getColor(requireContext(), R.color.grey_1))
-        backgroundTintList = ContextCompat.getColorStateList(requireContext(), R.color.grey_bg)
+        setTextColor(ContextCompat.getColor(requireContext(), R.color.text_muted))
+        backgroundTintList = ContextCompat.getColorStateList(requireContext(), R.color.surface_divider)
     }
 
 }

@@ -40,8 +40,8 @@ object GroupSystemMessageStyle {
         if (text.isBlank()) return text
 
         val spannable = SpannableString(text)
-        val baseColor = ContextCompat.getColor(context, R.color.text_common)
-        val highlightColor = ContextCompat.getColor(context, R.color.text_common)
+        val baseColor = ContextCompat.getColor(context, R.color.text_primary)
+        val highlightColor = ContextCompat.getColor(context, R.color.text_primary)
 
         spannable.setSpan(
             ForegroundColorSpan(baseColor),

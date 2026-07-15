@@ -6,5 +6,5 @@
     <solid android:color="#EEF8FB" />
     <stroke
         android:width="0.5dp"
-        android:color="@color/stroke_receiver" />
+        android:color="@color/chat_stroke_receiver" />
 </shape>

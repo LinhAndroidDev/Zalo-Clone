@@ -23,9 +23,9 @@
             android:background="@color/white"
             app:tabGravity="fill"
             app:tabMode="fixed"
-            app:tabIndicatorColor="@color/blue1"
-            app:tabSelectedTextColor="@color/blue1"
-            app:tabTextColor="@color/text_grey"
+            app:tabIndicatorColor="@color/color_link"
+            app:tabSelectedTextColor="@color/color_link"
+            app:tabTextColor="@color/text_secondary"
             app:tabTextAppearance="@style/TabTextAppearance" />
 
         <View

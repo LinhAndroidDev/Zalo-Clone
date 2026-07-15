@@ -9,5 +9,5 @@
         android:topRightRadius="8dp" />
     <stroke
         android:width="0.8dp"
-        android:color="@color/stroke_receiver" />
+        android:color="@color/chat_stroke_receiver" />
 </shape>

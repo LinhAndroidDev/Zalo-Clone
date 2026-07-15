@@ -3,7 +3,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_corner_25_blue_light"
-    android:backgroundTint="@color/grey_emotion"
+    android:backgroundTint="@color/surface_emotion"
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
@@ -64,7 +64,7 @@
         android:layout_marginStart="2dp"
         android:layout_marginEnd="3dp"
         android:text="6"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:textSize="12sp"
         android:visibility="gone" />
 </LinearLayout>

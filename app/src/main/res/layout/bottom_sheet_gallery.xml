@@ -22,7 +22,7 @@
         android:layout_marginBottom="20dp"
         android:fontFamily="@font/font_noto_sans"
         android:text="Thư viện ảnh và video"
-        android:textColor="@color/text_common"
+        android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:textStyle="bold" />
 

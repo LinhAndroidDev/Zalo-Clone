@@ -28,14 +28,14 @@
                 android:layout_height="23dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_image_news"
-                app:tint="@color/blue2" />
+                app:tint="@color/color_nav_active" />
 
             <TextView
                 android:id="@+id/title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 tool:text="Ảnh của tôi" />
         </LinearLayout>

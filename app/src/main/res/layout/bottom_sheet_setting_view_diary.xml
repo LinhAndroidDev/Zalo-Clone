@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_corner_top_15"
-        android:backgroundTint="@color/grey_light"
+        android:backgroundTint="@color/surface_subtle"
         android:gravity="center_vertical"
         android:paddingHorizontal="15dp"
         android:paddingVertical="10dp">
@@ -24,7 +24,7 @@
             android:importantForAccessibility="no"
             android:src="@drawable/ic_back"
             android:visibility="gone"
-            app:tint="@color/grey_1" />
+            app:tint="@color/text_muted" />
 
         <TextView
             android:layout_width="0dp"
@@ -32,7 +32,7 @@
             android:layout_weight="1"
             android:fontFamily="@font/font_noto_sans"
             android:text="Cho phép bạn bè xem nhật ký"
-            android:textColor="@color/text_common"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -41,7 +41,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_close"
-            app:tint="@color/grey" />
+            app:tint="@color/icon_default" />
     </LinearLayout>
 
     <RelativeLayout
@@ -59,7 +59,7 @@
                 android:id="@+id/divider"
                 android:layout_width="match_parent"
                 android:layout_height="0.5dp"
-                android:background="@color/grey_1" />
+                android:background="@color/text_muted" />
 
             <LinearLayout
                 android:id="@+id/btnAllDiary"
@@ -78,7 +78,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Toàn bộ nhật ký"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="16sp" />
             </LinearLayout>
 
@@ -99,7 +99,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Trong 7 ngày gần nhất"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="16sp" />
             </LinearLayout>
 
@@ -120,7 +120,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Trong 1 tháng gần nhất"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="16sp" />
             </LinearLayout>
 
@@ -141,7 +141,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Trong 6 tháng gần nhất"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="16sp" />
             </LinearLayout>
 
@@ -168,7 +168,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Tuỳ chỉnh"
-                        android:textColor="@color/text_common"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
 
                     <TextView
@@ -176,7 +176,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="5dp"
                         android:text="Bấm chọn khoảng thời gian"
-                        android:textColor="@color/text_grey"
+                        android:textColor="@color/text_secondary"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -186,7 +186,7 @@
                     android:layout_marginEnd="15dp"
                     android:rotation="180"
                     android:src="@drawable/ic_back"
-                    app:tint="@color/text_grey" />
+                    app:tint="@color/text_secondary" />
             </LinearLayout>
 
             <TextView
@@ -195,13 +195,13 @@
                 android:layout_marginHorizontal="15dp"
                 android:layout_marginVertical="25dp"
                 android:background="@drawable/bg_corner_20_blue"
-                android:backgroundTint="@color/back_common"
+                android:backgroundTint="@color/color_primary"
                 android:fontFamily="@font/font_noto_sans"
                 android:gravity="center"
                 android:paddingVertical="10dp"
                 android:text="Lưu"
                 android:textAllCaps="true"
-                android:textColor="@color/text_white"
+                android:textColor="@color/text_on_color"
                 android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -220,7 +220,7 @@
                 android:layout_marginTop="15dp"
                 android:layout_marginEnd="100dp"
                 android:text="@string/note_select_date_diary"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
             <FrameLayout
@@ -234,7 +234,7 @@
                     android:layout_marginHorizontal="30dp"
                     android:layout_marginTop="10dp"
                     android:background="@drawable/bg_white_corner_10"
-                    android:backgroundTint="@color/grey_light" />
+                    android:backgroundTint="@color/surface_subtle" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -254,9 +254,9 @@
                         app:wheel_cyclic="true"
                         app:wheel_data="@array/WheelArrayDay"
                         app:wheel_item_align="right"
-                        app:wheel_item_text_color="@color/text_grey"
+                        app:wheel_item_text_color="@color/text_secondary"
                         app:wheel_item_text_size="23sp"
-                        app:wheel_selected_item_text_color="@color/text_common" />
+                        app:wheel_selected_item_text_color="@color/text_primary" />
 
                     <com.example.messageapp.library.wheel_picker.WheelPicker
                         android:id="@+id/main_wheel_center"
@@ -268,9 +268,9 @@
                         app:wheel_cyclic="true"
                         app:wheel_data="@array/WheelArrayMonth"
                         app:wheel_item_align="center"
-                        app:wheel_item_text_color="@color/text_grey"
+                        app:wheel_item_text_color="@color/text_secondary"
                         app:wheel_item_text_size="23sp"
-                        app:wheel_selected_item_text_color="@color/text_common" />
+                        app:wheel_selected_item_text_color="@color/text_primary" />
 
                     <com.example.messageapp.library.wheel_picker.WheelPicker
                         android:id="@+id/main_wheel_right"
@@ -283,9 +283,9 @@
                         app:wheel_cyclic="true"
                         app:wheel_data="@array/WheelArrayYear"
                         app:wheel_item_align="left"
-                        app:wheel_item_text_color="@color/text_grey"
+                        app:wheel_item_text_color="@color/text_secondary"
                         app:wheel_item_text_size="23sp"
-                        app:wheel_selected_item_text_color="@color/text_common" />
+                        app:wheel_selected_item_text_color="@color/text_primary" />
                 </LinearLayout>
             </FrameLayout>
 
@@ -295,13 +295,13 @@
                 android:layout_marginHorizontal="15dp"
                 android:layout_marginVertical="25dp"
                 android:background="@drawable/bg_corner_20_blue"
-                android:backgroundTint="@color/blue_light"
+                android:backgroundTint="@color/color_blue_tint"
                 android:fontFamily="@font/font_noto_sans"
                 android:gravity="center"
                 android:paddingVertical="10dp"
                 android:text="@string/choose"
                 android:textAllCaps="true"
-                android:textColor="@color/back_common_end"
+                android:textColor="@color/color_primary_variant"
                 android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>

@@ -14,7 +14,7 @@
             android:layout_width="90dp"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_corner_25_blue_light"
-            android:backgroundTint="@color/grey_emotion"
+            android:backgroundTint="@color/surface_emotion"
             android:gravity="center"
             android:paddingVertical="7dp">
 
@@ -23,14 +23,14 @@
                 android:layout_height="17dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_image_news"
-                app:tint="@color/green"/>
+                app:tint="@color/color_success"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="7dp"
                 android:text="@string/image"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -39,7 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:background="@drawable/bg_corner_25_blue_light"
-            android:backgroundTint="@color/grey_emotion"
+            android:backgroundTint="@color/surface_emotion"
             android:gravity="center"
             android:paddingVertical="7dp">
 
@@ -55,7 +55,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:text="@string/video"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -64,7 +64,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:background="@drawable/bg_corner_25_blue_light"
-            android:backgroundTint="@color/grey_emotion"
+            android:backgroundTint="@color/surface_emotion"
             android:gravity="center"
             android:paddingVertical="7dp">
 
@@ -80,7 +80,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:text="@string/album"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -89,7 +89,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:background="@drawable/bg_corner_25_blue_light"
-            android:backgroundTint="@color/grey_emotion"
+            android:backgroundTint="@color/surface_emotion"
             android:gravity="center"
             android:paddingVertical="7dp">
 
@@ -98,14 +98,14 @@
                 android:layout_height="17dp"
                 android:importantForAccessibility="no"
                 android:src="@drawable/ic_diary_fill"
-                app:tint="@color/orange_dark" />
+                app:tint="@color/color_icon_amber" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:text="@string/memory"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>

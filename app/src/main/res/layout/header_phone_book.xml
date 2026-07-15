@@ -34,7 +34,7 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginStart="10dp"
                 android:text="@string/friend_request"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
             <TextView
@@ -43,7 +43,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:layout_marginStart="5dp"
-                    android:textColor="@color/text_grey"
+                    android:textColor="@color/text_secondary"
                     android:textSize="14sp"
                     android:visibility="gone"
                     android:text="(7)" />
@@ -80,7 +80,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/phone_book_machine"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
                 <TextView
@@ -88,7 +88,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:textColor="@color/text_grey"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:text="@string/contact_using_zalo" />
             </LinearLayout>
@@ -126,7 +126,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/birthday_calendar"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
                 <TextView
@@ -134,7 +134,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:textColor="@color/text_grey"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:text="@string/track_your_birthday" />
             </LinearLayout>
@@ -155,7 +155,7 @@
                 android:layout_marginStart="10dp"
                 tools:text="Tất cả  91"
                 android:textSize="14sp"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:paddingVertical="5dp"
                 android:paddingHorizontal="10dp"
                 android:background="@drawable/bg_corner_25_blue_light"
@@ -167,7 +167,7 @@
                 android:layout_marginStart="15dp"
                 android:text="Mới truy cập  9"
                 android:textSize="14sp"
-                android:textColor="@color/text_grey"
+                android:textColor="@color/text_secondary"
                 android:paddingVertical="5dp"
                 android:paddingHorizontal="10dp"
                 android:background="@drawable/bg_corner_25_stroke_grey"

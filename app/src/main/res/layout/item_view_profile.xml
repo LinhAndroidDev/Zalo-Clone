@@ -17,7 +17,7 @@
             android:layout_height="25dp"
             android:layout_marginHorizontal="15dp"
             android:importantForAccessibility="no"
-            app:tint="@color/blue1" />
+            app:tint="@color/color_link" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -30,7 +30,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/font_noto_sans"
-                android:textColor="@color/text_common"
+                android:textColor="@color/text_primary"
                 android:textSize="15sp" />
 
             <TextView
@@ -38,7 +38,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/font_noto_sans"
-                android:textColor="@color/text_grey"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -50,7 +50,7 @@
             android:importantForAccessibility="no"
             android:src="@drawable/ic_error_fill"
             android:visibility="gone"
-            app:tint="@color/red" />
+            app:tint="@color/color_error" />
 
         <FrameLayout
             android:id="@+id/contact"
@@ -58,7 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="5dp"
             android:background="@drawable/bg_circle"
-            android:backgroundTint="@color/grey_bg"
+            android:backgroundTint="@color/surface_divider"
             android:visibility="gone">
 
             <ImageView
@@ -83,7 +83,7 @@
     <View
         android:id="@+id/divider"
         android:layout_marginStart="50dp"
-        android:background="@color/grey_light"
+        android:background="@color/surface_subtle"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"/>
 </LinearLayout>

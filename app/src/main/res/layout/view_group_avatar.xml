@@ -59,7 +59,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/bg_circle_stroke_1"
             android:gravity="center"
-            android:textColor="@color/grey_2"
+            android:textColor="@color/text_subtle"
             android:textSize="14sp"
             android:visibility="gone"
             tools:ignore="SmallSp"

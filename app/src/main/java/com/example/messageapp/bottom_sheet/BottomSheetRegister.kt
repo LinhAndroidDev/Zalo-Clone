@@ -72,11 +72,11 @@ class BottomSheetRegister : BottomSheetDialogFragment() {
         bindData()
 
         binding.layoutPassword.setEndIconTintList(ColorStateList.valueOf(
-            ContextCompat.getColor(requireActivity(), R.color.grey_1)
+            ContextCompat.getColor(requireActivity(), R.color.text_muted)
         ))
 
-        binding.layoutPassword.setIconEndTint(R.color.grey_1)
-        binding.layoutPasswordAgain.setIconEndTint(R.color.grey_1)
+        binding.layoutPassword.setIconEndTint(R.color.text_muted)
+        binding.layoutPasswordAgain.setIconEndTint(R.color.text_muted)
         binding.edtPassword.setChangeIconHidePassword(binding.layoutPassword)
         binding.edtPasswordAgain.setChangeIconHidePassword(binding.layoutPasswordAgain)
 
@@ -107,9 +107,9 @@ class BottomSheetRegister : BottomSheetDialogFragment() {
     private fun EditText.setChangeIconHidePassword(textInputLayout: TextInputLayout) {
         this.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
-                textInputLayout.setIconEndTint(R.color.back_common_end)
+                textInputLayout.setIconEndTint(R.color.color_primary_variant)
             } else {
-                textInputLayout.setIconEndTint(R.color.grey_1)
+                textInputLayout.setIconEndTint(R.color.text_muted)
             }
         }
     }

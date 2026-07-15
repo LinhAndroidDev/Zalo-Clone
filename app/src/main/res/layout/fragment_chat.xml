@@ -7,7 +7,7 @@
         android:id="@+id/rootView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/grey_bg"
+        android:background="@color/surface_divider"
         android:orientation="vertical"
         tools:context=".fragment.ChatFragment">
 
@@ -53,7 +53,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/chat_upload_sending"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="12sp" />
 
                 <ProgressBar
@@ -71,7 +71,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="12sp"
                     tools:text="42%" />
             </LinearLayout>
@@ -81,7 +81,7 @@
                 android:text="@string/typing"
                 android:paddingHorizontal="10dp"
                 android:background="@color/white"
-                android:textColor="@color/orange_dark"
+                android:textColor="@color/color_icon_amber"
                 android:textSize="12sp"
                 android:visibility="gone"
                 android:layout_width="wrap_content"
@@ -103,7 +103,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="4dp"
                     android:text="@string/mention_picker_hint"
-                    android:textColor="@color/grey_1"
+                    android:textColor="@color/text_muted"
                     android:textSize="12sp" />
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -130,7 +130,7 @@
                     android:layout_width="3dp"
                     android:layout_height="match_parent"
                     android:layout_marginEnd="10dp"
-                    android:background="@color/back_common" />
+                    android:background="@color/color_primary" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -144,7 +144,7 @@
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:textColor="@color/back_common"
+                        android:textColor="@color/color_primary"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         tools:text="Nguyễn A" />
@@ -155,7 +155,7 @@
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:textColor="@color/text_grey"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp"
                         tools:text="Nội dung tin nhắn" />
                 </LinearLayout>
@@ -177,7 +177,7 @@
                     android:contentDescription="@string/delete"
                     android:padding="4dp"
                     android:src="@drawable/ic_close"
-                    app:tint="@color/grey_2" />
+                    app:tint="@color/text_subtle" />
             </LinearLayout>
 
             <LinearLayout
@@ -203,7 +203,7 @@
                     android:background="@color/white"
                     android:hint="@string/message"
                     android:importantForAutofill="no"
-                    android:textColor="@color/text_common"
+                    android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     tools:ignore="TextFields" />
 
@@ -254,7 +254,7 @@
             android:id="@+id/viewCoverPopupOptions"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/transparent_popup_options"
+            android:background="@color/overlay_scrim"
             android:visibility="gone" />
     </RelativeLayout>
 </layout>
