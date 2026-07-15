@@ -20,7 +20,7 @@ data class Data(
     val replyType: String? = null,
     val replyPhotoUrl: String? = null,
     val diaryNotificationType: String? = null,
-    /** User id that should receive this diary notification (for client-side filtering). */
+    /** User id that should receive this push (chat 1-1, group member, or diary). */
     val recipientUserId: String? = null,
     val postId: String? = null,
     val commentId: String? = null,

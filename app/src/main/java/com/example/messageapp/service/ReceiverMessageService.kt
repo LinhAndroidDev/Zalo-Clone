@@ -65,7 +65,18 @@ class ReceiverMessageService : FirebaseMessagingService() {
                 )
                 return
             }
-            val senderId = data["senderId"] ?: ""
+
+            val currentUserId = sessionRepository.getAuth().trim()
+            val senderId = data["senderId"]?.trim().orEmpty()
+            if (currentUserId.isNotBlank() && senderId.isNotBlank() && senderId == currentUserId) {
+                Log.d(TAG, "Skip chat push triggered by current user ($currentUserId)")
+                return
+            }
+            val recipientUserId = data["recipientUserId"]?.trim().orEmpty()
+            if (recipientUserId.isNotBlank() && currentUserId.isNotBlank() && recipientUserId != currentUserId) {
+                Log.d(TAG, "Skip chat push for $recipientUserId (logged in as $currentUserId)")
+                return
+            }
             val groupId = data["groupId"]?.trim().orEmpty()
             val isMention = data["isMention"] == "1"
             val replyMeta = parseReplyMeta(data)

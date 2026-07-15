@@ -754,6 +754,7 @@ object FireBaseInstance {
                         title = nameSender,
                         body = ReplyNotificationHelper.formatNotificationBody(message, baseBody),
                         senderId = userId,
+                        recipientUserId = conversation.friendId,
                         groupId = null,
                         messageTime = fcmReply.messageTime,
                         replyPreviewText = fcmReply.replyPreviewText,
@@ -916,6 +917,7 @@ object FireBaseInstance {
                                         title = nameSender,
                                         body = body,
                                         senderId = userId,
+                                        recipientUserId = mid,
                                         groupId = groupId,
                                         isMention = if (isMentioned) "1" else "0",
                                         mentionType = when {
