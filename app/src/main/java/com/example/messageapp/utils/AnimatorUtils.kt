@@ -96,7 +96,7 @@ object AnimatorUtils {
         }
     }
 
-    fun expandView(view: View, duration: Long = 300) {
+    fun expandView(view: View, duration: Long = 300, onEnd: (() -> Unit)? = null) {
         view.measure(
             View.MeasureSpec.makeMeasureSpec((view.parent as View).width, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.UNSPECIFIED
@@ -112,10 +112,17 @@ object AnimatorUtils {
             view.requestLayout()
         }
         animator.duration = duration
+        if (onEnd != null) {
+            animator.addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    onEnd.invoke()
+                }
+            })
+        }
         animator.start()
     }
 
-    fun collapseView(view: View, duration: Long = 300) {
+    fun collapseView(view: View, duration: Long = 300, onEnd: (() -> Unit)? = null) {
         val initialHeight = view.measuredHeight
 
         val animator = ValueAnimator.ofInt(initialHeight, 0)
@@ -126,13 +133,12 @@ object AnimatorUtils {
         }
 
         animator.duration = duration
-        animator.start()
-
         animator.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
-                super.onAnimationEnd(animation)
                 view.visibility = View.GONE
+                onEnd?.invoke()
             }
         })
+        animator.start()
     }
 }

@@ -4,6 +4,7 @@ import com.example.messageapp.domain.model.Conversation
 import com.example.messageapp.domain.model.Emotion
 import com.example.messageapp.domain.model.EmotionType
 import com.example.messageapp.domain.model.Message
+import com.example.messageapp.domain.model.PinnedMessage
 import com.example.messageapp.domain.repository.ChatRepository
 import com.example.messageapp.domain.repository.SessionRepository
 import kotlinx.coroutines.flow.Flow
@@ -148,6 +149,69 @@ class RemoveMessageUseCase @Inject constructor(
 ) {
     operator fun invoke(conversation: Conversation, time: String) {
         chatRepository.removeMessage(conversation, sessionRepository.getAuth(), time)
+    }
+}
+
+class ObservePinnedMessagesUseCase @Inject constructor(
+    private val chatRepository: ChatRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(conversation: Conversation): Flow<List<PinnedMessage>> =
+        chatRepository.observePinnedMessages(conversation, sessionRepository.getAuth())
+}
+
+@Deprecated(
+    message = "Renamed to ObservePinnedMessagesUseCase",
+    replaceWith = ReplaceWith("ObservePinnedMessagesUseCase"),
+)
+class ObservePinnedMessageUseCase @Inject constructor(
+    private val delegate: ObservePinnedMessagesUseCase,
+) {
+    operator fun invoke(conversation: Conversation): Flow<List<PinnedMessage>> =
+        delegate(conversation)
+}
+
+class PinMessageUseCase @Inject constructor(
+    private val chatRepository: ChatRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(message: Message, conversation: Conversation) {
+        if (message.time.isBlank() || message.type == SYSTEM_MESSAGE_TYPE) return
+        chatRepository.pinMessage(
+            message = message,
+            conversation = conversation,
+            userId = sessionRepository.getAuth(),
+            userName = sessionRepository.getNameUser(),
+        )
+    }
+
+    companion object {
+        private const val SYSTEM_MESSAGE_TYPE = 4
+        const val MAX_PINNED_MESSAGES = 10
+    }
+}
+
+class UnpinMessageUseCase @Inject constructor(
+    private val chatRepository: ChatRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(conversation: Conversation, messageTime: String) {
+        if (messageTime.isBlank()) return
+        chatRepository.unpinMessage(conversation, sessionRepository.getAuth(), messageTime)
+    }
+}
+
+class ReorderPinnedMessagesUseCase @Inject constructor(
+    private val chatRepository: ChatRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(conversation: Conversation, orderedTimes: List<String>) {
+        if (orderedTimes.isEmpty()) return
+        chatRepository.reorderPinnedMessages(
+            conversation = conversation,
+            userId = sessionRepository.getAuth(),
+            orderedTimes = orderedTimes,
+        )
     }
 }
 

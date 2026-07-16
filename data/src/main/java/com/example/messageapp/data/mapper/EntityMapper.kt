@@ -1,5 +1,6 @@
 package com.example.messageapp.data.mapper
 
+import com.example.messageapp.data.firestore.ChatThreadPin as FsChatThreadPin
 import com.example.messageapp.data.firestore.Conversation as FsConversation
 import com.example.messageapp.data.firestore.Emotion as FsEmotion
 import com.example.messageapp.data.firestore.EmotionType as FsEmotionType
@@ -26,6 +27,7 @@ import com.example.messageapp.domain.model.GroupChat
 import com.example.messageapp.domain.model.Message
 import com.example.messageapp.domain.model.MessageMention
 import com.example.messageapp.domain.model.MessageReply
+import com.example.messageapp.domain.model.PinnedMessage
 import com.example.messageapp.domain.model.User
 import com.example.messageapp.domain.model.UserPresence
 
@@ -104,6 +106,17 @@ object EntityMapper {
         type = reply.type,
         photoUrl = reply.photoUrl,
     )
+
+    fun toDomain(pin: FsChatThreadPin): PinnedMessage = PinnedMessage(
+        messageTime = pin.messageTime,
+        pinnedBy = pin.pinnedBy,
+        pinnedByName = pin.pinnedByName,
+        previewText = pin.previewText,
+        messageType = pin.messageType,
+        photoUrl = pin.photoUrl,
+    )
+
+    fun toDomainList(pins: List<FsChatThreadPin>): List<PinnedMessage> = pins.map { toDomain(it) }
 
     fun toDomain(emotion: FsEmotion): Emotion = Emotion(
         favourite = emotion.favourite,

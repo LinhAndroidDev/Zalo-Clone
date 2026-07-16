@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 
 import com.example.messageapp.data.firestore.Conversation
+import com.example.messageapp.data.firestore.ChatThreadPin
 import com.example.messageapp.data.firestore.Emotion
 import com.example.messageapp.data.firestore.EmotionType
 import com.example.messageapp.data.firestore.Friend
@@ -74,6 +75,14 @@ object FireBaseInstance {
     private const val PATH_ITEMS = "items"
     private const val PATH_GROUPS = "groups"
     private const val PATH_MEMBER_READ = "memberRead"
+    private const val PATH_PINNED_MESSAGES = "pinnedMessages"
+    private const val PATH_PINNED_MESSAGE_TIME = "pinnedMessageTime"
+    private const val PATH_PINNED_BY = "pinnedBy"
+    private const val PATH_PINNED_BY_NAME = "pinnedByName"
+    private const val PATH_PINNED_PREVIEW_TEXT = "pinnedPreviewText"
+    private const val PATH_PINNED_MESSAGE_TYPE = "pinnedMessageType"
+    private const val PATH_PINNED_PHOTO_URL = "pinnedPhotoUrl"
+    private const val MAX_PINNED_MESSAGES = 10
 
     /**
      * This function is used to check the login of the user
@@ -1427,11 +1436,175 @@ object FireBaseInstance {
      */
     fun removeMessage(conversation: Conversation, userId: String, time: String) {
         val idRoom = messageThreadDocumentId(conversation, userId)
+        val roomRef = db.collection(PATH_MESSAGE).document(idRoom)
+        roomRef.get().addOnSuccessListener { roomDoc ->
+            db.collection(PATH_MESSAGE)
+                .document(idRoom)
+                .collection(PATH_CHAT)
+                .document(time)
+                .delete()
+            val pins = parsePinnedMessages(roomDoc)
+            if (pins.any { it.messageTime == time }) {
+                removePinnedMessage(idRoom, time)
+            }
+        }
+    }
+
+    fun observePinnedMessages(
+        idRoom: String,
+        success: (List<ChatThreadPin>) -> Unit,
+        failure: (String) -> Unit,
+    ): ListenerRegistration {
+        return db.collection(PATH_MESSAGE)
+            .document(idRoom)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    failure.invoke(error.message.orEmpty())
+                    return@addSnapshotListener
+                }
+                if (snapshot == null || !snapshot.exists()) {
+                    success.invoke(emptyList())
+                    return@addSnapshotListener
+                }
+                val pins = parsePinnedMessages(snapshot)
+                val legacyPin = parseLegacyPinnedMessage(snapshot)
+                when {
+                    pins.isNotEmpty() -> success.invoke(pins)
+                    legacyPin != null -> {
+                        success.invoke(listOf(legacyPin))
+                        migrateLegacyPinnedMessage(idRoom, legacyPin)
+                    }
+                    else -> success.invoke(emptyList())
+                }
+            }
+    }
+
+    fun addPinnedMessage(idRoom: String, pin: ChatThreadPin, maxPins: Int = MAX_PINNED_MESSAGES) {
+        val roomRef = db.collection(PATH_MESSAGE).document(idRoom)
+        roomRef.get().addOnSuccessListener { snapshot ->
+            val current = if (snapshot.exists()) parsePinnedMessages(snapshot) else emptyList()
+            val legacy = if (current.isEmpty() && snapshot.exists()) parseLegacyPinnedMessage(snapshot) else null
+            val merged = if (legacy != null) listOf(legacy) else current
+            if (merged.any { it.messageTime == pin.messageTime }) return@addOnSuccessListener
+            if (merged.size >= maxPins) return@addOnSuccessListener
+            val updated = merged + pin
+            writePinnedMessages(idRoom, updated, clearLegacy = legacy != null || snapshot.exists())
+        }
+    }
+
+    fun removePinnedMessage(idRoom: String, messageTime: String) {
+        val roomRef = db.collection(PATH_MESSAGE).document(idRoom)
+        roomRef.get().addOnSuccessListener { snapshot ->
+            if (!snapshot.exists()) return@addOnSuccessListener
+            val current = parsePinnedMessages(snapshot)
+            val legacy = if (current.isEmpty()) parseLegacyPinnedMessage(snapshot) else null
+            val merged = if (legacy != null) listOf(legacy) else current
+            val updated = merged.filterNot { it.messageTime == messageTime }
+            if (updated.isEmpty()) {
+                clearPinnedMessages(idRoom)
+            } else {
+                writePinnedMessages(idRoom, updated, clearLegacy = legacy != null)
+            }
+        }
+    }
+
+    fun setPinnedMessagesOrder(idRoom: String, orderedTimes: List<String>) {
+        val roomRef = db.collection(PATH_MESSAGE).document(idRoom)
+        roomRef.get().addOnSuccessListener { snapshot ->
+            if (!snapshot.exists()) return@addOnSuccessListener
+            val current = parsePinnedMessages(snapshot)
+            val legacy = if (current.isEmpty()) parseLegacyPinnedMessage(snapshot) else null
+            val merged = if (legacy != null) listOf(legacy) else current
+            if (merged.isEmpty()) return@addOnSuccessListener
+            val byTime = merged.associateBy { it.messageTime }
+            val reordered = orderedTimes.mapNotNull { byTime[it] }
+            if (reordered.isEmpty()) return@addOnSuccessListener
+            writePinnedMessages(idRoom, reordered, clearLegacy = legacy != null)
+        }
+    }
+
+    private fun parsePinnedMessages(snapshot: com.google.firebase.firestore.DocumentSnapshot): List<ChatThreadPin> {
+        @Suppress("UNCHECKED_CAST")
+        val rawList = snapshot.get(PATH_PINNED_MESSAGES) as? List<Map<String, Any?>> ?: return emptyList()
+        return rawList.mapNotNull { map -> mapToChatThreadPin(map) }
+    }
+
+    private fun parseLegacyPinnedMessage(snapshot: com.google.firebase.firestore.DocumentSnapshot): ChatThreadPin? {
+        val messageTime = snapshot.getString(PATH_PINNED_MESSAGE_TIME).orEmpty()
+        if (messageTime.isBlank()) return null
+        return ChatThreadPin(
+            messageTime = messageTime,
+            pinnedBy = snapshot.getString(PATH_PINNED_BY).orEmpty(),
+            pinnedByName = snapshot.getString(PATH_PINNED_BY_NAME).orEmpty(),
+            previewText = snapshot.getString(PATH_PINNED_PREVIEW_TEXT).orEmpty(),
+            messageType = snapshot.getLong(PATH_PINNED_MESSAGE_TYPE)?.toInt() ?: 0,
+            photoUrl = snapshot.getString(PATH_PINNED_PHOTO_URL),
+        )
+    }
+
+    private fun mapToChatThreadPin(map: Map<String, Any?>): ChatThreadPin? {
+        val messageTime = map["messageTime"] as? String ?: map[PATH_PINNED_MESSAGE_TIME] as? String
+        if (messageTime.isNullOrBlank()) return null
+        return ChatThreadPin(
+            messageTime = messageTime,
+            pinnedBy = map["pinnedBy"] as? String ?: "",
+            pinnedByName = map["pinnedByName"] as? String ?: "",
+            previewText = map["previewText"] as? String ?: map[PATH_PINNED_PREVIEW_TEXT] as? String ?: "",
+            messageType = (map["messageType"] as? Long)?.toInt()
+                ?: (map["messageType"] as? Int)
+                ?: (map[PATH_PINNED_MESSAGE_TYPE] as? Long)?.toInt()
+                ?: 0,
+            photoUrl = map["photoUrl"] as? String ?: map[PATH_PINNED_PHOTO_URL] as? String,
+        )
+    }
+
+    private fun pinToFirestoreMap(pin: ChatThreadPin): Map<String, Any?> = mapOf(
+        "messageTime" to pin.messageTime,
+        "pinnedBy" to pin.pinnedBy,
+        "pinnedByName" to pin.pinnedByName,
+        "previewText" to pin.previewText,
+        "messageType" to pin.messageType,
+        "photoUrl" to pin.photoUrl,
+    )
+
+    private fun writePinnedMessages(
+        idRoom: String,
+        pins: List<ChatThreadPin>,
+        clearLegacy: Boolean,
+    ) {
+        val data = hashMapOf<String, Any>(
+            PATH_PINNED_MESSAGES to pins.map { pinToFirestoreMap(it) },
+        )
+        if (clearLegacy) {
+            data[PATH_PINNED_MESSAGE_TIME] = FieldValue.delete()
+            data[PATH_PINNED_BY] = FieldValue.delete()
+            data[PATH_PINNED_BY_NAME] = FieldValue.delete()
+            data[PATH_PINNED_PREVIEW_TEXT] = FieldValue.delete()
+            data[PATH_PINNED_MESSAGE_TYPE] = FieldValue.delete()
+            data[PATH_PINNED_PHOTO_URL] = FieldValue.delete()
+        }
         db.collection(PATH_MESSAGE)
             .document(idRoom)
-            .collection(PATH_CHAT)
-            .document(time)
-            .delete()
+            .set(data, SetOptions.merge())
+    }
+
+    private fun migrateLegacyPinnedMessage(idRoom: String, legacyPin: ChatThreadPin) {
+        writePinnedMessages(idRoom, listOf(legacyPin), clearLegacy = true)
+    }
+
+    private fun clearPinnedMessages(idRoom: String) {
+        val data = hashMapOf<String, Any>(
+            PATH_PINNED_MESSAGES to FieldValue.delete(),
+            PATH_PINNED_MESSAGE_TIME to FieldValue.delete(),
+            PATH_PINNED_BY to FieldValue.delete(),
+            PATH_PINNED_BY_NAME to FieldValue.delete(),
+            PATH_PINNED_PREVIEW_TEXT to FieldValue.delete(),
+            PATH_PINNED_MESSAGE_TYPE to FieldValue.delete(),
+            PATH_PINNED_PHOTO_URL to FieldValue.delete(),
+        )
+        db.collection(PATH_MESSAGE)
+            .document(idRoom)
+            .update(data)
     }
 
     /**

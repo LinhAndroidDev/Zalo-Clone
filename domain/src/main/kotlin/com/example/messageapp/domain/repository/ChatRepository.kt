@@ -3,6 +3,7 @@ package com.example.messageapp.domain.repository
 import com.example.messageapp.domain.model.Conversation
 import com.example.messageapp.domain.model.EmotionType
 import com.example.messageapp.domain.model.Message
+import com.example.messageapp.domain.model.PinnedMessage
 import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
@@ -11,6 +12,7 @@ interface ChatRepository {
         conversation: Conversation,
         userId: String,
     ): Flow<List<Message>>
+    fun observePinnedMessages(conversation: Conversation, userId: String): Flow<List<PinnedMessage>>
     fun sendMessage(
         message: Message,
         userId: String,
@@ -20,6 +22,9 @@ interface ChatRepository {
         sendFirst: Boolean,
     )
     fun removeMessage(conversation: Conversation, userId: String, time: String)
+    fun pinMessage(message: Message, conversation: Conversation, userId: String, userName: String)
+    fun unpinMessage(conversation: Conversation, userId: String, messageTime: String)
+    fun reorderPinnedMessages(conversation: Conversation, userId: String, orderedTimes: List<String>)
     fun toggleMessageReaction(
         time: String,
         conversation: Conversation,

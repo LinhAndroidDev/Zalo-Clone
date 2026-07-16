@@ -17,11 +17,15 @@ import com.example.messageapp.domain.usecase.chat.RemoveGroupMemberUseCase
 import com.example.messageapp.domain.usecase.chat.MarkMessageReadUseCase
 import com.example.messageapp.domain.usecase.chat.ObserveGroupReadStatusUseCase
 import com.example.messageapp.domain.usecase.chat.ObserveMessagesUseCase
+import com.example.messageapp.domain.usecase.chat.ObservePinnedMessagesUseCase
 import com.example.messageapp.domain.usecase.chat.ObservePresenceUseCase
 import com.example.messageapp.domain.usecase.chat.ObserveTypingUseCase
+import com.example.messageapp.domain.usecase.chat.PinMessageUseCase
 import com.example.messageapp.domain.usecase.chat.RemoveMessageUseCase
+import com.example.messageapp.domain.usecase.chat.ReorderPinnedMessagesUseCase
 import com.example.messageapp.domain.usecase.chat.SendMessageUseCase
 import com.example.messageapp.domain.usecase.chat.ToggleMessageReactionUseCase
+import com.example.messageapp.domain.usecase.chat.UnpinMessageUseCase
 import com.example.messageapp.domain.usecase.chat.UpdateTypingUseCase
 import com.example.messageapp.domain.usecase.chat.UploadChatMediaUseCase
 import com.example.messageapp.mapper.ChatUiMapper
@@ -29,6 +33,7 @@ import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Friend
 import com.example.messageapp.model.Message
+import com.example.messageapp.model.PinnedMessage
 import com.example.messageapp.model.User
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.UserPresence
@@ -63,6 +68,10 @@ class ChatFragmentViewModel @Inject constructor(
     private val updateTypingUseCase: UpdateTypingUseCase,
     private val markMessageReadUseCase: MarkMessageReadUseCase,
     private val removeMessageUseCase: RemoveMessageUseCase,
+    private val observePinnedMessagesUseCase: ObservePinnedMessagesUseCase,
+    private val pinMessageUseCase: PinMessageUseCase,
+    private val unpinMessageUseCase: UnpinMessageUseCase,
+    private val reorderPinnedMessagesUseCase: ReorderPinnedMessagesUseCase,
     private val observePresenceUseCase: ObservePresenceUseCase,
     private val observeGroupReadStatusUseCase: ObserveGroupReadStatusUseCase,
     private val loadGroupMembersUseCase: LoadGroupMembersUseCase,
@@ -84,6 +93,7 @@ class ChatFragmentViewModel @Inject constructor(
         get() = sessionRepository
 
     private var messagesJob: Job? = null
+    private var pinnedMessageJob: Job? = null
     private var typingJob: Job? = null
     private var presenceJob: Job? = null
     private var groupReadJob: Job? = null
@@ -92,6 +102,11 @@ class ChatFragmentViewModel @Inject constructor(
 
     private val _messages = MutableStateFlow<ArrayList<Message>?>(null)
     val messages = _messages.asStateFlow()
+
+    private val _pinnedMessages = MutableStateFlow<List<PinnedMessage>>(emptyList())
+    val pinnedMessages = _pinnedMessages.asStateFlow()
+
+    fun primaryPinnedMessage(): PinnedMessage? = _pinnedMessages.value.firstOrNull()
 
     private val _groupMemberReadMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val groupMemberReadMap = _groupMemberReadMap.asStateFlow()
@@ -132,6 +147,7 @@ class ChatFragmentViewModel @Inject constructor(
 
     fun getMessage(conversation: Conversation) {
         messagesJob?.cancel()
+        pinnedMessageJob?.cancel()
         val domainConversation = ChatUiMapper.toDomain(conversation)
         messagesJob = viewModelScope.launch {
             observeMessagesUseCase(domainConversation)
@@ -144,6 +160,39 @@ class ChatFragmentViewModel @Inject constructor(
                     }
                 }
         }
+        pinnedMessageJob = viewModelScope.launch {
+            observePinnedMessagesUseCase(domainConversation)
+                .catch { showError(it.message.orEmpty()) }
+                .collect { domainPins ->
+                    _pinnedMessages.value = ChatUiMapper.toUiList(domainPins)
+                }
+        }
+    }
+
+    enum class PinMessageResult {
+        SUCCESS,
+        ALREADY_PINNED,
+        LIMIT_REACHED,
+    }
+
+    fun pinMessage(message: Message, conversation: Conversation): PinMessageResult {
+        val current = _pinnedMessages.value
+        if (current.any { it.messageTime == message.time }) {
+            return PinMessageResult.ALREADY_PINNED
+        }
+        if (current.size >= PinMessageUseCase.MAX_PINNED_MESSAGES) {
+            return PinMessageResult.LIMIT_REACHED
+        }
+        pinMessageUseCase(ChatUiMapper.toDomain(message), ChatUiMapper.toDomain(conversation))
+        return PinMessageResult.SUCCESS
+    }
+
+    fun unpinMessage(conversation: Conversation, messageTime: String) {
+        unpinMessageUseCase(ChatUiMapper.toDomain(conversation), messageTime)
+    }
+
+    fun reorderPinnedMessages(conversation: Conversation, orderedTimes: List<String>) {
+        reorderPinnedMessagesUseCase(ChatUiMapper.toDomain(conversation), orderedTimes)
     }
 
     fun updateSeenMessage(msg: Message, conversation: Conversation) {
@@ -481,6 +530,7 @@ class ChatFragmentViewModel @Inject constructor(
 
     override fun onCleared() {
         messagesJob?.cancel()
+        pinnedMessageJob?.cancel()
         typingJob?.cancel()
         stopObservingFriendPresence()
         stopObservingPeerConversation()

@@ -252,6 +252,7 @@
             android:baselineAligned="false">
 
             <LinearLayout
+                android:id="@+id/btnPin"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -267,6 +268,7 @@
                     app:tint="#f07e34" />
 
                 <TextView
+                    android:id="@+id/tvPinLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"

@@ -37,6 +37,10 @@ object ReplyNotificationHelper {
         val replyPhotoUrl: String?,
     )
 
+    fun buildPinPreview(message: Message): String = buildPreviewText(message)
+
+    fun pinPhotoUrl(message: Message): String? = firstPhotoUrl(message)
+
     private fun buildPreviewText(message: Message): String {
         val type = resolveMessageType(message)
         val base = when (type) {

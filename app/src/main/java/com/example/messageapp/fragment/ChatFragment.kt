@@ -13,9 +13,11 @@ import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.graphics.Rect
 import android.media.MediaPlayer
 import android.net.Uri
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -32,6 +34,7 @@ import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
@@ -44,6 +47,7 @@ import com.example.messageapp.adapter.ChatAdapter
 import com.example.messageapp.adapter.ClickPhotoModel
 import com.example.messageapp.adapter.LongClickPhotoModel
 import com.example.messageapp.adapter.MentionSuggestionAdapter
+import com.example.messageapp.adapter.PinnedMessageAdapter
 import com.example.messageapp.adapter.ReceiverViewHolder
 import com.example.messageapp.adapter.SenderViewHolder
 import com.example.messageapp.argument.PreviewPhotoArgument
@@ -60,6 +64,7 @@ import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.MessageMention
+import com.example.messageapp.model.PinnedMessage
 import android.view.inputmethod.InputMethodManager
 import com.example.messageapp.model.TypeMessage
 import kotlin.math.max
@@ -105,6 +110,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var replyingToMessage: Message? = null
     private var replyHighlightScrollListener: RecyclerView.OnScrollListener? = null
     private var lastMessagesSnapshot: List<Message> = emptyList()
+    private var lastPinnedNotFoundToastTime: String? = null
+    private var pinnedMessageAdapter: PinnedMessageAdapter? = null
+    private var pinnedItemTouchHelper: ItemTouchHelper? = null
+    private var isPinnedBannerExpanded = false
+    private var isPinnedSortMode = false
+    private var lastVisiblePinnedMessages: List<PinnedMessage> = emptyList()
     private val allMentionCandidate by lazy {
         MentionHelper.allMentionCandidate(getString(R.string.mention_all_label))
     }
@@ -112,6 +123,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     companion object {
         private const val REQUEST_CODE_MULTI_PICTURE = 1
         private const val SELECT_MULTI_PICTURE = "SELECT_MULTI_PICTURE"
+        private const val PINNED_BANNER_ANIM_DURATION_MS = 250L
     }
 
     private val mCallBackClickItem = object : ChatAdapter.CallBackClickItem {
@@ -289,6 +301,191 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         binding?.btnCancelReply?.setOnClickListener { clearReply() }
+
+        setupPinnedBannerList()
+    }
+
+    private fun setupPinnedBannerList() {
+        val banner = binding?.pinnedBannerContainer ?: return
+        pinnedMessageAdapter = PinnedMessageAdapter(
+            onItemClick = { pin ->
+                if (!isPinnedSortMode) {
+                    setPinnedBannerExpanded(expanded = false) {
+                        scrollToPinnedMessage(pin.messageTime)
+                    }
+                }
+            },
+            onItemLongClick = { pin, anchor -> showPinnedMessageMenu(pin, anchor) },
+        )
+        banner.rcvPinnedBannerList.adapter = pinnedMessageAdapter
+        setupPinnedDragHelper(banner.rcvPinnedBannerList)
+
+        banner.pinnedBannerHeader.setOnClickListener {
+            if (lastVisiblePinnedMessages.size >= 2) {
+                setPinnedBannerExpanded(!isPinnedBannerExpanded)
+            } else {
+                viewModel?.primaryPinnedMessage()?.messageTime?.takeIf { it.isNotBlank() }?.let { time ->
+                    scrollToMessage(time)
+                }
+            }
+        }
+        banner.btnExpandPinned.setOnClickListener {
+            if (lastVisiblePinnedMessages.size >= 2) {
+                setPinnedBannerExpanded(!isPinnedBannerExpanded)
+            }
+        }
+        banner.btnPinnedSortDone.setOnClickListener {
+            exitPinnedSortMode(saveOrder = true)
+        }
+    }
+
+    private fun setupPinnedDragHelper(recyclerView: RecyclerView) {
+        val callback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            0,
+        ) {
+            override fun onMove(
+                rv: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder,
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) return false
+                pinnedMessageAdapter?.moveItem(from, to)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
+
+            override fun isLongPressDragEnabled(): Boolean = isPinnedSortMode
+
+            override fun canDropOver(
+                recyclerView: RecyclerView,
+                current: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder,
+            ): Boolean = isPinnedSortMode
+        }
+        pinnedItemTouchHelper = ItemTouchHelper(callback).also { it.attachToRecyclerView(recyclerView) }
+    }
+
+    private fun showPinnedMessageMenu(pin: PinnedMessage, anchor: View) {
+        val popupView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.popup_pinned_message_menu, null)
+        val popup = PopupWindow(
+            popupView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true,
+        ).apply {
+            setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+            elevation = 8f
+        }
+
+        popupView.findViewById<View>(R.id.btnUnpin).setOnClickListener {
+            conversation?.let { viewModel?.unpinMessage(it, pin.messageTime) }
+            Toast.makeText(requireContext(), R.string.unpin_success, Toast.LENGTH_SHORT).show()
+            popup.dismiss()
+        }
+        popupView.findViewById<View>(R.id.btnSort).setOnClickListener {
+            enterPinnedSortMode()
+            popup.dismiss()
+        }
+
+        popupView.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+        )
+        val popupWidth = popupView.measuredWidth
+        val popupHeight = popupView.measuredHeight
+        val anchorLoc = IntArray(2)
+        anchor.getLocationOnScreen(anchorLoc)
+        val x = (anchorLoc[0] + anchor.width - popupWidth).coerceAtLeast(0)
+        val y = (anchorLoc[1] + anchor.height / 2 - popupHeight / 2).coerceAtLeast(0)
+        popup.showAtLocation(anchor, Gravity.NO_GRAVITY, x, y)
+    }
+
+    private fun enterPinnedSortMode() {
+        if (!isPinnedBannerExpanded) {
+            setPinnedBannerExpanded(true)
+        }
+        isPinnedSortMode = true
+        pinnedMessageAdapter?.setSortMode(true)
+        binding?.pinnedBannerContainer?.pinnedSortBar?.isVisible = true
+    }
+
+    private fun exitPinnedSortMode(saveOrder: Boolean) {
+        if (saveOrder) {
+            conversation?.let { cvt ->
+                val orderedTimes = pinnedMessageAdapter?.currentList?.map { it.messageTime }.orEmpty()
+                viewModel?.reorderPinnedMessages(cvt, orderedTimes)
+            }
+        }
+        isPinnedSortMode = false
+        pinnedMessageAdapter?.setSortMode(false)
+        binding?.pinnedBannerContainer?.pinnedSortBar?.isVisible = false
+        pinnedMessageAdapter?.submitList(lastVisiblePinnedMessages)
+    }
+
+    private fun setPinnedBannerExpanded(
+        expanded: Boolean,
+        animate: Boolean = true,
+        onComplete: (() -> Unit)? = null,
+    ) {
+        val banner = binding?.pinnedBannerContainer ?: run {
+            onComplete?.invoke()
+            return
+        }
+        val expandable = banner.pinnedBannerExpandable
+
+        if (isPinnedBannerExpanded == expanded) {
+            onComplete?.invoke()
+            return
+        }
+        isPinnedBannerExpanded = expanded
+
+        banner.imgExpandPinned.animate()
+            .rotation(if (expanded) 180f else 0f)
+            .setDuration(PINNED_BANNER_ANIM_DURATION_MS)
+            .start()
+
+        if (expanded) {
+            if (!isPinnedSortMode) {
+                pinnedMessageAdapter?.submitList(lastVisiblePinnedMessages)
+            }
+            if (animate) {
+                AnimatorUtils.expandView(expandable, PINNED_BANNER_ANIM_DURATION_MS, onComplete)
+            } else {
+                expandable.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                expandable.visibility = View.VISIBLE
+                onComplete?.invoke()
+            }
+        } else {
+            if (isPinnedSortMode) {
+                exitPinnedSortMode(saveOrder = false)
+            }
+            if (animate && expandable.isVisible) {
+                AnimatorUtils.collapseView(expandable, PINNED_BANNER_ANIM_DURATION_MS, onComplete)
+            } else {
+                expandable.visibility = View.GONE
+                onComplete?.invoke()
+            }
+        }
+    }
+
+    fun currentConversation(): Conversation? = conversation
+
+    fun scrollToPinnedMessage(messageTime: String) {
+        val index = chatAdapter?.indexOfMessageTime(messageTime) ?: -1
+        if (index < 0) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.pinned_message_not_found),
+                Toast.LENGTH_SHORT,
+            ).show()
+            return
+        }
+        scrollToMessage(messageTime)
     }
 
     @SuppressLint("InflateParams")
@@ -369,6 +566,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         val btnCopy: LinearLayout = popupView.findViewById(R.id.btnCopy)
         val btnReply: LinearLayout = popupView.findViewById(R.id.btnReply)
         val btnForward: LinearLayout = popupView.findViewById(R.id.btnForward)
+        val btnPin: LinearLayout = popupView.findViewById(R.id.btnPin)
+        val tvPinLabel: TextView = popupView.findViewById(R.id.tvPinLabel)
         val btnRemoveMessage: LinearLayout = popupView.findViewById(R.id.btnRemoveMessage)
         val layoutEmotion: LinearLayout = popupView.findViewById(R.id.layoutEmotion)
         val imgFavourite: ImageView = popupView.findViewById(R.id.imgFavourite)
@@ -392,6 +591,10 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         )
         btnCopy.isVisible = photoPreviewUrl == null
         btnForward.isVisible = TypeMessage.of(message.type) != TypeMessage.SYSTEM
+        val pinnedTimes = viewModel?.pinnedMessages?.value?.map { it.messageTime }.orEmpty()
+        val isPinned = message.time in pinnedTimes
+        btnPin.isVisible = TypeMessage.of(message.type) != TypeMessage.SYSTEM
+        tvPinLabel.setText(if (isPinned) R.string.unpin else R.string.pin)
 
         // Tạo PopupWindow với chiều rộng và chiều cao
         val popupWindow = PopupWindow(
@@ -443,6 +646,26 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 message = message,
                 excludeConversationId = conversation?.friendId.orEmpty(),
             ).show(parentFragmentManager, BottomSheetForwardMessage.TAG)
+        }
+
+        btnPin.setOnClickListener {
+            conversation?.let { cvt ->
+                if (isPinned) {
+                    viewModel?.unpinMessage(cvt, message.time)
+                    Toast.makeText(requireContext(), R.string.unpin_success, Toast.LENGTH_SHORT).show()
+                } else {
+                    when (viewModel?.pinMessage(message, cvt)) {
+                        ChatFragmentViewModel.PinMessageResult.SUCCESS ->
+                            Toast.makeText(requireContext(), R.string.pin_success, Toast.LENGTH_SHORT).show()
+                        ChatFragmentViewModel.PinMessageResult.ALREADY_PINNED ->
+                            Toast.makeText(requireContext(), R.string.pin_already_pinned, Toast.LENGTH_SHORT).show()
+                        ChatFragmentViewModel.PinMessageResult.LIMIT_REACHED ->
+                            Toast.makeText(requireContext(), R.string.pin_limit_reached, Toast.LENGTH_SHORT).show()
+                        null -> Unit
+                    }
+                }
+            }
+            popupWindow.dismiss()
         }
 
         btnRemoveMessage.setOnClickListener {
@@ -721,6 +944,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                                 }
                             }
                             lastMessagesSnapshot = ArrayList(msg)
+                            updatePinnedBanner(viewModel?.pinnedMessages?.value.orEmpty(), msg)
                             if (stateScrollable) {
                                 binding?.rcvChat?.scrollToPosition(
                                     chatAdapter?.itemCount?.minus(1) ?: 0
@@ -732,6 +956,14 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                                 updateSeenMessage(msg)
                             }
                         }
+                    }
+                }
+            }
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel?.pinnedMessages?.collect { pins ->
+                        updatePinnedBanner(pins, lastMessagesSnapshot)
                     }
                 }
             }
@@ -992,6 +1224,48 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         replyingToMessage = null
         binding?.replyPreviewContainer?.isVisible = false
         binding?.imgReplyThumb?.isVisible = false
+    }
+
+    private fun updatePinnedBanner(pins: List<PinnedMessage>, messages: List<Message>) {
+        val banner = binding?.pinnedBannerContainer ?: return
+        val visiblePins = pins.filter { pin ->
+            pin.messageTime.isNotBlank() && messages.any { it.time == pin.messageTime }
+        }
+        lastVisiblePinnedMessages = visiblePins
+        if (visiblePins.isEmpty()) {
+            setPinnedBannerExpanded(false, animate = false)
+            setPinnedBannerVisible(false)
+            lastPinnedNotFoundToastTime = null
+            return
+        }
+        val primary = visiblePins.first()
+        lastPinnedNotFoundToastTime = null
+        setPinnedBannerVisible(true)
+        banner.tvPinnedLabel.text = if (visiblePins.size >= 2) {
+            getString(R.string.pinned_count, visiblePins.size)
+        } else {
+            getString(R.string.pin)
+        }
+        banner.tvPinnedPreview.text = primary.previewText
+        banner.btnExpandPinned.isVisible = visiblePins.size >= 2
+        if (visiblePins.size < 2) {
+            setPinnedBannerExpanded(false, animate = false)
+        }
+        if (!isPinnedSortMode) {
+            pinnedMessageAdapter?.submitList(visiblePins)
+        }
+        val photoUrl = primary.photoUrl
+        if (!photoUrl.isNullOrBlank() && TypeMessage.of(primary.messageType) != TypeMessage.AUDIO) {
+            banner.imgPinnedThumb.isVisible = true
+            requireContext().loadImg(photoUrl, banner.imgPinnedThumb)
+        } else {
+            banner.imgPinnedThumb.isVisible = false
+        }
+    }
+
+    private fun setPinnedBannerVisible(visible: Boolean) {
+        binding?.pinnedBannerContainer?.pinnedBannerRoot?.isVisible = visible
+        binding?.pinnedMessageFadeOverlay?.isVisible = visible
     }
 
     private fun scrollToMessage(messageTime: String) {

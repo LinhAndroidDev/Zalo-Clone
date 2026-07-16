@@ -1,11 +1,14 @@
 package com.example.messageapp.data.repository
 
+import com.example.messageapp.data.firestore.ChatThreadPin
 import com.example.messageapp.data.firestore.TypeMessage
 import com.example.messageapp.data.legacy.FireBaseInstance
+import com.example.messageapp.data.legacy.ReplyNotificationHelper
 import com.example.messageapp.data.mapper.EntityMapper
 import com.example.messageapp.domain.model.Conversation
 import com.example.messageapp.domain.model.EmotionType
 import com.example.messageapp.domain.model.Message
+import com.example.messageapp.domain.model.PinnedMessage
 import com.example.messageapp.domain.repository.ChatRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -41,6 +44,61 @@ class ChatRepositoryImpl @Inject constructor() : ChatRepository {
             )
             awaitClose { registration.remove() }
         }
+
+    override fun observePinnedMessages(conversation: Conversation, userId: String): Flow<List<PinnedMessage>> =
+        callbackFlow {
+            val fsConversation = EntityMapper.toFirestore(conversation)
+            val roomId = FireBaseInstance.messageThreadDocumentId(fsConversation, userId)
+            val registration = FireBaseInstance.observePinnedMessages(
+                idRoom = roomId,
+                success = { pins ->
+                    trySend(EntityMapper.toDomainList(pins))
+                },
+                failure = { close(RuntimeException(it)) },
+            )
+            awaitClose { registration.remove() }
+        }
+
+    override fun pinMessage(
+        message: Message,
+        conversation: Conversation,
+        userId: String,
+        userName: String,
+    ) {
+        if (message.time.isBlank() || message.type == TypeMessage.SYSTEM.rawValue) return
+        val fsMessage = EntityMapper.toFirestore(message)
+        val fsConversation = EntityMapper.toFirestore(conversation)
+        val idRoom = FireBaseInstance.messageThreadDocumentId(fsConversation, userId)
+        FireBaseInstance.addPinnedMessage(
+            idRoom = idRoom,
+            pin = ChatThreadPin(
+                messageTime = message.time,
+                pinnedBy = userId,
+                pinnedByName = userName,
+                previewText = ReplyNotificationHelper.buildPinPreview(fsMessage),
+                messageType = message.type,
+                photoUrl = ReplyNotificationHelper.pinPhotoUrl(fsMessage),
+            ),
+        )
+    }
+
+    override fun unpinMessage(conversation: Conversation, userId: String, messageTime: String) {
+        if (messageTime.isBlank()) return
+        val fsConversation = EntityMapper.toFirestore(conversation)
+        val idRoom = FireBaseInstance.messageThreadDocumentId(fsConversation, userId)
+        FireBaseInstance.removePinnedMessage(idRoom, messageTime)
+    }
+
+    override fun reorderPinnedMessages(
+        conversation: Conversation,
+        userId: String,
+        orderedTimes: List<String>,
+    ) {
+        if (orderedTimes.isEmpty()) return
+        val fsConversation = EntityMapper.toFirestore(conversation)
+        val idRoom = FireBaseInstance.messageThreadDocumentId(fsConversation, userId)
+        FireBaseInstance.setPinnedMessagesOrder(idRoom, orderedTimes)
+    }
 
     override fun sendMessage(
         message: Message,

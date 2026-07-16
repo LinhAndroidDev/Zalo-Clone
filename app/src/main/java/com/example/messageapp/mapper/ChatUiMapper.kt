@@ -6,6 +6,7 @@ import com.example.messageapp.domain.model.EmotionType as DomainEmotionType
 import com.example.messageapp.domain.model.Message as DomainMessage
 import com.example.messageapp.domain.model.MessageMention as DomainMessageMention
 import com.example.messageapp.domain.model.MessageReply as DomainMessageReply
+import com.example.messageapp.domain.model.PinnedMessage as DomainPinnedMessage
 import com.example.messageapp.domain.model.User as DomainUser
 import com.example.messageapp.domain.model.UserPresence as DomainUserPresence
 import com.example.messageapp.model.Conversation
@@ -14,6 +15,7 @@ import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.MessageMention
 import com.example.messageapp.model.MessageReply
+import com.example.messageapp.model.PinnedMessage
 import com.example.messageapp.model.User
 import com.example.messageapp.model.UserPresence
 
@@ -171,4 +173,24 @@ object ChatUiMapper {
             avatar = friend.avatar,
             keyAuth = friend.userId,
         )
+
+    fun toUi(pin: DomainPinnedMessage): PinnedMessage = PinnedMessage(
+        messageTime = pin.messageTime,
+        pinnedBy = pin.pinnedBy,
+        pinnedByName = pin.pinnedByName,
+        previewText = pin.previewText,
+        messageType = pin.messageType,
+        photoUrl = pin.photoUrl,
+    )
+
+    fun toUiList(pins: List<DomainPinnedMessage>): List<PinnedMessage> = pins.map { toUi(it) }
+
+    fun toDomain(pin: PinnedMessage): DomainPinnedMessage = DomainPinnedMessage(
+        messageTime = pin.messageTime,
+        pinnedBy = pin.pinnedBy,
+        pinnedByName = pin.pinnedByName,
+        previewText = pin.previewText,
+        messageType = pin.messageType,
+        photoUrl = pin.photoUrl,
+    )
 }

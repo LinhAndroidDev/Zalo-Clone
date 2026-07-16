@@ -17,13 +17,31 @@
             android:layout_height="wrap_content"
             app:item_view="room_chat" />
 
+        <include
+            android:id="@+id/pinnedBannerContainer"
+            layout="@layout/layout_chat_pinned_banner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/header" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rcvChat"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/header"
+            android:layout_below="@+id/pinnedBannerContainer"
             android:layout_marginBottom="45dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        <View
+            android:id="@+id/pinnedMessageFadeOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:layout_alignTop="@id/rcvChat"
+            android:background="@drawable/bg_pinned_message_fade"
+            android:clickable="false"
+            android:focusable="false"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
 
         <View
             android:id="@+id/viewMarginKeyBoard"
