@@ -1,6 +1,6 @@
 package com.example.messageapp.bottom_sheet
 
-import android.graphics.drawable.ColorDrawable
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -23,6 +23,7 @@ import com.example.messageapp.viewmodel.ChatFragmentViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import androidx.core.graphics.drawable.toDrawable
 
 @AndroidEntryPoint
 class BottomSheetPinnedMessages : BottomSheetDialogFragment() {
@@ -100,6 +101,7 @@ class BottomSheetPinnedMessages : BottomSheetDialogFragment() {
         }
     }
 
+    @SuppressLint("InflateParams")
     private fun showPinnedMenu(pin: PinnedMessage, anchor: View) {
         val popupView = LayoutInflater.from(requireContext())
             .inflate(R.layout.popup_pinned_message_menu, null)
@@ -109,7 +111,7 @@ class BottomSheetPinnedMessages : BottomSheetDialogFragment() {
             ViewGroup.LayoutParams.WRAP_CONTENT,
             true,
         ).apply {
-            setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+            setBackgroundDrawable(android.graphics.Color.TRANSPARENT.toDrawable())
             elevation = 8f
         }
 
