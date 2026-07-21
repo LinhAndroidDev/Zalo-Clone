@@ -49,9 +49,19 @@
     </LinearLayout>
 
     <ImageView
+        android:id="@+id/btnChatSearch"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:contentDescription="@string/cd_chat_search"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_search"
+        app:tint="@color/white" />
+
+    <ImageView
         android:id="@+id/btnChatContact"
         android:layout_width="20dp"
         android:layout_height="20dp"
+        android:layout_marginStart="20dp"
         android:importantForAccessibility="no"
         android:src="@drawable/ic_contact"
         app:tint="@color/white" />

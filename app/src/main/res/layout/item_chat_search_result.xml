@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:tools="http://schemas.android.com/tools">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingVertical="10dp">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/imgSenderAvatar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="15dp"
+                android:src="@mipmap/ic_launcher" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="15dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvSenderName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/font_noto_sans"
+                    android:maxLines="1"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    tools:text="Nguyễn Văn A" />
+
+                <TextView
+                    android:id="@+id/tvMessageContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/font_noto_sans"
+                    android:maxLines="2"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    tools:text="Hình như hôm nay trời đẹp · 14:30" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginStart="75dp"
+            android:background="#E1E1E1" />
+    </LinearLayout>
+</layout>

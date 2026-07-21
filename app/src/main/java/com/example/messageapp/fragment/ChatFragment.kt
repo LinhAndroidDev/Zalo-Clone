@@ -116,6 +116,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private var isPinnedBannerExpanded = false
     private var isPinnedSortMode = false
     private var lastVisiblePinnedMessages: List<PinnedMessage> = emptyList()
+    private var pendingScrollToMessageTime: String? = null
     private val allMentionCandidate by lazy {
         MentionHelper.allMentionCandidate(getString(R.string.mention_all_label))
     }
@@ -270,6 +271,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                     activity?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                 }
             }
+            binding?.header?.onChatSearchClick = {
+                findNavController().navigate(
+                    ChatFragmentDirections.actionChatFragmentToChatSearchFragment(cvt)
+                )
+            }
         }
         binding?.edtMessage?.doOnTextChanged { text, _, _, _ ->
             if (text?.isNotEmpty() == true) {
@@ -301,6 +307,19 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
 
         binding?.btnCancelReply?.setOnClickListener { clearReply() }
+
+        findNavController().currentBackStackEntry
+            ?.savedStateHandle
+            ?.getLiveData<String>(ChatSearchFragment.SCROLL_TO_MESSAGE_TIME_KEY)
+            ?.observe(viewLifecycleOwner) { messageTime ->
+                if (!messageTime.isNullOrBlank()) {
+                    pendingScrollToMessageTime = messageTime.trim()
+                    findNavController().currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>(ChatSearchFragment.SCROLL_TO_MESSAGE_TIME_KEY)
+                    consumePendingScrollToMessage(messagesLoaded = false)
+                }
+            }
 
         setupPinnedBannerList()
     }
@@ -945,6 +964,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                             }
                             lastMessagesSnapshot = ArrayList(msg)
                             updatePinnedBanner(viewModel?.pinnedMessages?.value.orEmpty(), msg)
+                            consumePendingScrollToMessage(messagesLoaded = msg.isNotEmpty())
                             if (stateScrollable) {
                                 binding?.rcvChat?.scrollToPosition(
                                     chatAdapter?.itemCount?.minus(1) ?: 0
@@ -1266,6 +1286,31 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     private fun setPinnedBannerVisible(visible: Boolean) {
         binding?.pinnedBannerContainer?.pinnedBannerRoot?.isVisible = visible
         binding?.pinnedMessageFadeOverlay?.isVisible = visible
+    }
+
+    /**
+     * Defer scroll until [ChatAdapter] has messages again after returning from [ChatSearchFragment]
+     * (view/adapter are recreated while ViewModel still holds the thread).
+     */
+    private fun consumePendingScrollToMessage(messagesLoaded: Boolean) {
+        val pendingTime = pendingScrollToMessageTime?.trim().orEmpty()
+        if (pendingTime.isBlank()) return
+
+        val index = chatAdapter?.indexOfMessageTime(pendingTime) ?: -1
+        if (index >= 0) {
+            pendingScrollToMessageTime = null
+            binding?.rcvChat?.post { scrollToMessage(pendingTime) }
+            return
+        }
+
+        if (messagesLoaded) {
+            pendingScrollToMessageTime = null
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.reply_original_not_found),
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
     }
 
     private fun scrollToMessage(messageTime: String) {

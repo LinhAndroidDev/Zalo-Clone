@@ -98,6 +98,12 @@
     <string name="pinned_menu_sort">Sắp xếp</string>
     <string name="pinned_sort_hint">Kéo để sắp xếp</string>
     <string name="pinned_sort_done">Xong</string>
+    <string name="chat_search_hint">Nhập từ khóa tìm kiếm</string>
+    <string name="chat_search_no_results">Không tìm thấy tin nhắn</string>
+    <string name="chat_search_screen_title">Tìm kiếm tin nhắn</string>
+    <string name="chat_search_empty_prompt">Nhập từ khóa và bấm tìm kiếm</string>
+    <string name="chat_search_result_count">%d kết quả</string>
+    <string name="cd_chat_search">Tìm kiếm trong chat</string>
     <string name="pin_limit_reached">Chỉ ghim tối đa 10 tin</string>
     <string name="pin_already_pinned">Tin nhắn đã được ghim</string>
     <string name="appointment_reminder">Nhắc hẹn</string>
