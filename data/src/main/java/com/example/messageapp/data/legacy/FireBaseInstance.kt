@@ -564,13 +564,6 @@ object FireBaseInstance {
     }
 
     /**
-     * Marks the current user's group inbox row as read.
-     */
-    fun markGroupConversationSeen(userId: String, groupId: String) {
-        markGroupMessageRead(userId, groupId, lastReadTime = "")
-    }
-
-    /**
      * Marks group inbox read and updates this member's read cursor for read receipts.
      */
     fun markGroupMessageRead(userId: String, groupId: String, lastReadTime: String) {
@@ -595,9 +588,7 @@ object FireBaseInstance {
     ): ListenerRegistration {
         if (groupId.isBlank()) {
             onChange(emptyMap())
-            return object : ListenerRegistration {
-                override fun remove() {}
-            }
+            return ListenerRegistration { }
         }
         return db.collection(PATH_GROUPS).document(groupId)
             .collection(PATH_MEMBER_READ)
@@ -2171,7 +2162,7 @@ object FireBaseInstance {
         val col = db.collection(DiaryPostFirestore.COLLECTION)
         fun writePost(imageUrls: List<String>) {
             val doc = col.document()
-            val data = hashMapOf<String, Any>(
+            val data = hashMapOf(
                 DiaryPostFirestore.FIELD_AUTHOR_ID to authorId,
                 DiaryPostFirestore.FIELD_AUTHOR_NAME to authorName,
                 DiaryPostFirestore.FIELD_AUTHOR_AVATAR to authorAvatarUrl,
@@ -2248,7 +2239,7 @@ object FireBaseInstance {
                     context,
                     imageUris,
                     onDone = { urls ->
-                        val updates = hashMapOf<String, Any>(
+                        val updates = hashMapOf(
                             DiaryPostFirestore.FIELD_CONTENT to content,
                             DiaryPostFirestore.FIELD_IMAGE_URLS to urls,
                             DiaryPostFirestore.FIELD_UPDATED_AT to FieldValue.serverTimestamp()
@@ -2563,7 +2554,7 @@ object FireBaseInstance {
     ) {
         val postRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
         val newRef = postRef.collection(DiaryPostFirestore.SUB_COMMENTS).document()
-        val data = hashMapOf<String, Any>(
+        val data = hashMapOf(
             DiaryPostFirestore.COMMENT_FIELD_AUTHOR_ID to authorId,
             DiaryPostFirestore.COMMENT_FIELD_AUTHOR_NAME to authorName,
             DiaryPostFirestore.COMMENT_FIELD_AUTHOR_AVATAR to authorAvatarUrl,
@@ -2785,7 +2776,7 @@ object FireBaseInstance {
         val commentRef = db.collection(DiaryPostFirestore.COLLECTION).document(postId)
             .collection(DiaryPostFirestore.SUB_COMMENTS).document(commentId)
         val newRef = commentRef.collection(DiaryPostFirestore.SUB_REPLIES).document()
-        val data = hashMapOf<String, Any>(
+        val data = hashMapOf(
             DiaryPostFirestore.COMMENT_FIELD_AUTHOR_ID to authorId,
             DiaryPostFirestore.COMMENT_FIELD_AUTHOR_NAME to authorName,
             DiaryPostFirestore.COMMENT_FIELD_AUTHOR_AVATAR to authorAvatarUrl,
@@ -3068,7 +3059,7 @@ object FireBaseInstance {
             val ref = db.collection(PATH_USER).document(recipientId)
                 .collection(DiaryNotificationFirestore.SUB_COLLECTION)
                 .document()
-            val data = hashMapOf<String, Any>(
+            val data = hashMapOf(
                 DiaryNotificationFirestore.FIELD_TYPE to type.name,
                 DiaryNotificationFirestore.FIELD_ACTOR_ID to actorId,
                 DiaryNotificationFirestore.FIELD_ACTOR_NAME to resolvedName,
@@ -3133,7 +3124,7 @@ object FireBaseInstance {
                     token = token,
                     data = Data(
                         title = actorName,
-                        body = if (previewText.isNotBlank()) previewText else body,
+                        body = previewText.ifBlank { body },
                         senderId = actorId,
                         diaryNotificationType = type.name,
                         recipientUserId = recipientId,
