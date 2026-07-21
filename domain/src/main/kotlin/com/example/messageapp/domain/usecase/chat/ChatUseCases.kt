@@ -8,6 +8,7 @@ import com.example.messageapp.domain.model.PinnedMessage
 import com.example.messageapp.domain.repository.ChatRepository
 import com.example.messageapp.domain.repository.SessionRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class ObserveMessagesUseCase @Inject constructor(
@@ -117,12 +118,21 @@ class ToggleMessageReactionUseCase @Inject constructor(
     }
 }
 
+class ObserveTypingUsersUseCase @Inject constructor(
+    private val chatRepository: ChatRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(conversation: Conversation): Flow<List<String>> =
+        chatRepository.observeTypingUsers(conversation, sessionRepository.getAuth())
+}
+
 class ObserveTypingUseCase @Inject constructor(
     private val chatRepository: ChatRepository,
     private val sessionRepository: SessionRepository,
 ) {
     operator fun invoke(conversation: Conversation): Flow<Boolean> =
-        chatRepository.observeTyping(conversation, sessionRepository.getAuth())
+        chatRepository.observeTypingUsers(conversation, sessionRepository.getAuth())
+            .map { it.isNotEmpty() }
 }
 
 class UpdateTypingUseCase @Inject constructor(

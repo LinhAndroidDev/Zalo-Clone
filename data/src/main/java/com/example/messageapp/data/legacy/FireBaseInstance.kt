@@ -32,6 +32,8 @@ import com.example.messageapp.data.legacy.MediaFileUtils.compressImage
 import com.example.messageapp.data.legacy.MediaFileUtils.isVideoUri
 import com.example.messageapp.data.legacy.MediaFileUtils.readUriBytes
 import com.example.messageapp.domain.chat.MentionParser
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -68,6 +70,8 @@ object FireBaseInstance {
     private const val PATH_EMOTION = "emotion"
     private const val PATH_AUDIO = "audios"
     private const val PATH_TYPING = "typing"
+    private const val PATH_TYPING_USERS = "typingUsers"
+    private const val TYPING_TTL_MS = 8_000L
     private const val PATH_STICKER = "sticker"
     private const val PATH_FRIEND_REQUESTS = "friendRequests"
     private const val PATH_FRIENDS = "friends"
@@ -994,7 +998,11 @@ object FireBaseInstance {
                 val groupDocRef = db.collection(PATH_GROUPS).document(groupId)
                 batch.update(
                     groupDocRef,
-                    mapOf("typing" to false, "typingUserId" to ""),
+                    mapOf(
+                        "$PATH_TYPING_USERS.$userId" to FieldValue.delete(),
+                        PATH_TYPING to false,
+                        "typingUserId" to "",
+                    ),
                 )
                 batch.commit().addOnFailureListener {
                     Log.e("Send Message", "batch group inbox: ${it.message}")
@@ -1692,13 +1700,62 @@ object FireBaseInstance {
     /** Typing indicator for group chats (stored on the group document). */
     fun updateGroupTyping(groupId: String, userId: String, typing: Boolean) {
         if (groupId.isBlank() || userId.isBlank()) return
-        db.collection(PATH_GROUPS).document(groupId)
-            .update(
+        val ref = db.collection(PATH_GROUPS).document(groupId)
+        if (typing) {
+            ref.update(
                 mapOf(
-                    "typing" to typing,
-                    "typingUserId" to if (typing) userId else "",
+                    "$PATH_TYPING_USERS.$userId" to FieldValue.serverTimestamp(),
+                    PATH_TYPING to true,
+                    "typingUserId" to userId,
                 ),
             )
+        } else {
+            ref.update(
+                mapOf(
+                    "$PATH_TYPING_USERS.$userId" to FieldValue.delete(),
+                    PATH_TYPING to false,
+                    "typingUserId" to "",
+                ),
+            )
+        }
+    }
+
+    private fun parseActiveTypingUserIds(
+        snap: DocumentSnapshot,
+        myUserId: String,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): List<String> {
+        @Suppress("UNCHECKED_CAST")
+        val raw = snap.get(PATH_TYPING_USERS) as? Map<String, Any?> ?: emptyMap()
+        return raw.mapNotNull { (uid, value) ->
+            if (uid.isBlank() || uid == myUserId) return@mapNotNull null
+            val millis = when (value) {
+                is Timestamp -> value.toDate().time
+                is Number -> value.toLong()
+                else -> null
+            } ?: return@mapNotNull null
+            if (nowMillis - millis <= TYPING_TTL_MS) uid to millis else null
+        }
+            .sortedByDescending { it.second }
+            .map { it.first }
+    }
+
+    /**
+     * Listens for user ids currently typing in a group (excluding [myUserId], TTL-filtered).
+     */
+    fun observeGroupTypingUsers(
+        groupId: String,
+        myUserId: String,
+        onTypingUsers: (List<String>) -> Unit,
+    ): ListenerRegistration {
+        return db.collection(PATH_GROUPS).document(groupId)
+            .addSnapshotListener { snap, _ ->
+                if (snap == null || !snap.exists()) {
+                    onTypingUsers(emptyList())
+                    return@addSnapshotListener
+                }
+                onTypingUsers(parseActiveTypingUserIds(snap, myUserId))
+            }
     }
 
     /**
@@ -1709,16 +1766,9 @@ object FireBaseInstance {
         myUserId: String,
         onTypingFromOthers: (Boolean) -> Unit,
     ): ListenerRegistration {
-        return db.collection(PATH_GROUPS).document(groupId)
-            .addSnapshotListener { snap, _ ->
-                if (snap == null || !snap.exists()) {
-                    onTypingFromOthers(false)
-                    return@addSnapshotListener
-                }
-                val typing = snap.getBoolean("typing") == true
-                val uid = snap.getString("typingUserId").orEmpty()
-                onTypingFromOthers(typing && uid.isNotBlank() && uid != myUserId)
-            }
+        return observeGroupTypingUsers(groupId, myUserId) { userIds ->
+            onTypingFromOthers(userIds.isNotEmpty())
+        }
     }
 
     /**

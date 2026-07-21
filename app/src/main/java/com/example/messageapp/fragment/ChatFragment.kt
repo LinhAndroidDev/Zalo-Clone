@@ -1001,9 +1001,11 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             }
         }
 
-        lifecycleScope.launch {
-            viewModel?.typing?.collect { typing ->
-                binding?.typingView?.isVisible = typing
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel?.typingUiState?.collect { state ->
+                    binding?.typingBanner?.bind(state)
+                }
             }
         }
 

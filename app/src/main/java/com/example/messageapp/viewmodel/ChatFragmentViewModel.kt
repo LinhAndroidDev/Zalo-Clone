@@ -19,7 +19,7 @@ import com.example.messageapp.domain.usecase.chat.ObserveGroupReadStatusUseCase
 import com.example.messageapp.domain.usecase.chat.ObserveMessagesUseCase
 import com.example.messageapp.domain.usecase.chat.ObservePinnedMessagesUseCase
 import com.example.messageapp.domain.usecase.chat.ObservePresenceUseCase
-import com.example.messageapp.domain.usecase.chat.ObserveTypingUseCase
+import com.example.messageapp.domain.usecase.chat.ObserveTypingUsersUseCase
 import com.example.messageapp.domain.usecase.chat.PinMessageUseCase
 import com.example.messageapp.domain.usecase.chat.RemoveMessageUseCase
 import com.example.messageapp.domain.usecase.chat.ReorderPinnedMessagesUseCase
@@ -34,6 +34,8 @@ import com.example.messageapp.model.EmotionType
 import com.example.messageapp.model.Friend
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.PinnedMessage
+import com.example.messageapp.model.TypingUiState
+import com.example.messageapp.model.TypingUserUi
 import com.example.messageapp.model.User
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.model.UserPresence
@@ -41,9 +43,11 @@ import com.example.messageapp.utils.FileUtils
 import com.example.messageapp.utils.FileUtils.isVideoUri
 import com.example.messageapp.utils.GroupAvatarLoader
 import com.example.messageapp.utils.MentionHelper
+import com.example.messageapp.utils.TypingDisplayNameHelper
 import com.example.messageapp.utils.getImageDimensions
 import com.example.messageapp.utils.getVideoDimensions
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -59,12 +63,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChatFragmentViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val sessionRepository: SessionRepository,
     private val getConversationUseCase: GetConversationUseCase,
     private val observeMessagesUseCase: ObserveMessagesUseCase,
     private val sendMessageUseCase: SendMessageUseCase,
     private val toggleMessageReactionUseCase: ToggleMessageReactionUseCase,
-    private val observeTypingUseCase: ObserveTypingUseCase,
+    private val observeTypingUsersUseCase: ObserveTypingUsersUseCase,
     private val updateTypingUseCase: UpdateTypingUseCase,
     private val markMessageReadUseCase: MarkMessageReadUseCase,
     private val removeMessageUseCase: RemoveMessageUseCase,
@@ -114,8 +119,8 @@ class ChatFragmentViewModel @Inject constructor(
     private val _groupLastMessageReaders = MutableStateFlow<List<String>>(emptyList())
     val groupLastMessageReaders = _groupLastMessageReaders.asStateFlow()
 
-    private val _typing = MutableStateFlow(false)
-    val typing = _typing.asStateFlow()
+    private val _typingUiState = MutableStateFlow(TypingUiState())
+    val typingUiState = _typingUiState.asStateFlow()
 
     private val _friendPresence = MutableStateFlow<UserPresence?>(null)
     val friendPresence = _friendPresence.asStateFlow()
@@ -349,8 +354,62 @@ class ChatFragmentViewModel @Inject constructor(
     fun observeTyping(conversation: Conversation) {
         typingJob?.cancel()
         typingJob = viewModelScope.launch {
-            observeTypingUseCase(ChatUiMapper.toDomain(conversation)).collect { _typing.value = it }
+            combine(
+                observeTypingUsersUseCase(ChatUiMapper.toDomain(conversation)),
+                mentionCandidates,
+            ) { userIds, mentionMembers ->
+                buildTypingUiState(conversation, userIds, mentionMembers)
+            }.collect { state ->
+                _typingUiState.value = state
+            }
         }
+    }
+
+    private fun buildTypingUiState(
+        conversation: Conversation,
+        userIds: List<String>,
+        mentionMembers: List<MentionHelper.MentionCandidate>,
+    ): TypingUiState {
+        if (userIds.isEmpty()) return TypingUiState(isVisible = false)
+        val memberMap = mentionMembers.associateBy { it.userId }
+        val users = userIds.map { userId ->
+            resolveTypingUser(conversation, userId, memberMap[userId])
+        }
+        val shortNames = users.map { it.shortName }.filter { it.isNotBlank() }
+        return TypingUiState(
+            isVisible = true,
+            users = users,
+            label = TypingDisplayNameHelper.buildTypingLabel(appContext.resources, shortNames),
+        )
+    }
+
+    private fun resolveTypingUser(
+        conversation: Conversation,
+        userId: String,
+        member: MentionHelper.MentionCandidate?,
+    ): TypingUserUi {
+        if (!conversation.isGroupThread()) {
+            val shortName = TypingDisplayNameHelper.shortDisplayName(conversation.name.orEmpty())
+                .ifBlank { userId.takeLast(6) }
+            return TypingUserUi(
+                userId = userId,
+                shortName = shortName,
+                avatarUrl = conversation.friendImage.orEmpty(),
+            )
+        }
+        if (member != null) {
+            return TypingUserUi(
+                userId = userId,
+                shortName = TypingDisplayNameHelper.shortDisplayName(member.displayName)
+                    .ifBlank { userId.takeLast(6) },
+                avatarUrl = member.avatar,
+            )
+        }
+        return TypingUserUi(
+            userId = userId,
+            shortName = userId.takeLast(6),
+            avatarUrl = "",
+        )
     }
 
     fun startObservingFriendPresence(friendId: String) {

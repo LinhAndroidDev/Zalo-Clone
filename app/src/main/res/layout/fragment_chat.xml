@@ -94,16 +94,11 @@
                     tools:text="42%" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/typingView"
-                android:text="@string/typing"
-                android:paddingHorizontal="10dp"
-                android:background="@color/white"
-                android:textColor="@color/color_icon_amber"
-                android:textSize="12sp"
-                android:visibility="gone"
+            <com.example.messageapp.custom.ChatTypingBannerView
+                android:id="@+id/typingBanner"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
 
             <LinearLayout
                 android:id="@+id/mentionPickerContainer"

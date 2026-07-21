@@ -13,6 +13,7 @@ import com.example.messageapp.domain.repository.ChatRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -155,22 +156,33 @@ class ChatRepositoryImpl @Inject constructor() : ChatRepository {
         }
     }
 
-    override fun observeTyping(conversation: Conversation, userId: String): Flow<Boolean> =
+    override fun observeTypingUsers(conversation: Conversation, userId: String): Flow<List<String>> =
         callbackFlow {
             if (conversation.isGroupThread()) {
-                val registration = FireBaseInstance.observeGroupTyping(conversation.friendId, userId) { show ->
-                    trySend(show)
+                val registration = FireBaseInstance.observeGroupTypingUsers(conversation.friendId, userId) { userIds ->
+                    trySend(userIds)
                 }
                 awaitClose { registration.remove() }
             } else {
+                val friendId = conversation.friendId
                 val registration = FireBaseInstance.getConversationRlt(
-                    friendId = conversation.friendId,
+                    friendId = friendId,
                     userId = userId,
-                    success = { cvt -> trySend(cvt.typing) },
+                    success = { cvt ->
+                        val typingUsers = when {
+                            !cvt.typing -> emptyList()
+                            cvt.sender == friendId || cvt.sender.isBlank() -> listOf(friendId)
+                            else -> emptyList()
+                        }
+                        trySend(typingUsers)
+                    },
                 )
                 awaitClose { registration.remove() }
             }
         }
+
+    override fun observeTyping(conversation: Conversation, userId: String): Flow<Boolean> =
+        observeTypingUsers(conversation, userId).map { it.isNotEmpty() }
 
     override fun markSeen(message: Message, conversation: Conversation, userId: String) {
         if (conversation.isGroupThread()) {

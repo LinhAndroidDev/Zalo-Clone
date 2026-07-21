@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp">
+
+        <FrameLayout
+            android:id="@+id/typingAvatarStack"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/avatarSlot1"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/bg_grey_equal"
+                android:visibility="gone"
+                app:civ_border_color="@color/white"
+                app:civ_border_width="1dp"
+                tools:visibility="visible" />
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/avatarSlot2"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/bg_grey_equal"
+                android:visibility="gone"
+                app:civ_border_color="@color/white"
+                app:civ_border_width="1dp" />
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/avatarSlot3"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/bg_grey_equal"
+                android:visibility="gone"
+                app:civ_border_color="@color/white"
+                app:civ_border_width="1dp" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tvTypingLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:textColor="@color/color_icon_amber"
+            android:textSize="12sp"
+            tools:text="Hùng đang nhập tin nhắn" />
+    </LinearLayout>
+</merge>

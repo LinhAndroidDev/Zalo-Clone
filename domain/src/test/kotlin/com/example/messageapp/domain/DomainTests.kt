@@ -6,6 +6,7 @@ import com.example.messageapp.domain.model.Message
 import com.example.messageapp.domain.chat.EmotionReactionDetector
 import com.example.messageapp.domain.chat.MentionParser
 import com.example.messageapp.domain.model.Conversation
+import com.example.messageapp.domain.model.PinnedMessage
 import com.example.messageapp.domain.repository.ChatRepository
 import com.example.messageapp.domain.usecase.chat.ToggleMessageReactionUseCase
 import kotlinx.coroutines.flow.flowOf
@@ -113,6 +114,8 @@ private class FakeChatRepository : ChatRepository {
     override fun messageThreadDocumentId(conversation: Conversation, userId: String) = "room"
     override fun observeMessages(conversation: Conversation, userId: String) =
         flowOf(emptyList<Message>())
+    override fun observePinnedMessages(conversation: Conversation, userId: String) =
+        flowOf(emptyList<PinnedMessage>())
     override fun sendMessage(
         message: Message,
         userId: String,
@@ -122,6 +125,18 @@ private class FakeChatRepository : ChatRepository {
         sendFirst: Boolean,
     ) {}
     override fun removeMessage(conversation: Conversation, userId: String, time: String) {}
+    override fun pinMessage(
+        message: Message,
+        conversation: Conversation,
+        userId: String,
+        userName: String,
+    ) {}
+    override fun unpinMessage(conversation: Conversation, userId: String, messageTime: String) {}
+    override fun reorderPinnedMessages(
+        conversation: Conversation,
+        userId: String,
+        orderedTimes: List<String>,
+    ) {}
     override fun toggleMessageReaction(
         time: String,
         conversation: Conversation,
@@ -130,6 +145,8 @@ private class FakeChatRepository : ChatRepository {
         onFailure: (String) -> Unit,
     ) {}
     override fun updateTyping(conversation: Conversation, userId: String, typing: Boolean) {}
+    override fun observeTypingUsers(conversation: Conversation, userId: String) =
+        flowOf(emptyList<String>())
     override fun observeTyping(conversation: Conversation, userId: String) =
         flowOf(false)
     override fun markSeen(message: Message, conversation: Conversation, userId: String) {}

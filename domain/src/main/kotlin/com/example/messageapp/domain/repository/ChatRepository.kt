@@ -33,6 +33,7 @@ interface ChatRepository {
         onFailure: (String) -> Unit,
     )
     fun updateTyping(conversation: Conversation, userId: String, typing: Boolean)
+    fun observeTypingUsers(conversation: Conversation, userId: String): Flow<List<String>>
     fun observeTyping(conversation: Conversation, userId: String): Flow<Boolean>
     fun markSeen(message: Message, conversation: Conversation, userId: String)
 }
