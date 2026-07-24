@@ -7,21 +7,40 @@
         android:layout_height="match_parent"
         android:background="@color/black">
 
-        <ImageView
-            android:id="@+id/imgStory"
+        <com.example.messageapp.custom.StoryMediaTransformLayout
+            android:id="@+id/mediaTransformContainer"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:importantForAccessibility="no"
-            android:scaleType="centerCrop"
-            android:visibility="gone" />
+            android:layout_height="match_parent">
 
-        <androidx.media3.ui.PlayerView
-            android:id="@+id/videoStory"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone"
-            app:show_buffering="when_playing"
-            app:use_controller="false" />
+            <FrameLayout
+                android:id="@+id/mediaTransformWrapper"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:id="@+id/imgStory"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:importantForAccessibility="no"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+                <androidx.media3.ui.PlayerView
+                    android:id="@+id/videoStory"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="gone"
+                    app:resize_mode="zoom"
+                    app:show_buffering="when_playing"
+                    app:use_controller="false" />
+            </FrameLayout>
+        </com.example.messageapp.custom.StoryMediaTransformLayout>
+
+        <com.example.messageapp.custom.StoryMusicStickerView
+            android:id="@+id/musicSticker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"

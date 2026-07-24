@@ -21,6 +21,7 @@ import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.model.EmotionType
 import com.example.messageapp.utils.EmotionBurstEffect
 import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.RelativeTimeFormatter
 import androidx.core.net.toUri
 
 class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
@@ -46,7 +47,7 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
         val ctx = holder.v.root.context
 
         holder.v.tvAuthorName.text = post.authorName
-        holder.v.tvTime.text = formatRelativeTime(ctx, post.createdAtMillis)
+        holder.v.tvTime.text = RelativeTimeFormatter.format(ctx, post.createdAtMillis)
 
         val openAuthorProfile = {
             val id = post.authorUserId
@@ -209,17 +210,6 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
         popupView.findViewById<View>(R.id.imgCry).setOnClickListener { pick(EmotionType.CRY) }
         popupView.findViewById<View>(R.id.imgAngry).setOnClickListener { pick(EmotionType.ANGRY) }
         popup.showAsDropDown(anchor, 0, -anchor.height * 2, Gravity.START)
-    }
-
-    private fun formatRelativeTime(context: Context, createdAtMillis: Long): String {
-        val diff = System.currentTimeMillis() - createdAtMillis
-        val sec = diff / 1000
-        return when {
-            sec < 60 -> context.getString(R.string.time_just_now)
-            sec < 3600 -> context.getString(R.string.time_minutes_ago, sec / 60)
-            sec < 86400 -> context.getString(R.string.time_hours_ago, sec / 3600)
-            else -> context.getString(R.string.time_days_ago, sec / 86400)
-        }
     }
 
     fun submitList(newList: List<DiaryPost>) {

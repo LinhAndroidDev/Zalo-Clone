@@ -24,6 +24,7 @@ import com.example.messageapp.databinding.FragmentCreateStoryBinding
 import com.example.messageapp.domain.model.StoryPrivacy
 import com.example.messageapp.model.GalleryItem
 import com.example.messageapp.model.MusicTrackItem
+import com.example.messageapp.model.StoryMediaTransform
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.GalleryUtils
 import com.example.messageapp.viewmodel.CreateStoryViewModel
@@ -83,7 +84,7 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
         binding?.btnChangeMedia?.setOnClickListener { backToGalleryPicker() }
         binding?.btnPrivacy?.setOnClickListener { showPrivacySheet() }
         binding?.btnAddMusic?.setOnClickListener { showMusicSheet() }
-        binding?.btnPublish?.setOnClickListener { viewModel?.publishStory() }
+        binding?.btnPublish?.setOnClickListener { publishStoryWithMusicPosition() }
     }
 
     private fun setupBackNavigation() {
@@ -261,8 +262,26 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
         }.show(childFragmentManager, "BottomSheetStoryCustomFriends")
     }
 
+    private fun publishStoryWithMusicPosition() {
+        val sticker = binding?.musicSticker
+        val (stickerX, stickerY) = if (viewModel?.selectedMusic?.value != null && sticker?.isVisible == true) {
+            sticker.getNormalizedPosition()
+        } else {
+            0.5f to 0.5f
+        }
+        val mediaTransform = binding?.mediaTransformContainer?.captureTransformState()
+            ?: StoryMediaTransform.Default
+        viewModel?.publishStory(
+            musicStickerX = stickerX,
+            musicStickerY = stickerY,
+            mediaTransform = mediaTransform,
+        )
+    }
+
     private fun bindMusicSticker(track: MusicTrackItem?) {
         val sticker = binding?.musicSticker ?: return
+        sticker.isDraggable = true
+        sticker.previewAudioEnabled = true
         if (track == null) {
             sticker.clearSticker()
             return

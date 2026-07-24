@@ -23,6 +23,7 @@ import com.example.messageapp.databinding.ItemDiaryReplyToggleBinding
 import com.example.messageapp.model.DiaryCommentRow
 import com.example.messageapp.model.DiaryPostComment
 import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.RelativeTimeFormatter
 
 class DiaryCommentAdapter(
     private val onToggleLike: (DiaryPostComment) -> Unit,
@@ -76,7 +77,7 @@ class DiaryCommentAdapter(
             val ctx = binding.root.context
             binding.tvAuthor.text = c.authorName.ifBlank { ctx.getString(R.string.diary_default_user_name) }
             binding.tvText.text = c.text
-            binding.tvTime.text = formatRelative(ctx, c.createdAtMillis)
+            binding.tvTime.text = RelativeTimeFormatter.format(ctx, c.createdAtMillis)
             ctx.loadImg(c.authorAvatarUrl, binding.imgAvatar, R.drawable.bg_grey_equal)
 
             binding.tvLikeCount.text = if (c.likeCount > 0) c.likeCount.toString() else ""
@@ -99,7 +100,7 @@ class DiaryCommentAdapter(
             val ctx = binding.root.context
             binding.tvAuthor.text = r.authorName.ifBlank { ctx.getString(R.string.diary_default_user_name) }
             binding.tvText.text = buildReplyText(ctx, r)
-            binding.tvTime.text = formatRelative(ctx, r.createdAtMillis)
+            binding.tvTime.text = RelativeTimeFormatter.format(ctx, r.createdAtMillis)
             ctx.loadImg(r.authorAvatarUrl, binding.imgAvatar, R.drawable.bg_grey_equal)
 
             binding.tvLikeCount.text = if (r.likeCount > 0) r.likeCount.toString() else ""
@@ -190,15 +191,4 @@ class DiaryCommentAdapter(
         )
 
     private fun likeCountColor(context: Context, likedByMe: Boolean): Int = likeLabelColor(context, likedByMe)
-
-    private fun formatRelative(context: Context, createdAtMillis: Long): String {
-        val diff = System.currentTimeMillis() - createdAtMillis
-        val sec = diff / 1000
-        return when {
-            sec < 60 -> context.getString(R.string.time_just_now)
-            sec < 3600 -> context.getString(R.string.time_minutes_ago, sec / 60)
-            sec < 86400 -> context.getString(R.string.time_hours_ago, sec / 3600)
-            else -> context.getString(R.string.time_days_ago, sec / 86400)
-        }
-    }
 }

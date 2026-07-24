@@ -3306,6 +3306,12 @@ object FireBaseInstance {
         musicArtist: String,
         musicAudioUrl: String,
         musicImageUrl: String,
+        musicStickerX: Float,
+        musicStickerY: Float,
+        mediaScale: Float,
+        mediaRotation: Float,
+        mediaTranslationX: Float,
+        mediaTranslationY: Float,
         onProgress: (Float) -> Unit,
         success: (String) -> Unit,
         failure: (String) -> Unit,
@@ -3339,6 +3345,12 @@ object FireBaseInstance {
                     StoryFirestore.FIELD_MUSIC_ARTIST to musicArtist,
                     StoryFirestore.FIELD_MUSIC_AUDIO_URL to musicAudioUrl,
                     StoryFirestore.FIELD_MUSIC_IMAGE_URL to musicImageUrl,
+                    StoryFirestore.FIELD_MUSIC_STICKER_X to musicStickerX,
+                    StoryFirestore.FIELD_MUSIC_STICKER_Y to musicStickerY,
+                    StoryFirestore.FIELD_MEDIA_SCALE to mediaScale,
+                    StoryFirestore.FIELD_MEDIA_ROTATION to mediaRotation,
+                    StoryFirestore.FIELD_MEDIA_TRANSLATION_X to mediaTranslationX,
+                    StoryFirestore.FIELD_MEDIA_TRANSLATION_Y to mediaTranslationY,
                 )
                 doc.set(data)
                     .addOnSuccessListener { success(doc.id) }

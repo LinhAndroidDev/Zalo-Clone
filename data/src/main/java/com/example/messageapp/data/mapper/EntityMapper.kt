@@ -295,6 +295,12 @@ object EntityMapper {
         musicArtist = story.musicArtist,
         musicAudioUrl = story.musicAudioUrl,
         musicImageUrl = story.musicImageUrl,
+        musicStickerX = story.musicStickerX,
+        musicStickerY = story.musicStickerY,
+        mediaScale = story.mediaScale,
+        mediaRotation = story.mediaRotation,
+        mediaTranslationX = story.mediaTranslationX,
+        mediaTranslationY = story.mediaTranslationY,
         viewedByMe = story.viewedByMe,
     )
 

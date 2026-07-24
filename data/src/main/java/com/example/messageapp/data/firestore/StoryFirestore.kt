@@ -21,6 +21,12 @@ object StoryFirestore {
     const val FIELD_MUSIC_ARTIST = "musicArtist"
     const val FIELD_MUSIC_AUDIO_URL = "musicAudioUrl"
     const val FIELD_MUSIC_IMAGE_URL = "musicImageUrl"
+    const val FIELD_MUSIC_STICKER_X = "musicStickerX"
+    const val FIELD_MUSIC_STICKER_Y = "musicStickerY"
+    const val FIELD_MEDIA_SCALE = "mediaScale"
+    const val FIELD_MEDIA_ROTATION = "mediaRotation"
+    const val FIELD_MEDIA_TRANSLATION_X = "mediaTranslationX"
+    const val FIELD_MEDIA_TRANSLATION_Y = "mediaTranslationY"
     const val FIELD_VIEWED_AT = "viewedAt"
 
     const val MEDIA_IMAGE = "image"
@@ -53,8 +59,24 @@ object StoryFirestore {
             musicArtist = data[FIELD_MUSIC_ARTIST]?.toString().orEmpty(),
             musicAudioUrl = data[FIELD_MUSIC_AUDIO_URL]?.toString().orEmpty(),
             musicImageUrl = data[FIELD_MUSIC_IMAGE_URL]?.toString().orEmpty(),
+            musicStickerX = parseNormalizedFloat(data[FIELD_MUSIC_STICKER_X], 0.5f),
+            musicStickerY = parseNormalizedFloat(data[FIELD_MUSIC_STICKER_Y], 0.5f),
+            mediaScale = parseFloat(data[FIELD_MEDIA_SCALE], 1f),
+            mediaRotation = parseFloat(data[FIELD_MEDIA_ROTATION], 0f),
+            mediaTranslationX = parseFloat(data[FIELD_MEDIA_TRANSLATION_X], 0f),
+            mediaTranslationY = parseFloat(data[FIELD_MEDIA_TRANSLATION_Y], 0f),
             viewedByMe = viewedByMe,
         )
+    }
+
+    private fun parseNormalizedFloat(value: Any?, default: Float): Float = when (value) {
+        is Number -> value.toFloat().coerceIn(0f, 1f)
+        else -> default
+    }
+
+    private fun parseFloat(value: Any?, default: Float): Float = when (value) {
+        is Number -> value.toFloat()
+        else -> default
     }
 
     private fun parseMillis(value: Any?): Long = when (value) {
@@ -80,5 +102,11 @@ data class Story(
     val musicArtist: String = "",
     val musicAudioUrl: String = "",
     val musicImageUrl: String = "",
+    val musicStickerX: Float = 0.5f,
+    val musicStickerY: Float = 0.5f,
+    val mediaScale: Float = 1f,
+    val mediaRotation: Float = 0f,
+    val mediaTranslationX: Float = 0f,
+    val mediaTranslationY: Float = 0f,
     val viewedByMe: Boolean = false,
 )

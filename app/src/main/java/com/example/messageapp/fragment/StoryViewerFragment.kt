@@ -16,7 +16,9 @@ import com.example.messageapp.R
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentStoryViewerBinding
 import com.example.messageapp.domain.model.StoryMediaType
+import com.example.messageapp.model.MusicTrackItem
 import com.example.messageapp.model.StoryItem
+import com.example.messageapp.model.StoryMediaTransform
 import com.example.messageapp.model.StoryRingItem
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.viewmodel.StoryViewerViewModel
@@ -118,6 +120,7 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         val story = ring.stories[storyIndex]
         viewModel?.markViewed(story)
         bindHeader(ring, story)
+        bindMusicSticker(story)
         bindProgressBars(ring.stories.size)
         bindMedia(story)
         startSegmentTimer(story)
@@ -127,16 +130,29 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         binding?.tvAuthorName?.text = ring.authorName
         binding?.tvStoryTime?.text = formatStoryAge(story.createdAtMillis)
         context?.loadImg(ring.authorAvatarUrl, binding?.imgAuthor!!, R.drawable.bg_grey_equal)
-        if (story.musicName.isNotBlank()) {
-            binding?.tvMusicLabel?.isVisible = true
-            binding?.tvMusicLabel?.text = getString(
-                R.string.story_music_selected,
-                story.musicName,
-                story.musicArtist,
-            )
-        } else {
+    }
+
+    private fun bindMusicSticker(story: StoryItem) {
+        val sticker = binding?.musicSticker ?: return
+        if (story.musicAudioUrl.isBlank() && story.musicImageUrl.isBlank()) {
+            sticker.clearSticker()
             binding?.tvMusicLabel?.isVisible = false
+            return
         }
+        sticker.isDraggable = false
+        sticker.previewAudioEnabled = false
+        sticker.bindTrack(
+            MusicTrackItem(
+                id = story.musicTrackId,
+                name = story.musicName,
+                artistName = story.musicArtist,
+                audioUrl = story.musicAudioUrl,
+                imageUrl = story.musicImageUrl,
+                durationSeconds = 0,
+            ),
+        )
+        sticker.applyNormalizedPosition(story.musicStickerX, story.musicStickerY)
+        binding?.tvMusicLabel?.isVisible = false
     }
 
     private fun bindProgressBars(count: Int) {
@@ -161,6 +177,15 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
     }
 
     private fun bindMedia(story: StoryItem) {
+        binding?.mediaTransformContainer?.isTransformEnabled = false
+        binding?.mediaTransformContainer?.applyTransformState(
+            StoryMediaTransform(
+                scale = story.mediaScale,
+                rotation = story.mediaRotation,
+                translationXNorm = story.mediaTranslationX,
+                translationYNorm = story.mediaTranslationY,
+            ),
+        )
         binding?.imgStory?.isVisible = story.mediaType == StoryMediaType.IMAGE
         binding?.videoStory?.isVisible = story.mediaType == StoryMediaType.VIDEO
         if (story.mediaType == StoryMediaType.IMAGE) {
@@ -287,6 +312,7 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         videoPlayer?.clearMediaItems()
         musicPlayer?.stop()
         musicPlayer?.clearMediaItems()
+        binding?.musicSticker?.clearSticker()
     }
 
     private fun closeViewer() {
@@ -311,6 +337,7 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         musicPlayer?.release()
         musicPlayer = null
         binding?.videoStory?.player = null
+        binding?.musicSticker?.release()
         super.onDestroyView()
     }
 

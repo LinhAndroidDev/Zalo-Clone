@@ -6,6 +6,7 @@ import com.example.messageapp.domain.model.DiaryNotification
 import com.example.messageapp.domain.model.DiaryNotificationType
 import com.example.messageapp.domain.model.EmotionType
 import com.example.messageapp.model.DiaryNotificationItem
+import com.example.messageapp.utils.RelativeTimeFormatter
 
 object DiaryNotificationUiMapper {
 
@@ -29,7 +30,7 @@ object DiaryNotificationUiMapper {
             read = notification.read,
             createdAtMillis = notification.createdAtMillis,
             actionText = formatActionText(context, notification),
-            timeText = formatRelativeTime(context, notification.createdAtMillis),
+            timeText = RelativeTimeFormatter.format(context, notification.createdAtMillis),
         )
     }
 
@@ -57,17 +58,8 @@ object DiaryNotificationUiMapper {
         null -> context.getString(R.string.diary_reaction_like)
     }
 
-    fun formatRelativeTime(context: Context, createdAtMillis: Long): String {
-        if (createdAtMillis <= 0L) return ""
-        val diff = System.currentTimeMillis() - createdAtMillis
-        val sec = diff / 1000
-        return when {
-            sec < 60 -> context.getString(R.string.time_just_now)
-            sec < 3600 -> context.getString(R.string.time_minutes_ago, sec / 60)
-            sec < 86400 -> context.getString(R.string.time_hours_ago, sec / 3600)
-            else -> context.getString(R.string.time_days_ago, sec / 86400)
-        }
-    }
+    fun formatRelativeTime(context: Context, createdAtMillis: Long): String =
+        RelativeTimeFormatter.format(context, createdAtMillis)
 
     fun actionIconRes(type: DiaryNotificationType): Int = when (type) {
         DiaryNotificationType.POST_REACTION -> R.drawable.emotion_like

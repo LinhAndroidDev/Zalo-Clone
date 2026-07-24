@@ -37,6 +37,9 @@ class StoryMusicStickerView @JvmOverloads constructor(
     private var downViewY = 0f
     private var isDragging = false
 
+    var isDraggable = true
+    var previewAudioEnabled = true
+
     init {
         binding.btnPlayContainer.setOnClickListener { togglePlayback() }
         setupDrag()
@@ -44,8 +47,13 @@ class StoryMusicStickerView @JvmOverloads constructor(
 
     fun bindTrack(track: MusicTrackItem) {
         isVisible = true
+        binding.btnPlayContainer.isVisible = previewAudioEnabled
         context.loadImg(track.imageUrl, binding.imgAlbum, R.drawable.bg_grey_equal)
-        prepareMusic(track.audioUrl)
+        if (previewAudioEnabled) {
+            prepareMusic(track.audioUrl)
+        } else {
+            stopAndReleaseMusic()
+        }
         updatePlayIcon()
     }
 
@@ -55,11 +63,29 @@ class StoryMusicStickerView @JvmOverloads constructor(
     }
 
     fun centerInParent() {
+        applyNormalizedPosition(0.5f, 0.5f)
+    }
+
+    fun getNormalizedPosition(): Pair<Float, Float> {
+        val parentView = parent as? FrameLayout ?: return 0.5f to 0.5f
+        if (width == 0 || height == 0 || parentView.width == 0 || parentView.height == 0) {
+            return 0.5f to 0.5f
+        }
+        val maxX = (parentView.width - width).toFloat().coerceAtLeast(1f)
+        val maxY = (parentView.height - height).toFloat().coerceAtLeast(1f)
+        return (x / maxX).coerceIn(0f, 1f) to (y / maxY).coerceIn(0f, 1f)
+    }
+
+    fun applyNormalizedPosition(normalizedX: Float, normalizedY: Float) {
+        val nx = normalizedX.coerceIn(0f, 1f)
+        val ny = normalizedY.coerceIn(0f, 1f)
         post {
             val parentView = parent as? FrameLayout ?: return@post
             if (width == 0 || height == 0 || parentView.width == 0 || parentView.height == 0) return@post
-            x = ((parentView.width - width) / 2f).coerceAtLeast(0f)
-            y = ((parentView.height - height) / 2f).coerceAtLeast(0f)
+            val maxX = (parentView.width - width).toFloat().coerceAtLeast(0f)
+            val maxY = (parentView.height - height).toFloat().coerceAtLeast(0f)
+            x = nx * maxX
+            y = ny * maxY
         }
     }
 
@@ -76,7 +102,7 @@ class StoryMusicStickerView @JvmOverloads constructor(
     @SuppressLint("ClickableViewAccessibility")
     private fun setupDrag() {
         setOnTouchListener { _, event ->
-            if (!isVisible) return@setOnTouchListener false
+            if (!isVisible || !isDraggable) return@setOnTouchListener false
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downRawX = event.rawX
@@ -140,6 +166,7 @@ class StoryMusicStickerView @JvmOverloads constructor(
     }
 
     private fun togglePlayback() {
+        if (!previewAudioEnabled) return
         val player = musicPlayer ?: return
         if (isPlaying) {
             player.pause()

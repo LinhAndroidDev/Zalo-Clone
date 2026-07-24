@@ -5,6 +5,7 @@ import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.domain.model.StoryPrivacy
 import com.example.messageapp.domain.usecase.story.CreateStoryUseCase
 import com.example.messageapp.model.MusicTrackItem
+import com.example.messageapp.model.StoryMediaTransform
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -61,7 +62,11 @@ class CreateStoryViewModel @Inject constructor(
         _selectedMusic.value = track
     }
 
-    fun publishStory() {
+    fun publishStory(
+        musicStickerX: Float = 0.5f,
+        musicStickerY: Float = 0.5f,
+        mediaTransform: StoryMediaTransform = StoryMediaTransform.Default,
+    ) {
         val uri = _mediaUri.value ?: run {
             showError("Chọn ảnh hoặc video")
             return
@@ -81,6 +86,12 @@ class CreateStoryViewModel @Inject constructor(
             musicArtist = music?.artistName.orEmpty(),
             musicAudioUrl = music?.audioUrl.orEmpty(),
             musicImageUrl = music?.imageUrl.orEmpty(),
+            musicStickerX = musicStickerX,
+            musicStickerY = musicStickerY,
+            mediaScale = mediaTransform.scale,
+            mediaRotation = mediaTransform.rotation,
+            mediaTranslationX = mediaTransform.translationXNorm,
+            mediaTranslationY = mediaTransform.translationYNorm,
             onProgress = { progress -> _uploadProgress.value = progress },
             onSuccess = {
                 _uploadProgress.value = null

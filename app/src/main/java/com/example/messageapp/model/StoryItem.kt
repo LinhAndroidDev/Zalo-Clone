@@ -22,6 +22,12 @@ data class StoryItem(
     val musicArtist: String = "",
     val musicAudioUrl: String = "",
     val musicImageUrl: String = "",
+    val musicStickerX: Float = 0.5f,
+    val musicStickerY: Float = 0.5f,
+    val mediaScale: Float = 1f,
+    val mediaRotation: Float = 0f,
+    val mediaTranslationX: Float = 0f,
+    val mediaTranslationY: Float = 0f,
     val viewedByMe: Boolean = false,
 ) : Parcelable
 

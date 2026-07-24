@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.FrameLayout
+import com.example.messageapp.model.StoryMediaTransform
 import kotlin.math.atan2
 
 class StoryMediaTransformLayout @JvmOverloads constructor(
@@ -25,6 +26,8 @@ class StoryMediaTransformLayout @JvmOverloads constructor(
     private var lastTouchY = 0f
     private var lastRotationDegrees = 0f
     private var isMultiTouch = false
+
+    var isTransformEnabled = true
 
     private val scaleDetector = ScaleGestureDetector(
         context,
@@ -50,15 +53,37 @@ class StoryMediaTransformLayout @JvmOverloads constructor(
     }
 
     fun resetTransform() {
-        currentScale = 1f
-        currentRotation = 0f
-        translationX = 0f
-        translationY = 0f
+        applyTransformState(StoryMediaTransform.Default)
+    }
+
+    fun captureTransformState(): StoryMediaTransform {
+        val w = width.toFloat().coerceAtLeast(1f)
+        val h = height.toFloat().coerceAtLeast(1f)
+        return StoryMediaTransform(
+            scale = currentScale,
+            rotation = currentRotation,
+            translationXNorm = translationX / w,
+            translationYNorm = translationY / h,
+        )
+    }
+
+    fun applyTransformState(state: StoryMediaTransform) {
+        currentScale = state.scale.coerceIn(MIN_SCALE, MAX_SCALE)
+        currentRotation = state.rotation
+        if (width == 0 || height == 0) {
+            post { applyTransformState(state) }
+            return
+        }
+        val w = width.toFloat().coerceAtLeast(1f)
+        val h = height.toFloat().coerceAtLeast(1f)
+        translationX = state.translationXNorm * w
+        translationY = state.translationYNorm * h
         applyTransform()
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!isTransformEnabled) return false
         scaleDetector.onTouchEvent(event)
 
         when (event.actionMasked) {
