@@ -117,6 +117,42 @@
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_diaryFragment_to_createStoryFragment"
+            app:destination="@id/createStoryFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_diaryFragment_to_storyViewerFragment"
+            app:destination="@id/storyViewerFragment"
+            app:enterAnim="@anim/fade_in"
+            app:exitAnim="@anim/no_animation"
+            app:popEnterAnim="@anim/no_animation"
+            app:popExitAnim="@anim/fade_out" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/createStoryFragment"
+        android:name="com.example.messageapp.fragment.CreateStoryFragment"
+        android:label="CreateStoryFragment"
+        tools:layout="@layout/fragment_create_story" />
+
+    <fragment
+        android:id="@+id/storyViewerFragment"
+        android:name="com.example.messageapp.fragment.StoryViewerFragment"
+        android:label="StoryViewerFragment"
+        tools:layout="@layout/fragment_story_viewer">
+        <argument
+            android:name="startAuthorId"
+            app:argType="string"
+            android:defaultValue="" />
+        <argument
+            android:name="ringAuthorIds"
+            app:argType="string[]"
+            app:nullable="true"
+            android:defaultValue="@null" />
     </fragment>
     <fragment
         android:id="@+id/personalFragment"

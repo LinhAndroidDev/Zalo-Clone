@@ -13,7 +13,9 @@ import com.example.messageapp.utils.FileUtils.loadImg
 
 class GalleryAdapter(
     private val context: Context,
-    private val onItemChecked: (GalleryItem, Boolean) -> Unit
+    private val singleSelect: Boolean = false,
+    private val onItemChecked: (GalleryItem, Boolean) -> Unit = { _, _ -> },
+    private val onItemSelected: (GalleryItem) -> Unit = {},
 ) : RecyclerView.Adapter<GalleryAdapter.GalleryViewHolder>() {
 
     private var items = listOf<GalleryItem>()
@@ -36,7 +38,7 @@ class GalleryAdapter(
         val binding = ItemGalleryBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
-            false
+            false,
         )
         return GalleryViewHolder(binding)
     }
@@ -52,19 +54,23 @@ class GalleryAdapter(
 
         fun bind(item: GalleryItem, position: Int) {
             binding.apply {
-                // Load image
                 context.loadImg(item.path, imgGallery)
-                
-                // Show/hide video indicator
+
                 icVideo.visibility = if (item.isVideo) ViewGroup.VISIBLE else ViewGroup.GONE
                 tvDuration.visibility = if (item.isVideo) ViewGroup.VISIBLE else ViewGroup.GONE
                 bgCoverVideo.visibility = if (item.isVideo) ViewGroup.VISIBLE else ViewGroup.GONE
-                
+
                 if (item.isVideo) {
                     tvDuration.text = item.duration
                 }
-                
-                // Handle selection state
+
+                if (singleSelect) {
+                    icCheck.isVisible = false
+                    bgCoverCheck.isVisible = false
+                    itemView.setOnClickListener { onItemSelected(item) }
+                    return
+                }
+
                 val isSelected = selectedItems.contains(item)
                 if (isSelected) {
                     icCheck.setImageResource(R.drawable.ic_check_gallery)
@@ -74,7 +80,7 @@ class GalleryAdapter(
                     bgCoverCheck.isVisible = false
                 }
                 icCheck.visibility = ViewGroup.VISIBLE
-                
+
                 itemView.setOnClickListener {
                     val newCheckedState = !isSelected
                     if (newCheckedState) {
@@ -83,7 +89,7 @@ class GalleryAdapter(
                         selectedItems.remove(item)
                     }
                     icCheck.setImageResource(
-                        if (newCheckedState) R.drawable.ic_check_gallery else R.drawable.ic_un_check_gallery
+                        if (newCheckedState) R.drawable.ic_check_gallery else R.drawable.ic_un_check_gallery,
                     )
                     onItemChecked(item, newCheckedState)
                     notifyItemChanged(position)

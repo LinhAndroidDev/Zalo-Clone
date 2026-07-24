@@ -29,6 +29,7 @@ class CustomHeaderView @JvmOverloads constructor(
     var addFriend: (() -> Unit)? = null
     var onChatMenuClick: (() -> Unit)? = null
     var onDiaryNotificationClick: (() -> Unit)? = null
+    var onAddStoryClick: (() -> Unit)? = null
     var onChatSearchClick: (() -> Unit)? = null
 
     interface OnTypeSearchListener {
@@ -155,6 +156,10 @@ class CustomHeaderView @JvmOverloads constructor(
 
         binding?.notification?.setOnClickListener {
             onDiaryNotificationClick?.invoke()
+        }
+
+        binding?.addStory?.setOnClickListener {
+            onAddStoryClick?.invoke()
         }
 
         binding?.viewChat?.btnChatMenu?.setOnClickListener {

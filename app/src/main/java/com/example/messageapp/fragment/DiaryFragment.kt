@@ -11,13 +11,15 @@ import com.example.messageapp.MainActivity
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryPostAdapter
+import com.example.messageapp.adapter.StoryRingAdapter
+import com.example.messageapp.model.StoryRingItem
+import com.example.messageapp.model.StoryViewerCache
 import com.example.messageapp.model.DiaryNavigationTarget
 import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.bottom_sheet.BottomSheetDiaryComments
 import com.example.messageapp.dialog.StatusImagePreviewDialog
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.databinding.FragmentDiaryBinding
-import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.DiaryFragmentViewModel
@@ -28,15 +30,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-enum class TypeNews {
-    Camera, Video, Edit
-}
-
 @AndroidEntryPoint
 class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>() {
     override val layoutResId: Int = R.layout.fragment_diary
 
     private val diaryPostAdapter by lazy { DiaryPostAdapter() }
+    private val storyRingAdapter by lazy { StoryRingAdapter() }
 
     override fun initView() {
         super.initView()
@@ -44,6 +43,20 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
         binding?.rcvDiaryFeed?.layoutManager = LinearLayoutManager(requireContext())
         binding?.rcvDiaryFeed?.adapter = diaryPostAdapter
+
+        binding?.rcvStoryRings?.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        binding?.rcvStoryRings?.adapter = storyRingAdapter
+        storyRingAdapter.onMyStoryClick = { ring ->
+            if (ring == null) {
+                navigateToCreateStory()
+            } else {
+                openStoryViewer(ring.authorId)
+            }
+        }
+        storyRingAdapter.onFriendStoryClick = { ring ->
+            openStoryViewer(ring.authorId)
+        }
         diaryPostAdapter.onOpenImagePreview = { uris, index ->
             StatusImagePreviewDialog.newInstance(uris, index)
                 .show(childFragmentManager, "StatusImagePreviewDialog")
@@ -73,8 +86,10 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
         viewModel?.getInfoUser()
         viewModel?.startDiaryFeed()
+        viewModel?.startStoryRings()
         viewModel?.startNotificationBadge()
 
+        binding?.header?.onAddStoryClick = { navigateToCreateStory() }
         binding?.header?.onDiaryNotificationClick = {
             findNavController().navigate(R.id.action_diaryFragment_to_diaryNotificationFragment)
         }
@@ -87,12 +102,30 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
             viewModel?.user?.collect { user ->
                 binding?.let { binding ->
                     activity?.loadImg(user?.avatar.toString(), binding.avatarUser)
-                    activity?.loadImg(user?.avatar.toString(), binding.imgCreateNews)
                 }
             }
         }
 
-        AnimatorUtils.scaleNews(binding?.iconNews, TypeNews.Camera)
+        lifecycleScope.launch(Dispatchers.Main) {
+            viewModel?.storyRings?.collect { rings ->
+                storyRingAdapter.updateDiff(rings)
+            }
+        }
+    }
+
+    private fun navigateToCreateStory() {
+        findNavController().navigate(R.id.action_diaryFragment_to_createStoryFragment)
+    }
+
+    private fun openStoryViewer(startAuthorId: String) {
+        viewModel?.storyRings?.value?.let { StoryViewerCache.update(it) }
+        findNavController().navigate(
+            R.id.action_diaryFragment_to_storyViewerFragment,
+            bundleOf(
+                "startAuthorId" to startAuthorId,
+                "ringAuthorIds" to (viewModel?.ringAuthorIds() ?: arrayOf(startAuthorId)),
+            ),
+        )
     }
 
     override fun onResume() {

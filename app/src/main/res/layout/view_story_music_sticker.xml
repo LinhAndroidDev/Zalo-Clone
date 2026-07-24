@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:layout_height="wrap_content"
+    tools:layout_width="wrap_content"
+    tools:parentTag="android.widget.FrameLayout">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/imgAlbum"
+        android:layout_width="@dimen/story_music_sticker_size"
+        android:layout_height="@dimen/story_music_sticker_size"
+        android:importantForAccessibility="no"
+        android:clickable="false"
+        android:focusable="false"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_grey_equal"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.StoryMusicSticker"
+        app:strokeColor="@color/white"
+        app:strokeWidth="2dp" />
+
+    <FrameLayout
+        android:id="@+id/btnPlayContainer"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_story_music_play_button">
+
+        <ImageView
+            android:id="@+id/btnPlay"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_play"
+            app:tint="@color/white" />
+    </FrameLayout>
+</merge>

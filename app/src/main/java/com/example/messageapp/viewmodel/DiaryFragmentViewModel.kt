@@ -1,6 +1,7 @@
 package com.example.messageapp.viewmodel
 
 import android.os.SystemClock
+import android.util.Log
 import com.example.messageapp.base.BaseViewModel
 import com.example.messageapp.domain.repository.SessionRepository
 import com.example.messageapp.domain.usecase.diary.GetDiaryAuthorUseCase
@@ -11,6 +12,10 @@ import com.example.messageapp.mapper.DiaryUiMapper
 import com.example.messageapp.mapper.SocialUiMapper
 import com.example.messageapp.model.DiaryPost
 import com.example.messageapp.model.EmotionType
+import com.example.messageapp.domain.usecase.story.ObserveStoryRingsUseCase
+import com.example.messageapp.mapper.StoryUiMapper
+import com.example.messageapp.model.StoryRingItem
+import com.example.messageapp.model.StoryViewerCache
 import com.example.messageapp.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +30,7 @@ class DiaryFragmentViewModel @Inject constructor(
     private val setDiaryPostReactionUseCase: SetDiaryPostReactionUseCase,
     private val observeDiaryNotificationUnreadCountUseCase: ObserveDiaryNotificationUnreadCountUseCase,
     private val deleteDiaryPostUseCase: com.example.messageapp.domain.usecase.diary.DeleteDiaryPostUseCase,
+    private val observeStoryRingsUseCase: ObserveStoryRingsUseCase,
 ) : BaseViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
@@ -36,9 +42,14 @@ class DiaryFragmentViewModel @Inject constructor(
     private val _unreadNotificationCount = MutableStateFlow(0)
     val unreadNotificationCount = _unreadNotificationCount.asStateFlow()
 
+    private val _storyRings = MutableStateFlow<List<StoryRingItem>>(emptyList())
+    val storyRings = _storyRings.asStateFlow()
+
     private var stopFeed: (() -> Unit)? = null
+    private var stopStoryRings: (() -> Unit)? = null
     private var stopUnread: (() -> Unit)? = null
     private var lastDiaryFeedErrorAtMs = 0L
+    private var lastStoryRingsErrorAtMs = 0L
 
     fun currentUserId(): String = sessionRepository.getAuth()
 
@@ -46,6 +57,7 @@ class DiaryFragmentViewModel @Inject constructor(
         sessionRepository.getAuth().ifBlank { return }
         getDiaryAuthorUseCase(onSuccess = { u ->
             _user.value = SocialUiMapper.toUi(u)
+            _storyRings.value = buildStoryRingList(_storyRings.value)
         })
     }
 
@@ -62,6 +74,60 @@ class DiaryFragmentViewModel @Inject constructor(
                 }
             },
         )
+    }
+
+    fun startStoryRings() {
+        sessionRepository.getAuth().ifBlank { return }
+        stopStoryRings?.invoke()
+        stopStoryRings = observeStoryRingsUseCase(
+            onRings = { rings ->
+                _storyRings.value = buildStoryRingList(rings.map { StoryUiMapper.toUi(it) })
+                StoryViewerCache.update(_storyRings.value)
+            },
+            onError = { msg ->
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastStoryRingsErrorAtMs >= 4_000L) {
+                    lastStoryRingsErrorAtMs = now
+                    Log.w("DiaryFragmentViewModel", "Story rings: $msg")
+                }
+            },
+        )
+    }
+
+    private fun buildStoryRingList(rings: List<StoryRingItem>): List<StoryRingItem> {
+        val myId = currentUserId()
+        val user = _user.value
+        val myRing = rings.find { it.isMe } ?: StoryRingItem(
+            authorId = myId,
+            authorName = user?.name.orEmpty(),
+            authorAvatarUrl = user?.avatar.orEmpty(),
+            stories = emptyList(),
+            hasUnseen = false,
+            isMe = true,
+        )
+        val others = rings.filter { !it.isMe && it.stories.isNotEmpty() }
+        return listOf(myRing.copy(
+            authorName = user?.name ?: myRing.authorName,
+            authorAvatarUrl = user?.avatar ?: myRing.authorAvatarUrl,
+        )) + others
+    }
+
+    fun ringAuthorIds(): Array<String> {
+        val myId = currentUserId()
+        val ids = _storyRings.value
+            .filter { it.stories.isNotEmpty() }
+            .map { it.authorId }
+            .toMutableList()
+        if (ids.none { it == myId }) {
+            val myStories = _storyRings.value.firstOrNull { it.isMe }?.stories.orEmpty()
+            if (myStories.isNotEmpty()) {
+                ids.add(0, myId)
+            }
+        } else {
+            ids.remove(myId)
+            ids.add(0, myId)
+        }
+        return ids.toTypedArray()
     }
 
     fun startNotificationBadge() {
@@ -99,6 +165,8 @@ class DiaryFragmentViewModel @Inject constructor(
         super.onCleared()
         stopFeed?.invoke()
         stopFeed = null
+        stopStoryRings?.invoke()
+        stopStoryRings = null
         stopUnread?.invoke()
         stopUnread = null
     }

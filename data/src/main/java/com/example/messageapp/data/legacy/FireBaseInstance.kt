@@ -12,6 +12,8 @@ import com.example.messageapp.data.firestore.Friend
 import com.example.messageapp.data.firestore.FriendRequest
 import com.example.messageapp.data.firestore.Message
 import com.example.messageapp.data.firestore.Sticker
+import com.example.messageapp.data.firestore.Story
+import com.example.messageapp.data.firestore.StoryFirestore
 import com.example.messageapp.data.firestore.TypeMessage
 import com.example.messageapp.data.firestore.DiaryLinkPreview
 import com.example.messageapp.data.firestore.DiaryPost
@@ -3191,4 +3193,355 @@ object FireBaseInstance {
     }
 
     // endregion Diary posts
+
+    // region Stories
+
+    private const val STORY_TTL_MS = 24L * 60L * 60L * 1000L
+    private const val STORY_PUBLIC_LIMIT = 50L
+
+    private suspend fun uploadMediaToFolder(
+        context: Context,
+        uri: Uri,
+        folder: String,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? {
+        return if (context.isVideoUri(uri)) {
+            uploadVideoToFolder(context, uri, folder, onFileUploadProgress)
+        } else {
+            uploadImageToFolder(context, uri, folder, onFileUploadProgress)
+        }
+    }
+
+    private suspend fun uploadImageToFolder(
+        context: Context,
+        uri: Uri,
+        folder: String,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? = suspendCancellableCoroutine { continuation ->
+        try {
+            val bytes = context.compressImage(uri)
+            onFileUploadProgress(0f)
+            val fileName = "${UUID.randomUUID()}.jpg"
+            CloudinaryManager.uploadBytes(
+                fileBytes = bytes,
+                fileName = fileName,
+                mimeType = "image/jpeg",
+                folder = folder,
+                onSuccess = { url -> continuation.resume(url) },
+                onFailure = { e -> continuation.resumeWithException(e) },
+                onUploadProgress = { p -> onFileUploadProgress(p) },
+            )
+        } catch (t: Throwable) {
+            continuation.resumeWithException(t)
+        }
+    }
+
+    private suspend fun uploadVideoToFolder(
+        context: Context,
+        uri: Uri,
+        folder: String,
+        onFileUploadProgress: (Float) -> Unit = { },
+    ): String? = suspendCancellableCoroutine { continuation ->
+        try {
+            val bytes = context.readUriBytes(uri)
+            onFileUploadProgress(0f)
+            val mime = context.contentResolver.getType(uri) ?: "video/mp4"
+            val ext = when {
+                mime.contains("webm", ignoreCase = true) -> "webm"
+                mime.contains("quicktime", ignoreCase = true) || mime.contains("mov", ignoreCase = true) -> "mov"
+                mime.contains("3gp", ignoreCase = true) -> "3gp"
+                else -> "mp4"
+            }
+            val fileName = "${UUID.randomUUID()}.$ext"
+            CloudinaryManager.uploadBytes(
+                fileBytes = bytes,
+                fileName = fileName,
+                mimeType = mime,
+                folder = folder,
+                onSuccess = { url -> continuation.resume(url) },
+                onFailure = { e -> continuation.resumeWithException(e) },
+                onUploadProgress = { p -> onFileUploadProgress(p) },
+            )
+        } catch (t: Throwable) {
+            continuation.resumeWithException(t)
+        }
+    }
+
+    fun createStory(
+        context: Context,
+        authorId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        mediaUri: Uri,
+        privacy: String,
+        visibleToUserIds: List<String>,
+        musicTrackId: String,
+        musicName: String,
+        musicArtist: String,
+        musicAudioUrl: String,
+        musicImageUrl: String,
+        onProgress: (Float) -> Unit,
+        success: (String) -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                onProgress(0f)
+                val folder = "stories/$authorId"
+                val mediaUrl = uploadMediaToFolder(context, mediaUri, folder, onProgress)
+                    ?: throw IllegalStateException("Upload failed")
+                val mediaType = if (context.isVideoUri(mediaUri)) {
+                    StoryFirestore.MEDIA_VIDEO
+                } else {
+                    StoryFirestore.MEDIA_IMAGE
+                }
+                val now = System.currentTimeMillis()
+                val expiresAt = now + STORY_TTL_MS
+                val doc = db.collection(StoryFirestore.COLLECTION).document()
+                val data = hashMapOf(
+                    StoryFirestore.FIELD_AUTHOR_ID to authorId,
+                    StoryFirestore.FIELD_AUTHOR_NAME to authorName,
+                    StoryFirestore.FIELD_AUTHOR_AVATAR to authorAvatarUrl,
+                    StoryFirestore.FIELD_MEDIA_URL to mediaUrl,
+                    StoryFirestore.FIELD_MEDIA_TYPE to mediaType,
+                    StoryFirestore.FIELD_CREATED_AT to FieldValue.serverTimestamp(),
+                    StoryFirestore.FIELD_EXPIRES_AT to expiresAt,
+                    StoryFirestore.FIELD_PRIVACY to privacy,
+                    StoryFirestore.FIELD_VISIBLE_TO to visibleToUserIds,
+                    StoryFirestore.FIELD_MUSIC_TRACK_ID to musicTrackId,
+                    StoryFirestore.FIELD_MUSIC_NAME to musicName,
+                    StoryFirestore.FIELD_MUSIC_ARTIST to musicArtist,
+                    StoryFirestore.FIELD_MUSIC_AUDIO_URL to musicAudioUrl,
+                    StoryFirestore.FIELD_MUSIC_IMAGE_URL to musicImageUrl,
+                )
+                doc.set(data)
+                    .addOnSuccessListener { success(doc.id) }
+                    .addOnFailureListener { failure(it.message ?: "Error") }
+            } catch (t: Throwable) {
+                failure(t.message ?: "Error")
+            }
+        }
+    }
+
+    fun markStoryViewed(
+        storyId: String,
+        viewerId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        if (storyId.isBlank() || viewerId.isBlank()) {
+            failure("Error")
+            return
+        }
+        db.collection(StoryFirestore.COLLECTION)
+            .document(storyId)
+            .collection(StoryFirestore.SUB_VIEWS)
+            .document(viewerId)
+            .set(mapOf(StoryFirestore.FIELD_VIEWED_AT to FieldValue.serverTimestamp()))
+            .addOnSuccessListener { success() }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun observeStoryRings(
+        userId: String,
+        onRings: (List<Story>) -> Unit,
+        onError: (String) -> Unit,
+    ): () -> Unit {
+        val storiesCol = db.collection(StoryFirestore.COLLECTION)
+        val now = System.currentTimeMillis()
+        val bucketStories = mutableMapOf<Int, Map<String, Story>>()
+        val viewedStoryIds = mutableSetOf<String>()
+        val regs = mutableListOf<ListenerRegistration>()
+        var friendIds = listOf<String>()
+
+        fun rebuildMerged(): LinkedHashMap<String, Story> {
+            val merged = linkedMapOf<String, Story>()
+            bucketStories.values.forEach { map ->
+                map.forEach { (id, story) -> merged[id] = story }
+            }
+            return merged
+        }
+
+        fun isStoryVisible(story: Story, viewerId: String, friends: Set<String>): Boolean {
+            if (story.expiresAtMillis <= now) return false
+            if (story.authorId == viewerId) return true
+            return when (story.privacy) {
+                StoryFirestore.PRIVACY_EVERYONE -> true
+                StoryFirestore.PRIVACY_FRIENDS -> friends.contains(story.authorId)
+                StoryFirestore.PRIVACY_CUSTOM -> story.visibleToUserIds.contains(viewerId)
+                else -> false
+            }
+        }
+
+        fun refreshViewStatus(onDone: () -> Unit) {
+            val mergedStories = rebuildMerged()
+            val ids = mergedStories.keys.toList()
+            if (ids.isEmpty()) {
+                viewedStoryIds.clear()
+                onDone()
+                return
+            }
+            viewedStoryIds.clear()
+            var remaining = ids.size
+            ids.forEach { storyId ->
+                storiesCol.document(storyId)
+                    .collection(StoryFirestore.SUB_VIEWS)
+                    .document(userId)
+                    .get()
+                    .addOnSuccessListener { snap ->
+                        if (snap.exists()) viewedStoryIds.add(storyId)
+                        remaining -= 1
+                        if (remaining == 0) onDone()
+                    }
+                    .addOnFailureListener {
+                        remaining -= 1
+                        if (remaining == 0) onDone()
+                    }
+            }
+        }
+
+        fun emitRings() {
+            val mergedStories = rebuildMerged()
+            val friendsSet = friendIds.toSet()
+            val visible = mergedStories.values
+                .filter { isStoryVisible(it, userId, friendsSet) }
+                .map { story ->
+                    story.copy(viewedByMe = viewedStoryIds.contains(story.id))
+                }
+            onRings(visible)
+        }
+
+        fun mergeAndEmit() {
+            refreshViewStatus { emitRings() }
+        }
+
+        fun attachStoryQuery(query: Query, bucket: Int) {
+            val reg = query.addSnapshotListener { snap, err ->
+                if (err != null) {
+                    onError(err.message ?: "Error")
+                    return@addSnapshotListener
+                }
+                val map = snap?.documents?.mapNotNull { doc ->
+                    StoryFirestore.fromDocument(doc)?.let { story ->
+                        if (story.expiresAtMillis > now) story.id to story else null
+                    }
+                }?.toMap().orEmpty()
+                bucketStories[bucket] = map
+                mergeAndEmit()
+            }
+            regs.add(reg)
+        }
+
+        fun attachQueries(authors: List<String>) {
+            regs.forEach { it.remove() }
+            regs.clear()
+            bucketStories.clear()
+            friendIds = authors
+
+            // Single-field query avoids composite Firestore indexes; filter privacy client-side.
+            attachStoryQuery(
+                storiesCol
+                    .whereGreaterThan(StoryFirestore.FIELD_EXPIRES_AT, now)
+                    .limit(150),
+                0,
+            )
+        }
+
+        val friendsReg = db.collection(PATH_USER).document(userId)
+            .collection(PATH_FRIENDS)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    onError(error.message ?: "Error")
+                    return@addSnapshotListener
+                }
+                val ids = value?.documents?.mapNotNull { it.id.takeIf { id -> id.isNotBlank() } }.orEmpty()
+                attachQueries(ids)
+            }
+        regs.add(friendsReg)
+
+        return {
+            regs.forEach { it.remove() }
+            regs.clear()
+        }
+    }
+
+    fun getStoriesForAuthors(
+        userId: String,
+        authorIds: List<String>,
+        onSuccess: (List<Story>) -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        val ids = authorIds.filter { it.isNotBlank() }.distinct()
+        if (ids.isEmpty()) {
+            onSuccess(emptyList())
+            return
+        }
+        db.collection(PATH_USER).document(userId)
+            .collection(PATH_FRIENDS)
+            .get()
+            .addOnSuccessListener { friendsSnap ->
+                val friendIds = friendsSnap.documents
+                    .mapNotNull { doc -> doc.id.takeIf { id -> id.isNotBlank() } }
+                    .toSet()
+                fetchStoriesForAuthors(userId, ids, friendIds, onSuccess, onFailure)
+            }
+            .addOnFailureListener { onFailure(it.message ?: "Error") }
+    }
+
+    private fun fetchStoriesForAuthors(
+        userId: String,
+        authorIds: List<String>,
+        friendIds: Set<String>,
+        onSuccess: (List<Story>) -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        val now = System.currentTimeMillis()
+        val chunks = authorIds.distinct().chunked(10)
+        val merged = linkedMapOf<String, Story>()
+        var remaining = chunks.size
+        if (remaining == 0) {
+            onSuccess(emptyList())
+            return
+        }
+        chunks.forEach { chunk ->
+            db.collection(StoryFirestore.COLLECTION)
+                .whereIn(StoryFirestore.FIELD_AUTHOR_ID, chunk)
+                .get()
+                .addOnSuccessListener { snap ->
+                    snap.documents.forEach { doc ->
+                        StoryFirestore.fromDocument(doc)?.let { story ->
+                            merged[story.id] = story
+                        }
+                    }
+                    remaining -= 1
+                    if (remaining == 0) {
+                        val visible = merged.values.filter { story ->
+                            isStoryVisibleForViewer(story, userId, friendIds, now)
+                        }
+                        onSuccess(visible.toList())
+                    }
+                }
+                .addOnFailureListener {
+                    onFailure(it.message ?: "Error")
+                }
+        }
+    }
+
+    private fun isStoryVisibleForViewer(
+        story: Story,
+        viewerId: String,
+        friends: Set<String>,
+        now: Long,
+    ): Boolean {
+        if (story.expiresAtMillis <= now) return false
+        if (story.authorId == viewerId) return true
+        return when (story.privacy) {
+            StoryFirestore.PRIVACY_EVERYONE -> true
+            StoryFirestore.PRIVACY_FRIENDS -> friends.contains(story.authorId)
+            StoryFirestore.PRIVACY_CUSTOM -> story.visibleToUserIds.contains(viewerId)
+            else -> false
+        }
+    }
+
+    // endregion Stories
 }

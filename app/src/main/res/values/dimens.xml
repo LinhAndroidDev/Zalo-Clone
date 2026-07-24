@@ -11,4 +11,5 @@
     <dimen name="WheelMargins">8dp</dimen>
     <dimen name="chat_receiver_bubble_margin_start_normal">5dp</dimen>
     <dimen name="chat_receiver_bubble_margin_start_cluster">45dp</dimen>
+    <dimen name="story_music_sticker_size">88dp</dimen>
 </resources>

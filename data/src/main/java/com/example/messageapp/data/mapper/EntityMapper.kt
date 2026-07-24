@@ -13,6 +13,7 @@ import com.example.messageapp.data.firestore.GroupChat as FsGroupChat
 import com.example.messageapp.data.firestore.Message as FsMessage
 import com.example.messageapp.data.firestore.MessageMention as FsMessageMention
 import com.example.messageapp.data.firestore.MessageReply as FsMessageReply
+import com.example.messageapp.data.firestore.Story as FsStory
 import com.example.messageapp.data.firestore.User as FsUser
 import com.example.messageapp.data.firestore.UserPresence as FsUserPresence
 import com.example.messageapp.domain.model.DiaryLinkPreview
@@ -29,6 +30,10 @@ import com.example.messageapp.domain.model.MessageMention
 import com.example.messageapp.domain.model.MessageReply
 import com.example.messageapp.domain.model.PinnedMessage
 import com.example.messageapp.domain.model.User
+import com.example.messageapp.domain.model.Story
+import com.example.messageapp.domain.model.StoryMediaType
+import com.example.messageapp.domain.model.StoryPrivacy
+import com.example.messageapp.domain.model.StoryRing
 import com.example.messageapp.domain.model.UserPresence
 
 object EntityMapper {
@@ -265,4 +270,60 @@ object EntityMapper {
     )
 
     fun toFirestore(type: EmotionType): FsEmotionType = FsEmotionType.valueOf(type.name)
+
+    fun toDomain(story: FsStory): Story = Story(
+        id = story.id,
+        authorId = story.authorId,
+        authorName = story.authorName,
+        authorAvatarUrl = story.authorAvatarUrl,
+        mediaUrl = story.mediaUrl,
+        mediaType = if (story.mediaType == com.example.messageapp.data.firestore.StoryFirestore.MEDIA_VIDEO) {
+            StoryMediaType.VIDEO
+        } else {
+            StoryMediaType.IMAGE
+        },
+        createdAtMillis = story.createdAtMillis,
+        expiresAtMillis = story.expiresAtMillis,
+        privacy = when (story.privacy) {
+            com.example.messageapp.data.firestore.StoryFirestore.PRIVACY_FRIENDS -> StoryPrivacy.FRIENDS
+            com.example.messageapp.data.firestore.StoryFirestore.PRIVACY_CUSTOM -> StoryPrivacy.CUSTOM
+            else -> StoryPrivacy.EVERYONE
+        },
+        visibleToUserIds = story.visibleToUserIds,
+        musicTrackId = story.musicTrackId,
+        musicName = story.musicName,
+        musicArtist = story.musicArtist,
+        musicAudioUrl = story.musicAudioUrl,
+        musicImageUrl = story.musicImageUrl,
+        viewedByMe = story.viewedByMe,
+    )
+
+    fun toDomainRing(
+        authorId: String,
+        authorName: String,
+        authorAvatarUrl: String,
+        stories: List<FsStory>,
+        myUserId: String,
+    ): StoryRing {
+        val domainStories = stories.map { toDomain(it) }.sortedBy { it.createdAtMillis }
+        val hasUnseen = if (authorId == myUserId) {
+            domainStories.isNotEmpty()
+        } else {
+            domainStories.any { !it.viewedByMe }
+        }
+        return StoryRing(
+            authorId = authorId,
+            authorName = authorName,
+            authorAvatarUrl = authorAvatarUrl,
+            stories = domainStories,
+            hasUnseen = hasUnseen,
+            isMe = authorId == myUserId,
+        )
+    }
+
+    fun privacyToFirestore(privacy: StoryPrivacy): String = when (privacy) {
+        StoryPrivacy.FRIENDS -> com.example.messageapp.data.firestore.StoryFirestore.PRIVACY_FRIENDS
+        StoryPrivacy.CUSTOM -> com.example.messageapp.data.firestore.StoryFirestore.PRIVACY_CUSTOM
+        StoryPrivacy.EVERYONE -> com.example.messageapp.data.firestore.StoryFirestore.PRIVACY_EVERYONE
+    }
 }

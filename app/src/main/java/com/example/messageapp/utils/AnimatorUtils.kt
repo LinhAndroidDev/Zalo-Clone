@@ -13,7 +13,10 @@ import android.view.animation.LinearInterpolator
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.R
-import com.example.messageapp.fragment.TypeNews
+
+enum class TypeNews {
+    Camera, Video, Edit
+}
 
 object AnimatorUtils {
     private const val DURATION_TIME = 300L
