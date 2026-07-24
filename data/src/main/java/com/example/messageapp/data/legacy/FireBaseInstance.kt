@@ -2460,8 +2460,6 @@ object FireBaseInstance {
                     }
                     postChunkRegs.add(reg)
             }
-            mergeAndEmit()
-            syncMyReactionListeners(mergeKeys())
         }
 
         friendsReg = db.collection(PATH_USER).document(userId)

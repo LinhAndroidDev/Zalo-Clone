@@ -4,7 +4,9 @@ import android.content.Intent
 import androidx.appcompat.app.AlertDialog
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.messageapp.MainActivity
@@ -23,7 +25,6 @@ import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
 import com.example.messageapp.viewmodel.DiaryFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -35,6 +36,7 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
     private val diaryPostAdapter by lazy { DiaryPostAdapter() }
     private val storyRingAdapter by lazy { StoryRingAdapter() }
+    private var savedScrollY = 0
 
     override fun initView() {
         super.initView()
@@ -83,11 +85,6 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
             }
         }
 
-        viewModel?.getInfoUser()
-        viewModel?.startDiaryFeed()
-        viewModel?.startStoryRings()
-        viewModel?.startNotificationBadge()
-
         binding?.header?.onAddStoryClick = { navigateToCreateStory() }
         binding?.header?.onDiaryNotificationClick = {
             findNavController().navigate(R.id.action_diaryFragment_to_diaryNotificationFragment)
@@ -97,18 +94,19 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
             viewModel?.setDiaryPostReaction(post, type)
         }
 
-        lifecycleScope.launch(Dispatchers.Main) {
-            viewModel?.user?.collect { user ->
-                binding?.let { binding ->
-                    activity?.loadImg(user?.avatar.toString(), binding.avatarUser)
-                }
-            }
-        }
+        restoreScrollPosition()
+    }
 
-        lifecycleScope.launch(Dispatchers.Main) {
-            viewModel?.storyRings?.collect { rings ->
-                storyRingAdapter.updateDiff(rings)
-            }
+    override fun onDestroyView() {
+        savedScrollY = binding?.scrollDiaryContent?.scrollY ?: savedScrollY
+        super.onDestroyView()
+    }
+
+    private fun restoreScrollPosition() {
+        val scrollY = savedScrollY
+        if (scrollY <= 0) return
+        binding?.scrollDiaryContent?.post {
+            binding?.scrollDiaryContent?.scrollTo(0, scrollY)
         }
     }
 
@@ -135,7 +133,7 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
     }
 
     private fun handleDiaryNavigationTarget(target: DiaryNavigationTarget) {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val posts = withTimeoutOrNull(5_000L) {
                 viewModel?.diaryPosts?.first { list -> list.any { it.id == target.postId } }
             }
@@ -158,18 +156,33 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
     override fun bindData() {
         super.bindData()
-        lifecycleScope.launch {
-            viewModel?.diaryPosts?.collect { posts ->
-                diaryPostAdapter.submitList(posts)
-                binding?.tvFeedEmpty?.isVisible = posts.isEmpty()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel?.diaryPosts?.collect { posts ->
+                        diaryPostAdapter.submitList(posts)
+                        binding?.tvFeedEmpty?.isVisible = posts.isEmpty()
+                    }
+                }
+                launch {
+                    viewModel?.unreadNotificationCount?.collect { count ->
+                        binding?.header?.setNotificationBadge(count)
+                    }
+                }
+                launch {
+                    viewModel?.user?.collect { user ->
+                        binding?.let { b ->
+                            activity?.loadImg(user?.avatar.toString(), b.avatarUser)
+                        }
+                    }
+                }
+                launch {
+                    viewModel?.storyRings?.collect { rings ->
+                        storyRingAdapter.updateDiff(rings)
+                    }
+                }
             }
         }
-        lifecycleScope.launch {
-            viewModel?.unreadNotificationCount?.collect { count ->
-                binding?.header?.setNotificationBadge(count)
-            }
-        }
-        // Lỗi: BaseFragment.initView() đã collect errorState + Toast — không collect lại ở đây (tránh toast trùng/spam).
     }
 
     override fun onClickView() {

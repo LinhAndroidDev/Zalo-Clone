@@ -51,6 +51,15 @@ class DiaryFragmentViewModel @Inject constructor(
     private var lastDiaryFeedErrorAtMs = 0L
     private var lastStoryRingsErrorAtMs = 0L
 
+    init {
+        if (sessionRepository.getAuth().isNotBlank()) {
+            getInfoUser()
+            startDiaryFeed()
+            startStoryRings()
+            startNotificationBadge()
+        }
+    }
+
     fun currentUserId(): String = sessionRepository.getAuth()
 
     fun getInfoUser() {
@@ -62,8 +71,8 @@ class DiaryFragmentViewModel @Inject constructor(
     }
 
     fun startDiaryFeed() {
+        if (stopFeed != null) return
         sessionRepository.getAuth().ifBlank { return }
-        stopFeed?.invoke()
         stopFeed = observeDiaryFeedUseCase(
             onPosts = { list -> _diaryPosts.value = DiaryUiMapper.toUiPosts(list) },
             onError = { msg ->
@@ -77,8 +86,8 @@ class DiaryFragmentViewModel @Inject constructor(
     }
 
     fun startStoryRings() {
+        if (stopStoryRings != null) return
         sessionRepository.getAuth().ifBlank { return }
-        stopStoryRings?.invoke()
         stopStoryRings = observeStoryRingsUseCase(
             onRings = { rings ->
                 _storyRings.value = buildStoryRingList(rings.map { StoryUiMapper.toUi(it) })
@@ -131,8 +140,8 @@ class DiaryFragmentViewModel @Inject constructor(
     }
 
     fun startNotificationBadge() {
+        if (stopUnread != null) return
         sessionRepository.getAuth().ifBlank { return }
-        stopUnread?.invoke()
         stopUnread = observeDiaryNotificationUnreadCountUseCase(
             onUpdate = { _unreadNotificationCount.value = it },
             onError = {},
