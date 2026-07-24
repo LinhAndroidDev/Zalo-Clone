@@ -1524,13 +1524,13 @@ object FireBaseInstance {
         }
     }
 
-    private fun parsePinnedMessages(snapshot: com.google.firebase.firestore.DocumentSnapshot): List<ChatThreadPin> {
+    private fun parsePinnedMessages(snapshot: DocumentSnapshot): List<ChatThreadPin> {
         @Suppress("UNCHECKED_CAST")
         val rawList = snapshot.get(PATH_PINNED_MESSAGES) as? List<Map<String, Any?>> ?: return emptyList()
         return rawList.mapNotNull { map -> mapToChatThreadPin(map) }
     }
 
-    private fun parseLegacyPinnedMessage(snapshot: com.google.firebase.firestore.DocumentSnapshot): ChatThreadPin? {
+    private fun parseLegacyPinnedMessage(snapshot: DocumentSnapshot): ChatThreadPin? {
         val messageTime = snapshot.getString(PATH_PINNED_MESSAGE_TIME).orEmpty()
         if (messageTime.isBlank()) return null
         return ChatThreadPin(

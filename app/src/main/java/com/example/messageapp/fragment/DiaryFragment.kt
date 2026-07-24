@@ -12,7 +12,6 @@ import com.example.messageapp.PersonalActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.DiaryPostAdapter
 import com.example.messageapp.adapter.StoryRingAdapter
-import com.example.messageapp.model.StoryRingItem
 import com.example.messageapp.model.StoryViewerCache
 import com.example.messageapp.model.DiaryNavigationTarget
 import com.example.messageapp.model.DiaryPost

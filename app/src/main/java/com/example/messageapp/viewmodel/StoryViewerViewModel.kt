@@ -97,7 +97,4 @@ class StoryViewerViewModel @Inject constructor(
         markStoryViewedUseCase(story.id)
     }
 
-    fun finishViewer() {
-        _finished.value = true
-    }
 }

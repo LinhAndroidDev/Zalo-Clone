@@ -14,9 +14,9 @@ class StoryFriendPickerAdapter : BaseAdapter<Friend, ItemStoryFriendPickerBindin
 
     override fun onBindViewHolder(holder: BaseViewHolder<ItemStoryFriendPickerBinding>, position: Int) {
         val friend = items[position]
-        val friendId = friend.keyAuth.orEmpty()
+        val friendId = friend.keyAuth
         holder.v.tvName.text = friend.name
-        holder.v.root.context.loadImg(friend.avatar.orEmpty(), holder.v.imgAvatar, R.drawable.bg_grey_equal)
+        holder.v.root.context.loadImg(friend.avatar, holder.v.imgAvatar, R.drawable.bg_grey_equal)
         holder.v.checkFriend.setOnCheckedChangeListener(null)
         holder.v.checkFriend.isChecked = friendId in checkedIds
         holder.v.checkFriend.setOnCheckedChangeListener { _, checked ->

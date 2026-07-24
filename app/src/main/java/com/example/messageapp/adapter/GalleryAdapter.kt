@@ -27,13 +27,6 @@ class GalleryAdapter(
         notifyDataSetChanged()
     }
 
-    fun getSelectedItems(): List<GalleryItem> = selectedItems.toList()
-
-    fun clearSelection() {
-        selectedItems.clear()
-        notifyDataSetChanged()
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GalleryViewHolder {
         val binding = ItemGalleryBinding.inflate(
             LayoutInflater.from(parent.context),

@@ -1,6 +1,5 @@
 package com.example.messageapp.domain.repository
 
-import com.example.messageapp.domain.model.Story
 import com.example.messageapp.domain.model.StoryPrivacy
 import com.example.messageapp.domain.model.StoryRing
 

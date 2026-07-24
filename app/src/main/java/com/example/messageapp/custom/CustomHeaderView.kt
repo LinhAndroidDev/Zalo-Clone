@@ -44,7 +44,7 @@ class CustomHeaderView @JvmOverloads constructor(
         binding = CustomHeaderViewBinding.inflate(LayoutInflater.from(context))
         binding?.let { binding ->
             binding.root.layoutParams =
-                LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+                LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
             addView(binding.root)
 
             val array =
