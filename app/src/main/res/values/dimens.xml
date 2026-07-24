@@ -12,4 +12,20 @@
     <dimen name="chat_receiver_bubble_margin_start_normal">5dp</dimen>
     <dimen name="chat_receiver_bubble_margin_start_cluster">45dp</dimen>
     <dimen name="story_music_sticker_size">88dp</dimen>
+
+    <!-- Emotion pill (layout_release_emotion) -->
+    <dimen name="emotion_favourite_icon_size">15dp</dimen>
+    <dimen name="emotion_icon_size">16dp</dimen>
+    <dimen name="emotion_like_icon_size">12.5dp</dimen>
+    <dimen name="emotion_like_icon_margin_start">3dp</dimen>
+
+    <!-- Diary post reaction button (scaled from 16dp → 25dp) -->
+    <dimen name="emotion_icon_action_size">25dp</dimen>
+    <dimen name="emotion_like_icon_action_size">19.5dp</dimen>
+    <dimen name="emotion_like_icon_action_margin_start">5dp</dimen>
+
+    <!-- Diary post reaction popup (scaled from 16dp → 32dp) -->
+    <dimen name="emotion_favourite_icon_popup_size">30dp</dimen>
+    <dimen name="emotion_icon_popup_size">32dp</dimen>
+    <dimen name="emotion_like_icon_popup_size">25dp</dimen>
 </resources>

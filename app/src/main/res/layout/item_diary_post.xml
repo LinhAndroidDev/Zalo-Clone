@@ -135,9 +135,10 @@
 
                     <ImageView
                         android:id="@+id/ivLike"
-                        android:src="@drawable/ic_favourite_not_fill"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"/>
+                        android:layout_width="@dimen/emotion_icon_action_size"
+                        android:layout_height="@dimen/emotion_icon_action_size"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_favourite_not_fill" />
 
                     <TextView
                         android:id="@+id/tvLikeLabel"

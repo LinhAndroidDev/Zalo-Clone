@@ -11,39 +11,39 @@
 
     <ImageView
         android:id="@+id/imgFavourite"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="@dimen/emotion_favourite_icon_popup_size"
+        android:layout_height="@dimen/emotion_favourite_icon_popup_size"
         android:contentDescription="@string/diary_reaction_favourite"
         android:src="@drawable/emotion_favourite" />
 
     <ImageView
         android:id="@+id/imgLike"
-        android:layout_width="25dp"
-        android:layout_height="25dp"
+        android:layout_width="@dimen/emotion_like_icon_popup_size"
+        android:layout_height="@dimen/emotion_like_icon_popup_size"
         android:layout_marginStart="12dp"
         android:contentDescription="@string/diary_reaction_like"
         android:src="@drawable/emotion_like" />
 
     <ImageView
         android:id="@+id/imgLaugh"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="@dimen/emotion_icon_popup_size"
+        android:layout_height="@dimen/emotion_icon_popup_size"
         android:layout_marginStart="10dp"
         android:contentDescription="@string/diary_reaction_laugh"
         android:src="@drawable/emotion_laugh" />
 
     <ImageView
         android:id="@+id/imgCry"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="@dimen/emotion_icon_popup_size"
+        android:layout_height="@dimen/emotion_icon_popup_size"
         android:layout_marginStart="10dp"
         android:contentDescription="@string/diary_reaction_cry"
         android:src="@drawable/emotion_cry" />
 
     <ImageView
         android:id="@+id/imgAngry"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="@dimen/emotion_icon_popup_size"
+        android:layout_height="@dimen/emotion_icon_popup_size"
         android:layout_marginStart="10dp"
         android:contentDescription="@string/diary_reaction_angry"
         android:src="@drawable/emotion_angry" />

@@ -7,10 +7,11 @@ import android.net.Uri
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.PopupWindow
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.example.messageapp.R
 import com.example.messageapp.base.BaseAdapter
@@ -118,8 +119,7 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
             holder.v.viewReleaseEmotion.isVisible = false
         }
 
-        val reactionIcon = reactionDrawable(ctx, post.myReactionType)
-        holder.v.ivLike.setImageDrawable(reactionIcon)
+        bindReactionIcon(holder.v.ivLike, post.myReactionType)
         holder.v.tvLikeLabel.text = if (post.myReactionType != null) {
             ""
         } else {
@@ -159,6 +159,22 @@ class DiaryPostAdapter : BaseAdapter<DiaryPost, ItemDiaryPostBinding>() {
             }
             popup.show()
         }
+    }
+
+    private fun bindReactionIcon(imageView: ImageView, type: EmotionType?) {
+        val ctx = imageView.context
+        val layoutParams = imageView.layoutParams as? ViewGroup.MarginLayoutParams ?: return
+        if (type == EmotionType.LIKE) {
+            layoutParams.width = ctx.resources.getDimensionPixelSize(R.dimen.emotion_like_icon_action_size)
+            layoutParams.height = ctx.resources.getDimensionPixelSize(R.dimen.emotion_like_icon_action_size)
+            layoutParams.marginStart = ctx.resources.getDimensionPixelSize(R.dimen.emotion_like_icon_action_margin_start)
+        } else {
+            layoutParams.width = ctx.resources.getDimensionPixelSize(R.dimen.emotion_icon_action_size)
+            layoutParams.height = ctx.resources.getDimensionPixelSize(R.dimen.emotion_icon_action_size)
+            layoutParams.marginStart = 0
+        }
+        imageView.layoutParams = layoutParams
+        imageView.setImageDrawable(reactionDrawable(ctx, type))
     }
 
     private fun reactionDrawable(ctx: Context, type: EmotionType?) = when (type) {

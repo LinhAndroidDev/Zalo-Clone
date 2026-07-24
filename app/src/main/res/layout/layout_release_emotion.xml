@@ -13,8 +13,8 @@
 
     <ImageView
         android:id="@+id/emotionFavourite"
-        android:layout_width="15dp"
-        android:layout_height="15dp"
+        android:layout_width="@dimen/emotion_favourite_icon_size"
+        android:layout_height="@dimen/emotion_favourite_icon_size"
         android:layout_marginVertical="1dp"
         android:importantForAccessibility="no"
         android:src="@drawable/emotion_favourite"
@@ -22,18 +22,18 @@
 
     <ImageView
         android:id="@+id/emotionLike"
-        android:layout_width="12.5dp"
-        android:layout_height="12.5dp"
+        android:layout_width="@dimen/emotion_like_icon_size"
+        android:layout_height="@dimen/emotion_like_icon_size"
         android:layout_marginVertical="1dp"
-        android:layout_marginStart="3dp"
+        android:layout_marginStart="@dimen/emotion_like_icon_margin_start"
         android:importantForAccessibility="no"
         android:src="@drawable/emotion_like"
         android:visibility="gone" />
 
     <ImageView
         android:id="@+id/emotionLaugh"
-        android:layout_width="16dp"
-        android:layout_height="16dp"
+        android:layout_width="@dimen/emotion_icon_size"
+        android:layout_height="@dimen/emotion_icon_size"
         android:layout_marginVertical="1dp"
         android:importantForAccessibility="no"
         android:src="@drawable/emotion_laugh"
@@ -41,8 +41,8 @@
 
     <ImageView
         android:id="@+id/emotionCry"
-        android:layout_width="16dp"
-        android:layout_height="16dp"
+        android:layout_width="@dimen/emotion_icon_size"
+        android:layout_height="@dimen/emotion_icon_size"
         android:layout_marginVertical="1dp"
         android:importantForAccessibility="no"
         android:src="@drawable/emotion_cry"
@@ -50,8 +50,8 @@
 
     <ImageView
         android:id="@+id/emotionAngry"
-        android:layout_width="16dp"
-        android:layout_height="16dp"
+        android:layout_width="@dimen/emotion_icon_size"
+        android:layout_height="@dimen/emotion_icon_size"
         android:layout_marginVertical="1dp"
         android:importantForAccessibility="no"
         android:src="@drawable/emotion_angry"
