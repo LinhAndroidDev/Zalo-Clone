@@ -12,8 +12,11 @@ sealed class DiaryCommentRow {
         override val rowId: String = "comment:${comment.id}"
     }
 
-    data class ReplyRow(val reply: DiaryPostComment) : DiaryCommentRow() {
-        override val rowId: String = "reply:${reply.parentCommentId}:${reply.id}"
+    data class ReplyRow(
+        val reply: DiaryPostComment,
+        val parentCommentId: String,
+    ) : DiaryCommentRow() {
+        override val rowId: String = "reply:$parentCommentId:${reply.id}"
     }
 
     data class ToggleRepliesRow(

@@ -55,9 +55,11 @@ class BottomSheetDiaryComments : BottomSheetDialogFragment() {
                 viewModel.startReplyToComment(comment)
                 beginReply(comment.authorName)
             },
-            onToggleReplyLike = { viewModel.toggleReplyLike(it) },
-            onReplyToReply = { reply ->
-                viewModel.startReplyToReply(reply)
+            onToggleReplyLike = { reply, parentCommentId ->
+                viewModel.toggleReplyLike(reply, parentCommentId)
+            },
+            onReplyToReply = { reply, parentCommentId ->
+                viewModel.startReplyToReply(reply, parentCommentId)
                 beginReply(reply.authorName)
             },
             onToggleReplies = { viewModel.toggleReplies(it) },

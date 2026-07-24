@@ -50,6 +50,10 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
     private val repliesByComment = mutableMapOf<String, List<DiaryPostComment>>()
     private val expandedCommentIds = mutableSetOf<String>()
     private val loadingReplyIds = mutableSetOf<String>()
+    private val pendingCommentLikeState = mutableMapOf<String, Boolean>()
+    private val pendingReplyLikeState = mutableMapOf<String, Boolean>()
+    /** Giữ trạng thái đã thích reply qua lần ẩn/hiện câu trả lời. */
+    private val replyLikedByMeCache = mutableMapOf<String, Boolean>()
 
     private var focusCommentId: String = ""
     private var focusReplyId: String = ""
@@ -70,7 +74,7 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
         stopComments = observeDiaryCommentsUseCase(
             postId = postId,
             onUpdate = { list ->
-                comments = list.map { DiaryUiMapper.toUi(it) }
+                comments = mergeComments(list.map { DiaryUiMapper.toUi(it) })
                 rebuildRows()
             },
             onError = { showError(it) },
@@ -92,7 +96,10 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
             }
             if (expanded) {
                 repliesByComment[comment.id].orEmpty().forEach { reply ->
-                    result += DiaryCommentRow.ReplyRow(reply)
+                    result += DiaryCommentRow.ReplyRow(
+                        reply = reply,
+                        parentCommentId = comment.id,
+                    )
                 }
             }
         }
@@ -137,13 +144,21 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
             return
         }
         expandedCommentIds.add(commentId)
+        if (commentId in replyListeners) {
+            rebuildRows()
+            tryEmitScrollTarget()
+            return
+        }
         loadingReplyIds.add(commentId)
         rebuildRows()
         replyListeners[commentId] = observeDiaryRepliesUseCase(
             postId = postId,
             commentId = commentId,
             onUpdate = { list ->
-                repliesByComment[commentId] = list.map { DiaryUiMapper.toUi(it) }
+                repliesByComment[commentId] = mergeReplies(
+                    commentId = commentId,
+                    incoming = list.map { DiaryUiMapper.toUi(it) },
+                )
                 loadingReplyIds.remove(commentId)
                 rebuildRows()
             },
@@ -157,7 +172,6 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
     fun toggleReplies(commentId: String) {
         if (commentId in expandedCommentIds) {
             expandedCommentIds.remove(commentId)
-            replyListeners.remove(commentId)?.invoke()
             loadingReplyIds.remove(commentId)
             rebuildRows()
             return
@@ -167,10 +181,12 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
 
     fun toggleCommentLike(comment: DiaryPostComment) {
         val liked = comment.likedByMe
+        val newLiked = !liked
+        pendingCommentLikeState[comment.id] = newLiked
         comments = comments.map {
             if (it.id == comment.id) {
                 it.copy(
-                    likedByMe = !liked,
+                    likedByMe = newLiked,
                     likeCount = (it.likeCount + if (liked) -1 else 1).coerceAtLeast(0),
                 )
             } else {
@@ -183,17 +199,30 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
             commentId = comment.id,
             currentlyLiked = liked,
             onSuccess = {},
-            onFailure = { showError(it) },
+            onFailure = {
+                pendingCommentLikeState.remove(comment.id)
+                showError(it)
+            },
         )
     }
 
-    fun toggleReplyLike(reply: DiaryPostComment) {
+    fun toggleReplyLike(reply: DiaryPostComment, parentCommentId: String) {
+        val parentId = parentCommentId.ifBlank { reply.parentCommentId }
+        if (parentId.isBlank()) return
+
         val liked = reply.likedByMe
-        val parentId = reply.parentCommentId
+        val newLiked = !liked
+        pendingReplyLikeState[reply.id] = newLiked
+        if (newLiked) {
+            replyLikedByMeCache[reply.id] = true
+        } else {
+            replyLikedByMeCache.remove(reply.id)
+        }
         repliesByComment[parentId] = repliesByComment[parentId].orEmpty().map {
             if (it.id == reply.id) {
                 it.copy(
-                    likedByMe = !liked,
+                    likedByMe = newLiked,
+                    parentCommentId = parentId,
                     likeCount = (it.likeCount + if (liked) -1 else 1).coerceAtLeast(0),
                 )
             } else {
@@ -207,7 +236,23 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
             replyId = reply.id,
             currentlyLiked = liked,
             onSuccess = {},
-            onFailure = { showError(it) },
+            onFailure = {
+                pendingReplyLikeState.remove(reply.id)
+                if (liked) {
+                    replyLikedByMeCache[reply.id] = true
+                } else {
+                    replyLikedByMeCache.remove(reply.id)
+                }
+                repliesByComment[parentId] = repliesByComment[parentId].orEmpty().map {
+                    if (it.id == reply.id) {
+                        it.copy(likedByMe = liked, likeCount = reply.likeCount)
+                    } else {
+                        it
+                    }
+                }
+                rebuildRows()
+                showError(it)
+            },
         )
     }
 
@@ -221,9 +266,9 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
     }
 
     /** Trả lời một reply: post dưới cùng comment gốc (1 cấp) nhưng mention tác giả reply. */
-    fun startReplyToReply(reply: DiaryPostComment) {
+    fun startReplyToReply(reply: DiaryPostComment, parentCommentId: String) {
         _replyingTo.value = ReplyingTo(
-            commentId = reply.parentCommentId,
+            commentId = parentCommentId.ifBlank { reply.parentCommentId },
             mentionedUserId = reply.authorId,
             mentionedName = reply.authorName,
         )
@@ -303,11 +348,54 @@ class BottomSheetDiaryCommentsViewModel @Inject constructor(
 
     fun currentUserName(): String = sessionRepository.getNameUser()
 
+    private fun mergeComments(incoming: List<DiaryPostComment>): List<DiaryPostComment> =
+        incoming.map { applyPendingLikeState(it, pendingCommentLikeState) }
+
+    private fun mergeReplies(
+        commentId: String,
+        incoming: List<DiaryPostComment>,
+    ): List<DiaryPostComment> =
+        incoming.map { reply ->
+            val normalized = if (reply.parentCommentId.isBlank()) {
+                reply.copy(parentCommentId = commentId)
+            } else {
+                reply
+            }
+            val withPending = applyPendingLikeState(normalized, pendingReplyLikeState)
+            withPending.copy(likedByMe = resolveReplyLikedByMe(withPending))
+        }
+
+    private fun resolveReplyLikedByMe(reply: DiaryPostComment): Boolean {
+        pendingReplyLikeState[reply.id]?.let { return it }
+        if (reply.likedByMe) {
+            replyLikedByMeCache[reply.id] = true
+            return true
+        }
+        if (replyLikedByMeCache[reply.id] == true) {
+            return true
+        }
+        return false
+    }
+
+    private fun applyPendingLikeState(
+        comment: DiaryPostComment,
+        pending: MutableMap<String, Boolean>,
+    ): DiaryPostComment {
+        val expected = pending[comment.id] ?: return comment
+        val merged = comment.copy(likedByMe = expected)
+        if (comment.likedByMe == expected) {
+            pending.remove(comment.id)
+        }
+        return merged
+    }
+
     override fun onCleared() {
         stopComments?.invoke()
         stopComments = null
         replyListeners.values.forEach { it.invoke() }
         replyListeners.clear()
+        replyLikedByMeCache.clear()
+        pendingReplyLikeState.clear()
         super.onCleared()
     }
 }

@@ -27,8 +27,8 @@ import com.example.messageapp.utils.FileUtils.loadImg
 class DiaryCommentAdapter(
     private val onToggleLike: (DiaryPostComment) -> Unit,
     private val onReply: (DiaryPostComment) -> Unit,
-    private val onToggleReplyLike: (DiaryPostComment) -> Unit,
-    private val onReplyToReply: (DiaryPostComment) -> Unit,
+    private val onToggleReplyLike: (DiaryPostComment, String) -> Unit,
+    private val onReplyToReply: (DiaryPostComment, String) -> Unit,
     private val onToggleReplies: (commentId: String) -> Unit,
     private val onLongClick: (comment: DiaryPostComment, anchor: View) -> Unit,
 ) : ListAdapter<DiaryCommentRow, RecyclerView.ViewHolder>(DIFF) {
@@ -65,7 +65,7 @@ class DiaryCommentAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = getItem(position)) {
             is DiaryCommentRow.CommentRow -> (holder as CommentVH).bind(row.comment)
-            is DiaryCommentRow.ReplyRow -> (holder as ReplyVH).bind(row.reply)
+            is DiaryCommentRow.ReplyRow -> (holder as ReplyVH).bind(row.reply, row.parentCommentId)
             is DiaryCommentRow.ToggleRepliesRow -> (holder as ToggleVH).bind(row)
         }
     }
@@ -80,7 +80,14 @@ class DiaryCommentAdapter(
             ctx.loadImg(c.authorAvatarUrl, binding.imgAvatar, R.drawable.bg_grey_equal)
 
             binding.tvLikeCount.text = if (c.likeCount > 0) c.likeCount.toString() else ""
-            bindLikeToggle(binding.tvLike, binding.imgLike, c.likedByMe) { onToggleLike(c) }
+            binding.tvLikeCount.setTextColor(likeCountColor(ctx, c.likedByMe))
+            bindLikeAction(
+                layoutLikeAction = binding.layoutLikeAction,
+                tvLike = binding.tvLike,
+                imgLike = binding.imgLike,
+                likeCount = c.likeCount,
+                likedByMe = c.likedByMe,
+            ) { onToggleLike(c) }
             binding.tvReply.setOnClickListener { onReply(c) }
             binding.root.setOnLongClickListener { onLongClick(c, binding.root); true }
         }
@@ -88,7 +95,7 @@ class DiaryCommentAdapter(
 
     inner class ReplyVH(private val binding: ItemDiaryReplyBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun bind(r: DiaryPostComment) {
+        fun bind(r: DiaryPostComment, parentCommentId: String) {
             val ctx = binding.root.context
             binding.tvAuthor.text = r.authorName.ifBlank { ctx.getString(R.string.diary_default_user_name) }
             binding.tvText.text = buildReplyText(ctx, r)
@@ -96,8 +103,15 @@ class DiaryCommentAdapter(
             ctx.loadImg(r.authorAvatarUrl, binding.imgAvatar, R.drawable.bg_grey_equal)
 
             binding.tvLikeCount.text = if (r.likeCount > 0) r.likeCount.toString() else ""
-            bindLikeToggle(binding.tvLike, binding.imgLike, r.likedByMe) { onToggleReplyLike(r) }
-            binding.tvReply.setOnClickListener { onReplyToReply(r) }
+            binding.tvLikeCount.setTextColor(likeCountColor(ctx, r.likedByMe))
+            bindLikeAction(
+                layoutLikeAction = binding.layoutLikeAction,
+                tvLike = binding.tvLike,
+                imgLike = binding.imgLike,
+                likeCount = r.likeCount,
+                likedByMe = r.likedByMe,
+            ) { onToggleReplyLike(r, parentCommentId) }
+            binding.tvReply.setOnClickListener { onReplyToReply(r, parentCommentId) }
             binding.root.setOnLongClickListener { onLongClick(r, binding.root); true }
         }
     }
@@ -137,18 +151,45 @@ class DiaryCommentAdapter(
         }
     }
 
-    /** Chưa like: hiện chữ "Thích"; đã like: thay bằng icon ic_like. */
-    private fun bindLikeToggle(
+    /**
+     * Có like (likeCount > 0): hiện icon + chữ "Thích".
+     * Chữ "Thích" xanh khi người dùng hiện tại đã like; xám khi chưa like.
+     */
+    private fun bindLikeAction(
+        layoutLikeAction: View,
         tvLike: TextView,
         imgLike: ImageView,
-        liked: Boolean,
+        likeCount: Int,
+        likedByMe: Boolean,
         onClick: () -> Unit,
     ) {
-        tvLike.isVisible = !liked
-        imgLike.isVisible = liked
-        tvLike.setOnClickListener { onClick() }
-        imgLike.setOnClickListener { onClick() }
+        val ctx = tvLike.context
+        val hasLikes = likeCount > 0
+        imgLike.isVisible = hasLikes
+        if (hasLikes) {
+            imgLike.setImageResource(R.drawable.ic_like)
+        }
+        tvLike.isVisible = true
+        tvLike.setTextColor(likeLabelColor(ctx, likedByMe))
+        val textMarginStart = if (hasLikes) {
+            (4 * ctx.resources.displayMetrics.density).toInt()
+        } else {
+            0
+        }
+        (tvLike.layoutParams as? ViewGroup.MarginLayoutParams)?.let { lp ->
+            lp.marginStart = textMarginStart
+            tvLike.layoutParams = lp
+        }
+        layoutLikeAction.setOnClickListener { onClick() }
     }
+
+    private fun likeLabelColor(context: Context, likedByMe: Boolean): Int =
+        ContextCompat.getColor(
+            context,
+            if (likedByMe) R.color.color_link else R.color.text_secondary,
+        )
+
+    private fun likeCountColor(context: Context, likedByMe: Boolean): Int = likeLabelColor(context, likedByMe)
 
     private fun formatRelative(context: Context, createdAtMillis: Long): String {
         val diff = System.currentTimeMillis() - createdAtMillis

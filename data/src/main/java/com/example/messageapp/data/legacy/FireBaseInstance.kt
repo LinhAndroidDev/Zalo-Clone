@@ -2663,17 +2663,32 @@ object FireBaseInstance {
             onUpdate(comments.map { it.copy(likedByMe = likedByMe[it.id] ?: false) })
         }
 
-        fun syncLikeListeners(visibleIds: Set<String>) {
+        fun syncLikeListeners(visibleIds: Set<String>, onReady: () -> Unit = {}) {
             (likeRegs.keys - visibleIds).forEach { id -> likeRegs.remove(id)?.remove() }
-            (visibleIds - likeRegs.keys).forEach { id ->
-                if (userId.isBlank()) return@forEach
-                likeRegs[id] = commentsCol.document(id)
+            val newIds = if (userId.isBlank()) emptySet() else visibleIds - likeRegs.keys
+            if (newIds.isEmpty()) {
+                onReady()
+                return
+            }
+            var pending = newIds.size
+            fun markDone() {
+                pending--
+                if (pending <= 0) onReady()
+            }
+            newIds.forEach { id ->
+                val likeDoc = commentsCol.document(id)
                     .collection(DiaryPostFirestore.SUB_COMMENT_LIKES)
                     .document(userId)
-                    .addSnapshotListener { snap, _ ->
-                        likedByMe[id] = snap?.exists() == true
-                        emit()
+                likeRegs[id] = likeDoc.addSnapshotListener { snap, _ ->
+                    likedByMe[id] = snap?.exists() == true
+                    emit()
+                }
+                likeDoc.get()
+                    .addOnSuccessListener { snap ->
+                        likedByMe[id] = snap.exists()
+                        markDone()
                     }
+                    .addOnFailureListener { markDone() }
             }
         }
 
@@ -2688,8 +2703,7 @@ object FireBaseInstance {
                 comments = snap?.documents?.mapNotNull { doc ->
                     DiaryPostFirestore.commentFromDocument(postId, doc)
                 }.orEmpty()
-                syncLikeListeners(comments.map { it.id }.toSet())
-                emit()
+                syncLikeListeners(comments.map { it.id }.toSet()) { emit() }
             }
 
         return {
@@ -2898,17 +2912,32 @@ object FireBaseInstance {
             onUpdate(replies.map { it.copy(likedByMe = likedByMe[it.id] ?: false) })
         }
 
-        fun syncLikeListeners(visibleIds: Set<String>) {
+        fun syncLikeListeners(visibleIds: Set<String>, onReady: () -> Unit = {}) {
             (likeRegs.keys - visibleIds).forEach { id -> likeRegs.remove(id)?.remove() }
-            (visibleIds - likeRegs.keys).forEach { id ->
-                if (userId.isBlank()) return@forEach
-                likeRegs[id] = repliesCol.document(id)
+            val newIds = if (userId.isBlank()) emptySet() else visibleIds - likeRegs.keys
+            if (newIds.isEmpty()) {
+                onReady()
+                return
+            }
+            var pending = newIds.size
+            fun markDone() {
+                pending--
+                if (pending <= 0) onReady()
+            }
+            newIds.forEach { id ->
+                val likeDoc = repliesCol.document(id)
                     .collection(DiaryPostFirestore.SUB_COMMENT_LIKES)
                     .document(userId)
-                    .addSnapshotListener { snap, _ ->
-                        likedByMe[id] = snap?.exists() == true
-                        emit()
+                likeRegs[id] = likeDoc.addSnapshotListener { snap, _ ->
+                    likedByMe[id] = snap?.exists() == true
+                    emit()
+                }
+                likeDoc.get()
+                    .addOnSuccessListener { snap ->
+                        likedByMe[id] = snap.exists()
+                        markDone()
                     }
+                    .addOnFailureListener { markDone() }
             }
         }
 
@@ -2923,8 +2952,7 @@ object FireBaseInstance {
                 replies = snap?.documents?.mapNotNull { doc ->
                     DiaryPostFirestore.replyFromDocument(postId, commentId, doc)
                 }.orEmpty()
-                syncLikeListeners(replies.map { it.id }.toSet())
-                emit()
+                syncLikeListeners(replies.map { it.id }.toSet()) { emit() }
             }
 
         return {
