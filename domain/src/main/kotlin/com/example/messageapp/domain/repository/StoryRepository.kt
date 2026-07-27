@@ -41,4 +41,20 @@ interface StoryRepository {
         onSuccess: (List<StoryRing>) -> Unit,
         onFailure: (String) -> Unit,
     )
+
+    fun updateStoryPrivacy(
+        storyId: String,
+        authorId: String,
+        privacy: StoryPrivacy,
+        visibleToUserIds: List<String>,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    )
+
+    fun deleteStory(
+        storyId: String,
+        authorId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    )
 }

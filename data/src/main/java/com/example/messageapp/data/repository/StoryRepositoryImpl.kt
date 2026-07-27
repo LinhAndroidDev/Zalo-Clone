@@ -97,6 +97,38 @@ class StoryRepositoryImpl @Inject constructor() : StoryRepository {
         )
     }
 
+    override fun updateStoryPrivacy(
+        storyId: String,
+        authorId: String,
+        privacy: StoryPrivacy,
+        visibleToUserIds: List<String>,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.updateStoryPrivacy(
+            storyId = storyId,
+            authorId = authorId,
+            privacy = EntityMapper.privacyToFirestore(privacy),
+            visibleToUserIds = visibleToUserIds,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
+
+    override fun deleteStory(
+        storyId: String,
+        authorId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        FireBaseInstance.deleteStory(
+            storyId = storyId,
+            authorId = authorId,
+            success = onSuccess,
+            failure = onFailure,
+        )
+    }
+
     private fun groupIntoRings(stories: List<FsStory>, myUserId: String): List<StoryRing> {
         if (stories.isEmpty()) return emptyList()
         return stories

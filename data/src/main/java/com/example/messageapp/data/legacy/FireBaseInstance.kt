@@ -3380,6 +3380,71 @@ object FireBaseInstance {
             .addOnFailureListener { failure(it.message ?: "Error") }
     }
 
+    fun updateStoryPrivacy(
+        storyId: String,
+        authorId: String,
+        privacy: String,
+        visibleToUserIds: List<String>,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        if (storyId.isBlank() || authorId.isBlank()) {
+            failure("Error")
+            return
+        }
+        val storyRef = db.collection(StoryFirestore.COLLECTION).document(storyId)
+        storyRef.get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    failure("Error")
+                    return@addOnSuccessListener
+                }
+                val ownerId = snap.getString(StoryFirestore.FIELD_AUTHOR_ID).orEmpty()
+                if (ownerId != authorId) {
+                    failure("Error")
+                    return@addOnSuccessListener
+                }
+                storyRef.update(
+                    mapOf(
+                        StoryFirestore.FIELD_PRIVACY to privacy,
+                        StoryFirestore.FIELD_VISIBLE_TO to visibleToUserIds,
+                    ),
+                )
+                    .addOnSuccessListener { success() }
+                    .addOnFailureListener { failure(it.message ?: "Error") }
+            }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
+    fun deleteStory(
+        storyId: String,
+        authorId: String,
+        success: () -> Unit,
+        failure: (String) -> Unit,
+    ) {
+        if (storyId.isBlank() || authorId.isBlank()) {
+            failure("Error")
+            return
+        }
+        val storyRef = db.collection(StoryFirestore.COLLECTION).document(storyId)
+        storyRef.get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    failure("Error")
+                    return@addOnSuccessListener
+                }
+                val ownerId = snap.getString(StoryFirestore.FIELD_AUTHOR_ID).orEmpty()
+                if (ownerId != authorId) {
+                    failure("Error")
+                    return@addOnSuccessListener
+                }
+                storyRef.delete()
+                    .addOnSuccessListener { success() }
+                    .addOnFailureListener { failure(it.message ?: "Error") }
+            }
+            .addOnFailureListener { failure(it.message ?: "Error") }
+    }
+
     fun observeStoryRings(
         userId: String,
         onRings: (List<Story>) -> Unit,

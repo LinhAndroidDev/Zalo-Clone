@@ -7,53 +7,19 @@
         android:layout_height="match_parent"
         android:background="@color/black">
 
-        <com.example.messageapp.custom.StoryMediaTransformLayout
-            android:id="@+id/mediaTransformContainer"
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/storyPager"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <FrameLayout
-                android:id="@+id/mediaTransformWrapper"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <ImageView
-                    android:id="@+id/imgStory"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:importantForAccessibility="no"
-                    android:scaleType="centerCrop"
-                    android:visibility="gone" />
-
-                <androidx.media3.ui.PlayerView
-                    android:id="@+id/videoStory"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:visibility="gone"
-                    app:resize_mode="zoom"
-                    app:show_buffering="when_playing"
-                    app:use_controller="false" />
-            </FrameLayout>
-        </com.example.messageapp.custom.StoryMediaTransformLayout>
-
-        <com.example.messageapp.custom.StoryMusicStickerView
-            android:id="@+id/musicSticker"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="gone" />
+            android:layout_height="match_parent" />
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginTop="28dp"
+            android:clickable="false"
+            android:focusable="false"
             android:orientation="vertical">
-
-            <LinearLayout
-                android:id="@+id/progressContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="8dp"
-                android:paddingTop="12dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -91,6 +57,15 @@
                     android:layout_weight="1" />
 
                 <ImageView
+                    android:id="@+id/btnMore"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_more"
+                    android:visibility="gone"
+                    app:tint="@color/white" />
+
+                <ImageView
                     android:id="@+id/btnClose"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
@@ -98,28 +73,6 @@
                     android:src="@drawable/ic_close"
                     app:tint="@color/white" />
             </LinearLayout>
-
-            <View
-                android:id="@+id/tapLeft"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <TextView
-                android:id="@+id/tvMusicLabel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="marquee"
-                android:marqueeRepeatLimit="marquee_forever"
-                android:padding="16dp"
-                android:singleLine="true"
-                android:textColor="@color/white"
-                android:visibility="gone" />
         </LinearLayout>
-
-        <View
-            android:id="@+id/tapOverlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
     </FrameLayout>
 </layout>

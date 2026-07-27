@@ -127,3 +127,57 @@ class LoadJamendoTracksUseCase @Inject constructor(
     suspend operator fun invoke(offset: Int = 0, limit: Int = 20): Result<MusicTrackPage> =
         musicRepository.loadJamendoTracks(offset, limit)
 }
+
+class UpdateStoryPrivacyUseCase @Inject constructor(
+    private val storyRepository: StoryRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(
+        storyId: String,
+        privacy: StoryPrivacy,
+        visibleToUserIds: List<String>,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        val userId = sessionRepository.getAuth()
+        if (userId.isBlank()) {
+            onFailure("Error")
+            return
+        }
+        if (privacy == StoryPrivacy.CUSTOM && visibleToUserIds.isEmpty()) {
+            onFailure("Chọn ít nhất một người bạn")
+            return
+        }
+        storyRepository.updateStoryPrivacy(
+            storyId = storyId,
+            authorId = userId,
+            privacy = privacy,
+            visibleToUserIds = visibleToUserIds,
+            onSuccess = onSuccess,
+            onFailure = onFailure,
+        )
+    }
+}
+
+class DeleteStoryUseCase @Inject constructor(
+    private val storyRepository: StoryRepository,
+    private val sessionRepository: SessionRepository,
+) {
+    operator fun invoke(
+        storyId: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        val userId = sessionRepository.getAuth()
+        if (userId.isBlank()) {
+            onFailure("Error")
+            return
+        }
+        storyRepository.deleteStory(
+            storyId = storyId,
+            authorId = userId,
+            onSuccess = onSuccess,
+            onFailure = onFailure,
+        )
+    }
+}

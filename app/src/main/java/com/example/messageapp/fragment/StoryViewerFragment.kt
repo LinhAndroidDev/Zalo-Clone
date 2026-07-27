@@ -4,23 +4,31 @@ import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
 import android.view.MotionEvent
-import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import com.example.messageapp.R
+import com.example.messageapp.adapter.StoryViewerPagerAdapter
 import com.example.messageapp.base.BaseFragment
+import com.example.messageapp.bottom_sheet.BottomSheetStoryCustomFriends
+import com.example.messageapp.bottom_sheet.BottomSheetStoryPrivacy
 import com.example.messageapp.databinding.FragmentStoryViewerBinding
+import com.example.messageapp.databinding.ItemStoryPageBinding
 import com.example.messageapp.domain.model.StoryMediaType
+import com.example.messageapp.domain.model.StoryPrivacy
 import com.example.messageapp.model.MusicTrackItem
 import com.example.messageapp.model.StoryItem
 import com.example.messageapp.model.StoryMediaTransform
-import com.example.messageapp.model.StoryRingItem
+import com.example.messageapp.model.StoryViewerPage
 import com.example.messageapp.utils.FileUtils.loadImg
+import com.example.messageapp.utils.RelativeTimeFormatter
 import com.example.messageapp.viewmodel.StoryViewerViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -32,25 +40,47 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
     override val layoutResId: Int = R.layout.fragment_story_viewer
 
     private val handler = Handler(Looper.getMainLooper())
+    private val pagerAdapter = StoryViewerPagerAdapter()
     private var videoPlayer: ExoPlayer? = null
     private var musicPlayer: ExoPlayer? = null
-    private var ringIndex = 0
-    private var storyIndex = 0
-    private var progressBars = mutableListOf<ProgressBar>()
     private var segmentStartMs = 0L
-    private var segmentDurationMs = IMAGE_DURATION_MS
+    private var segmentElapsedOffsetMs = 0L
+    private var isTimerPaused = false
+    private var activeTimerStory: StoryItem? = null
+    private var activeTimerPageIndex = -1
     private var progressRunnable: Runnable? = null
     private var touchDownY = 0f
     private var touchDownX = 0f
+    private var currentPageIndex = 0
+    private var pagerInitialized = false
+    private var suppressPageChange = false
 
     override fun initView() {
         super.initView()
         binding?.btnClose?.setOnClickListener { closeViewer() }
-        setupTapOverlay()
+        binding?.btnMore?.setOnClickListener { showOwnerMenu() }
+        setupPager()
+        setupPagerTouch()
+        observeViewModel()
+    }
 
+    private fun setupPager() {
+        binding?.storyPager?.offscreenPageLimit = 1
+        binding?.storyPager?.adapter = pagerAdapter
+        binding?.storyPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                if (suppressPageChange) return
+                currentPageIndex = position
+                onStoryPageSelected(position)
+            }
+        })
+    }
+
+    private fun observeViewModel() {
         lifecycleScope.launch {
             viewModel?.loading?.collectLatest { loading ->
-                if (loading == false && viewModel?.rings?.value.isNullOrEmpty()) {
+                if (loading == false && viewModel?.pages?.value.isNullOrEmpty()) {
+                    if (!isAdded) return@collectLatest
                     Toast.makeText(
                         requireContext(),
                         R.string.story_viewer_empty,
@@ -62,11 +92,24 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         }
 
         lifecycleScope.launch {
-            viewModel?.rings?.collectLatest { rings ->
-                if (rings.isEmpty()) return@collectLatest
-                ringIndex = viewModel?.startRingIndex() ?: 0
-                storyIndex = 0
-                showCurrentStory(rings)
+            viewModel?.pages?.collectLatest { pages ->
+                pagerAdapter.submitPages(pages)
+                if (pages.isEmpty()) return@collectLatest
+                if (!pagerInitialized) {
+                    val start = (viewModel?.resolveInitialPageIndex(pages) ?: 0)
+                        .coerceIn(0, pages.lastIndex)
+                    suppressPageChange = true
+                    currentPageIndex = start
+                    binding?.storyPager?.setCurrentItem(start, false)
+                    binding?.storyPager?.post {
+                        suppressPageChange = false
+                        pagerInitialized = true
+                        onStoryPageSelected(start)
+                    }
+                } else if (currentPageIndex > pages.lastIndex) {
+                    currentPageIndex = pages.lastIndex
+                    binding?.storyPager?.setCurrentItem(currentPageIndex, false)
+                }
             }
         }
 
@@ -78,8 +121,8 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupTapOverlay() {
-        binding?.tapOverlay?.setOnTouchListener { _, event ->
+    private fun setupPagerTouch() {
+        binding?.storyPager?.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     touchDownY = event.y
@@ -92,51 +135,64 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
                         closeViewer()
                         return@setOnTouchListener true
                     }
-                    val width = binding?.tapOverlay?.width?.toFloat() ?: return@setOnTouchListener true
-                    if (event.y > (binding?.tapOverlay?.height ?: 0) * 0.85f) {
-                        return@setOnTouchListener true
-                    }
-                    when {
-                        event.x < width * 0.35f -> goPrevious()
-                        event.x > width * 0.65f -> goNext()
+                    if (deltaX < TAP_SLOP_PX && deltaY < TAP_SLOP_PX) {
+                        val width = binding?.storyPager?.width?.toFloat() ?: return@setOnTouchListener false
+                        when {
+                            event.x < width * 0.35f -> {
+                                handleTapLeft()
+                                return@setOnTouchListener true
+                            }
+                            event.x > width * 0.65f -> {
+                                goNextPage()
+                                return@setOnTouchListener true
+                            }
+                        }
                     }
                 }
             }
-            true
+            false
         }
     }
 
-    private fun showCurrentStory(rings: List<StoryRingItem>) {
+    private fun handleTapLeft() {
+        if (!isAdded) return
+        val page = viewModel?.pageAt(currentPageIndex) ?: return
+        if (viewModel?.isFirstStoryInRing(page) == true) {
+            restartCurrentStory()
+        } else {
+            goPreviousPage()
+        }
+    }
+
+    private fun onStoryPageSelected(index: Int) {
+        if (!isAdded) return
+        val page = viewModel?.pageAt(index) ?: return
         stopPlayback()
-        if (ringIndex >= rings.size) {
-            closeViewer()
-            return
+        viewModel?.markViewed(page.story)
+        bindHeader(page)
+        updateOwnerMenu(page)
+        binding?.storyPager?.post {
+            if (!isAdded || currentPageIndex != index) return@post
+            bindPageMedia(page.story)
+            bindPageMusic(page.story)
+            resetPageProgress(index)
+            startSegmentTimer(page.story, index)
         }
-        val ring = rings[ringIndex]
-        if (storyIndex >= ring.stories.size) {
-            goNextRing(rings)
-            return
-        }
-        val story = ring.stories[storyIndex]
-        viewModel?.markViewed(story)
-        bindHeader(ring, story)
-        bindMusicSticker(story)
-        bindProgressBars(ring.stories.size)
-        bindMedia(story)
-        startSegmentTimer(story)
     }
 
-    private fun bindHeader(ring: StoryRingItem, story: StoryItem) {
-        binding?.tvAuthorName?.text = ring.authorName
-        binding?.tvStoryTime?.text = formatStoryAge(story.createdAtMillis)
-        context?.loadImg(ring.authorAvatarUrl, binding?.imgAuthor!!, R.drawable.bg_grey_equal)
+    private fun bindHeader(page: StoryViewerPage) {
+        binding?.tvAuthorName?.text = page.ring.authorName
+        binding?.tvStoryTime?.text = context?.let {
+            RelativeTimeFormatter.format(it, page.story.createdAtMillis)
+        }.orEmpty()
+        context?.loadImg(page.ring.authorAvatarUrl, binding?.imgAuthor!!, R.drawable.bg_grey_equal)
     }
 
-    private fun bindMusicSticker(story: StoryItem) {
-        val sticker = binding?.musicSticker ?: return
+    private fun bindPageMusic(story: StoryItem) {
+        val pageBinding = pageBindingAt(currentPageIndex) ?: return
+        val sticker = pageBinding.musicSticker
         if (story.musicAudioUrl.isBlank() && story.musicImageUrl.isBlank()) {
             sticker.clearSticker()
-            binding?.tvMusicLabel?.isVisible = false
             return
         }
         sticker.isDraggable = false
@@ -152,33 +208,20 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
             ),
         )
         sticker.applyNormalizedPosition(story.musicStickerX, story.musicStickerY)
-        binding?.tvMusicLabel?.isVisible = false
     }
 
-    private fun bindProgressBars(count: Int) {
-        val container = binding?.progressContainer ?: return
-        container.removeAllViews()
-        progressBars.clear()
-        repeat(count) { index ->
-            val bar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
-                layoutParams = android.widget.LinearLayout.LayoutParams(0, 4.dp(), 1f).apply {
-                    marginEnd = if (index == count - 1) 0 else 4.dp()
-                }
-                max = 1000
-                progress = when {
-                    index < storyIndex -> 1000
-                    index == storyIndex -> 0
-                    else -> 0
-                }
-            }
-            progressBars.add(bar)
-            container.addView(bar)
-        }
+    private fun clearPageMusic(index: Int) {
+        pageBindingAt(index)?.musicSticker?.clearSticker()
     }
 
-    private fun bindMedia(story: StoryItem) {
-        binding?.mediaTransformContainer?.isTransformEnabled = false
-        binding?.mediaTransformContainer?.applyTransformState(
+    private fun resetPageProgress(index: Int) {
+        pageBindingAt(index)?.progressStory?.progress = 0
+    }
+
+    private fun bindPageMedia(story: StoryItem) {
+        val pageBinding = pageBindingAt(currentPageIndex) ?: return
+        pageBinding.mediaTransformContainer.isTransformEnabled = false
+        pageBinding.mediaTransformContainer.applyTransformState(
             StoryMediaTransform(
                 scale = story.mediaScale,
                 rotation = story.mediaRotation,
@@ -186,18 +229,19 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
                 translationYNorm = story.mediaTranslationY,
             ),
         )
-        binding?.imgStory?.isVisible = story.mediaType == StoryMediaType.IMAGE
-        binding?.videoStory?.isVisible = story.mediaType == StoryMediaType.VIDEO
+        pageBinding.imgStory.isVisible = story.mediaType == StoryMediaType.IMAGE
+        pageBinding.videoStory.isVisible = story.mediaType == StoryMediaType.VIDEO
         if (story.mediaType == StoryMediaType.IMAGE) {
-            context?.loadImg(story.mediaUrl, binding?.imgStory!!, R.drawable.bg_grey_equal)
-            segmentDurationMs = IMAGE_DURATION_MS
+            videoPlayer?.pause()
+            pageBinding.videoStory.player = null
+            context?.loadImg(story.mediaUrl, pageBinding.imgStory, R.drawable.bg_grey_equal)
         } else {
             ensureVideoPlayer()
             videoPlayer?.setMediaItem(MediaItem.fromUri(story.mediaUrl))
             videoPlayer?.volume = VIDEO_VOLUME
             videoPlayer?.prepare()
             videoPlayer?.playWhenReady = true
-            segmentDurationMs = MAX_VIDEO_DURATION_MS
+            pageBinding.videoStory.player = videoPlayer
         }
         if (story.musicAudioUrl.isNotBlank()) {
             ensureMusicPlayer()
@@ -208,14 +252,20 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         }
     }
 
+    private fun pageBindingAt(index: Int): ItemStoryPageBinding? {
+        val pager = binding?.storyPager ?: return null
+        val recyclerView = pager.getChildAt(0) as? RecyclerView ?: return null
+        val holder = recyclerView.findViewHolderForAdapterPosition(index) as? StoryViewerPagerAdapter.PageViewHolder
+        return holder?.binding
+    }
+
     private fun ensureVideoPlayer() {
         if (videoPlayer != null) return
         videoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
-            binding?.videoStory?.player = player
             player.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) {
-                        goNext()
+                        goNextPage()
                     }
                 }
             })
@@ -227,28 +277,42 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         musicPlayer = ExoPlayer.Builder(requireContext()).build()
     }
 
-    private fun startSegmentTimer(story: StoryItem) {
+    private fun startSegmentTimer(story: StoryItem, pageIndex: Int) {
+        segmentElapsedOffsetMs = 0L
+        isTimerPaused = false
+        activeTimerStory = story
+        activeTimerPageIndex = pageIndex
         segmentStartMs = System.currentTimeMillis()
-        if (story.mediaType == StoryMediaType.VIDEO) {
-            progressRunnable = object : Runnable {
+        postSegmentTimer(story, pageIndex)
+    }
+
+    private fun postSegmentTimer(story: StoryItem, pageIndex: Int) {
+        progressRunnable?.let { handler.removeCallbacks(it) }
+        progressRunnable = if (story.mediaType == StoryMediaType.VIDEO) {
+            object : Runnable {
                 override fun run() {
-                    val elapsed = System.currentTimeMillis() - segmentStartMs
-                    val duration = minOf(videoPlayer?.duration?.takeIf { it > 0 } ?: MAX_VIDEO_DURATION_MS, MAX_VIDEO_DURATION_MS)
-                    updateProgress(elapsed, duration)
+                    if (!isAdded || view == null || currentPageIndex != pageIndex || isTimerPaused) return
+                    val elapsed = segmentElapsedMs()
+                    val duration = minOf(
+                        videoPlayer?.duration?.takeIf { it > 0 } ?: MAX_VIDEO_DURATION_MS,
+                        MAX_VIDEO_DURATION_MS,
+                    )
+                    updatePageProgress(pageIndex, elapsed, duration)
                     if (elapsed >= duration) {
-                        goNext()
+                        goNextPage()
                     } else {
                         handler.postDelayed(this, 32L)
                     }
                 }
             }
         } else {
-            progressRunnable = object : Runnable {
+            object : Runnable {
                 override fun run() {
-                    val elapsed = System.currentTimeMillis() - segmentStartMs
-                    updateProgress(elapsed, IMAGE_DURATION_MS)
+                    if (!isAdded || view == null || currentPageIndex != pageIndex || isTimerPaused) return
+                    val elapsed = segmentElapsedMs()
+                    updatePageProgress(pageIndex, elapsed, IMAGE_DURATION_MS)
                     if (elapsed >= IMAGE_DURATION_MS) {
-                        goNext()
+                        goNextPage()
                     } else {
                         handler.postDelayed(this, 32L)
                     }
@@ -258,86 +322,194 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         handler.post(progressRunnable!!)
     }
 
-    private fun updateProgress(elapsed: Long, duration: Long) {
-        val bar = progressBars.getOrNull(storyIndex) ?: return
-        val progress = ((elapsed.toFloat() / duration) * 1000).toInt().coerceIn(0, 1000)
-        bar.progress = progress
+    private fun segmentElapsedMs(): Long =
+        segmentElapsedOffsetMs + (System.currentTimeMillis() - segmentStartMs)
+
+    private fun pauseStoryTimer() {
+        if (isTimerPaused) return
+        progressRunnable?.let { handler.removeCallbacks(it) }
+        segmentElapsedOffsetMs = segmentElapsedMs()
+        isTimerPaused = true
+        videoPlayer?.pause()
+        musicPlayer?.pause()
     }
 
-    private fun goNext() {
-        val rings = viewModel?.rings?.value.orEmpty()
-        if (rings.isEmpty()) {
+    private fun resumeStoryTimer() {
+        if (!isTimerPaused) return
+        isTimerPaused = false
+        val story = activeTimerStory ?: viewModel?.pageAt(currentPageIndex)?.story ?: return
+        val pageIndex = activeTimerPageIndex.takeIf { it >= 0 } ?: currentPageIndex
+        segmentStartMs = System.currentTimeMillis()
+        if (story.mediaType == StoryMediaType.VIDEO) {
+            videoPlayer?.playWhenReady = true
+        }
+        musicPlayer?.playWhenReady = true
+        postSegmentTimer(story, pageIndex)
+    }
+
+    private fun updatePageProgress(pageIndex: Int, elapsed: Long, duration: Long) {
+        val progressBar = pageBindingAt(pageIndex)?.progressStory ?: return
+        progressBar.progress = ((elapsed.toFloat() / duration) * 1000).toInt().coerceIn(0, 1000)
+    }
+
+    private fun restartCurrentStory() {
+        if (!isAdded) return
+        val page = viewModel?.pageAt(currentPageIndex) ?: return
+        stopPlayback()
+        binding?.storyPager?.post {
+            if (!isAdded) return@post
+            bindPageMedia(page.story)
+            bindPageMusic(page.story)
+            resetPageProgress(currentPageIndex)
+            if (page.story.musicAudioUrl.isNotBlank()) {
+                ensureMusicPlayer()
+                musicPlayer?.seekTo(0)
+                musicPlayer?.playWhenReady = true
+            }
+            startSegmentTimer(page.story, currentPageIndex)
+        }
+    }
+
+    private fun goNextPage() {
+        if (!isAdded || view == null) return
+        val lastIndex = viewModel?.pages?.value?.lastIndex ?: -1
+        if (currentPageIndex >= lastIndex) {
             closeViewer()
             return
         }
-        val ring = rings.getOrNull(ringIndex) ?: run {
-            closeViewer()
-            return
-        }
-        if (storyIndex < ring.stories.lastIndex) {
-            storyIndex++
-            showCurrentStory(rings)
-        } else {
-            goNextRing(rings)
-        }
+        binding?.storyPager?.setCurrentItem(currentPageIndex + 1, true)
     }
 
-    private fun goPrevious() {
-        val rings = viewModel?.rings?.value.orEmpty()
-        if (rings.isEmpty()) return
-        if (storyIndex > 0) {
-            storyIndex--
-            showCurrentStory(rings)
-        } else if (ringIndex > 0) {
-            ringIndex--
-            storyIndex = (rings[ringIndex].stories.size - 1).coerceAtLeast(0)
-            showCurrentStory(rings)
-        }
-    }
-
-    private fun goNextRing(rings: List<StoryRingItem>) {
-        if (ringIndex < rings.lastIndex) {
-            ringIndex++
-            storyIndex = 0
-            showCurrentStory(rings)
-        } else {
-            closeViewer()
-        }
+    private fun goPreviousPage() {
+        if (!isAdded || view == null || currentPageIndex <= 0) return
+        binding?.storyPager?.setCurrentItem(currentPageIndex - 1, true)
     }
 
     private fun stopPlayback() {
         progressRunnable?.let { handler.removeCallbacks(it) }
         progressRunnable = null
+        segmentElapsedOffsetMs = 0L
+        isTimerPaused = false
+        activeTimerStory = null
+        activeTimerPageIndex = -1
+        pageBindingAt(currentPageIndex)?.videoStory?.player = null
+        clearPageMusic(currentPageIndex)
         videoPlayer?.stop()
         videoPlayer?.clearMediaItems()
         musicPlayer?.stop()
         musicPlayer?.clearMediaItems()
-        binding?.musicSticker?.clearSticker()
+    }
+
+    private fun updateOwnerMenu(page: StoryViewerPage) {
+        val isOwner = page.story.authorId == viewModel?.currentUserId()
+        binding?.btnMore?.isVisible = isOwner
+    }
+
+    private fun showOwnerMenu() {
+        val page = viewModel?.pageAt(currentPageIndex) ?: return
+        if (page.story.authorId != viewModel?.currentUserId()) return
+        val popup = PopupMenu(requireContext(), binding?.btnMore!!)
+        popup.menu.add(0, MENU_PRIVACY, 0, R.string.story_menu_privacy)
+        popup.menu.add(0, MENU_DELETE, 1, R.string.story_menu_delete)
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                MENU_PRIVACY -> {
+                    showPrivacySheet(page.story)
+                    true
+                }
+                MENU_DELETE -> {
+                    confirmDeleteStory(page.story)
+                    true
+                }
+                else -> false
+            }
+        }
+        popup.setOnDismissListener { resumeStoryTimer() }
+        pauseStoryTimer()
+        popup.show()
+    }
+
+    private fun showPrivacySheet(story: StoryItem) {
+        BottomSheetStoryPrivacy.newInstance().apply {
+            onPrivacySelected = { privacy ->
+                if (privacy == StoryPrivacy.CUSTOM) {
+                    showCustomFriendsSheet(story, story.visibleToUserIds)
+                } else {
+                    updatePrivacy(story.id, privacy, emptyList())
+                }
+            }
+        }.show(childFragmentManager, "BottomSheetStoryPrivacy")
+    }
+
+    private fun showCustomFriendsSheet(story: StoryItem, selectedIds: List<String>) {
+        BottomSheetStoryCustomFriends.newInstance(selectedIds).apply {
+            onFriendsSelected = { ids -> updatePrivacy(story.id, StoryPrivacy.CUSTOM, ids) }
+        }.show(childFragmentManager, "BottomSheetStoryCustomFriends")
+    }
+
+    private fun updatePrivacy(storyId: String, privacy: StoryPrivacy, visibleToUserIds: List<String>) {
+        viewModel?.updateStoryPrivacy(
+            storyId = storyId,
+            privacy = privacy,
+            visibleToUserIds = visibleToUserIds,
+            onSuccess = {
+                Toast.makeText(requireContext(), R.string.story_privacy_updated, Toast.LENGTH_SHORT).show()
+            },
+            onFailure = { msg ->
+                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
+    private fun confirmDeleteStory(story: StoryItem) {
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(R.string.story_delete_title)
+            .setMessage(R.string.story_delete_message)
+            .setNegativeButton(R.string.diary_post_delete_cancel, null)
+            .setPositiveButton(R.string.diary_post_delete_confirm) { _, _ ->
+                viewModel?.deleteStory(
+                    storyId = story.id,
+                    currentPageIndex = currentPageIndex,
+                    onSuccess = { newIndex ->
+                        Toast.makeText(requireContext(), R.string.story_delete_success, Toast.LENGTH_SHORT).show()
+                        if (newIndex == null) {
+                            closeViewer()
+                        } else {
+                            currentPageIndex = newIndex
+                            binding?.storyPager?.setCurrentItem(newIndex, false)
+                        }
+                    },
+                    onFailure = { msg ->
+                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
+            .show()
     }
 
     private fun closeViewer() {
+        if (!isAdded) return
         stopPlayback()
-        val navController = findNavController()
-        if (!navController.navigateUp()) {
-            navController.popBackStack(R.id.diaryFragment, false)
+        handler.removeCallbacksAndMessages(null)
+        try {
+            val navController = findNavController()
+            if (!navController.navigateUp()) {
+                navController.popBackStack(R.id.diaryFragment, false)
+            }
+        } catch (_: IllegalStateException) {
+            // Fragment already detached.
         }
     }
 
-    private fun formatStoryAge(createdAtMillis: Long): String {
-        val diffHours = ((System.currentTimeMillis() - createdAtMillis) / (1000 * 60 * 60)).coerceAtLeast(0)
-        return getString(R.string.story_hours_ago, diffHours)
-    }
-
-    private fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()
-
     override fun onDestroyView() {
+        handler.removeCallbacksAndMessages(null)
         stopPlayback()
         videoPlayer?.release()
         videoPlayer = null
         musicPlayer?.release()
         musicPlayer = null
-        binding?.videoStory?.player = null
-        binding?.musicSticker?.release()
+        pagerInitialized = false
+        suppressPageChange = false
         super.onDestroyView()
     }
 
@@ -347,5 +519,8 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         private const val VIDEO_VOLUME = 0.7f
         private const val MUSIC_VOLUME = 0.5f
         private const val SWIPE_DOWN_THRESHOLD_PX = 120f
+        private const val TAP_SLOP_PX = 30f
+        private const val MENU_PRIVACY = 1
+        private const val MENU_DELETE = 2
     }
 }

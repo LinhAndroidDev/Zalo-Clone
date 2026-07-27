@@ -187,6 +187,12 @@
     <string name="story_gallery_empty">Không có ảnh hoặc video trong thư viện</string>
     <string name="story_gallery_permission_required">Cần quyền truy cập thư viện để chọn ảnh hoặc video</string>
     <string name="story_viewer_empty">Không tải được tin. Vui lòng thử lại.</string>
+    <string name="story_menu_privacy">Sửa quyền riêng tư</string>
+    <string name="story_menu_delete">Xoá tin</string>
+    <string name="story_delete_title">Xoá tin?</string>
+    <string name="story_delete_message">Tin sẽ bị xoá vĩnh viễn.</string>
+    <string name="story_privacy_updated">Đã cập nhật quyền riêng tư</string>
+    <string name="story_delete_success">Đã xoá tin</string>
     <string name="friend_profile_empty_activity">Chưa có hoạt động nào. Hãy trò chuyện để hiểu nhau hơn!</string>
     <string name="add_friend">Kết bạn</string>
     <string name="sent_request">Đã gửi</string>
