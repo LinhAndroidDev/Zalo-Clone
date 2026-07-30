@@ -11,7 +11,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.drawable.ColorDrawable
 import android.graphics.Rect
@@ -40,10 +39,13 @@ import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media3.exoplayer.ExoPlayer
+import com.example.messageapp.ChatVideoPlayerActivity
 import com.example.messageapp.PersonalActivity
 import com.example.messageapp.PreviewPhotoActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.ChatAdapter
+import com.example.messageapp.argument.ChatVideoPlayerArgument
 import com.example.messageapp.adapter.ClickPhotoModel
 import com.example.messageapp.adapter.LongClickPhotoModel
 import com.example.messageapp.adapter.MentionSuggestionAdapter
@@ -52,6 +54,8 @@ import com.example.messageapp.adapter.ReceiverViewHolder
 import com.example.messageapp.adapter.SenderViewHolder
 import com.example.messageapp.argument.PreviewPhotoArgument
 import com.example.messageapp.base.BaseFragment
+import com.example.messageapp.chat.ChatVideoPlaybackCoordinator
+import com.example.messageapp.custom.ChatVideoCellView
 import com.example.messageapp.bottom_sheet.BottomSheetAddGroupMembers
 import com.example.messageapp.bottom_sheet.BottomSheetForwardMessage
 import com.example.messageapp.bottom_sheet.BottomSheetOptionPhoto
@@ -90,7 +94,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import java.io.File
-import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() {
@@ -98,6 +101,8 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     private var conversation: Conversation? = null
     private var chatAdapter: ChatAdapter? = null
+    private var chatVideoPlayer: ExoPlayer? = null
+    private var chatVideoCoordinator: ChatVideoPlaybackCoordinator? = null
     private var stateScrollable = true
     private var isChatScreenActive = false
     private var isMessageEmpty = true
@@ -150,14 +155,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         override fun onPhotoClick(data: ClickPhotoModel) {
             val url = data.photoData.getOrNull(data.indexOfPhoto) ?: return
             if (isLikelyVideoUrl(url)) {
-                val viewIntent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(url.toUri(), "video/*")
-                }
-                try {
-                    startActivity(Intent.createChooser(viewIntent, null))
-                } catch (_: ActivityNotFoundException) {
-                    Toast.makeText(requireContext(), "Không thể mở video", Toast.LENGTH_SHORT).show()
-                }
+                chatVideoCoordinator?.pause()
+                val intent = Intent(requireActivity(), ChatVideoPlayerActivity::class.java)
+                intent.putExtra(
+                    ChatVideoPlayerActivity.ARG_CHAT_VIDEO,
+                    ChatVideoPlayerArgument(
+                        videoUrl = url,
+                        messageTime = data.message.time,
+                    ),
+                )
+                startActivity(intent)
                 return
             }
             val keyId = when {
@@ -248,6 +255,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                 groupMembers = groupMentionMembers,
             )
             chatAdapter?.setOnActionClickItem(mCallBackClickItem)
+            setupChatVideoPlayback()
             binding?.rcvChat?.adapter = chatAdapter
             binding?.header?.setTitleChatView(cvt.name)
             if (cvt.isGroupThread()) {
@@ -947,6 +955,7 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                         messages?.let { msg ->
                             val previousMessages = lastMessagesSnapshot
                             chatAdapter?.updateDiffList(msg)
+                            binding?.rcvChat?.post { chatVideoCoordinator?.refresh() }
                             if (isChatScreenActive && previousMessages.isNotEmpty()) {
                                 val myUserId = viewModel?.shared?.getAuth().orEmpty()
                                 val remoteChanges = EmotionReactionDetector.detectRemoteReactionChanges(
@@ -1153,9 +1162,28 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         }
     }
 
+    private fun setupChatVideoPlayback() {
+        val recyclerView = binding?.rcvChat ?: return
+        chatVideoPlayer = ExoPlayer.Builder(requireContext()).build()
+        chatVideoCoordinator = ChatVideoPlaybackCoordinator(
+            recyclerView = recyclerView,
+            player = chatVideoPlayer!!,
+        )
+        chatAdapter?.setVideoPlaybackCallback(object : ChatAdapter.ChatVideoPlaybackCallback {
+            override fun onVideoCellBound(cell: ChatVideoCellView) {
+                recyclerView.post { chatVideoCoordinator?.refresh() }
+            }
+
+            override fun onViewRecycled(itemView: View) {
+                chatVideoCoordinator?.onViewRecycled(itemView)
+            }
+        })
+    }
+
     override fun onResume() {
         super.onResume()
         isChatScreenActive = true
+        chatVideoCoordinator?.resume()
         val notificationManager = context?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancelAll()
         presenceRefreshJob = lifecycleScope.launch {
@@ -1168,12 +1196,17 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
 
     override fun onPause() {
         isChatScreenActive = false
+        chatVideoCoordinator?.pause()
         presenceRefreshJob?.cancel()
         presenceRefreshJob = null
         super.onPause()
     }
 
     override fun onDestroyView() {
+        chatVideoCoordinator?.release()
+        chatVideoCoordinator = null
+        chatVideoPlayer?.release()
+        chatVideoPlayer = null
         viewModel?.stopObservingFriendPresence()
         viewModel?.stopObservingPeerConversation()
         viewModel?.stopGroupReadTracking()

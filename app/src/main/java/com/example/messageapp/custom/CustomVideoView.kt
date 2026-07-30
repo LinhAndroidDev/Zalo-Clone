@@ -5,51 +5,51 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
-import android.util.Log
 import android.view.LayoutInflater
 import android.widget.RelativeLayout
+import android.widget.SeekBar
 import androidx.core.view.isVisible
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
 import com.example.messageapp.R
 import com.example.messageapp.databinding.CustomVideoViewBinding
 import com.example.messageapp.utils.AnimatorUtils
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class CustomVideoView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    defStyleAttr: Int = 0,
 ) : RelativeLayout(context, attrs, defStyleAttr) {
+
     private var binding: CustomVideoViewBinding? = null
-    private var isPlaying = true
-    private var player: ExoPlayer = ExoPlayer.Builder(context).build()
-    private var showViewControl: Boolean = true
-    private val timePlay = Handler(Looper.getMainLooper())
+    private var player: ExoPlayer? = null
+    private var ownsPlayer = true
+    private var isPlaying = false
+    private var showViewControl = true
+    private var isUserSeeking = false
+    private val progressHandler = Handler(Looper.getMainLooper())
+    private var progressRunnable: Runnable? = null
+    private var playerListener: Player.Listener? = null
 
     init {
-        binding = CustomVideoViewBinding.inflate(LayoutInflater.from(context))
-        addView(binding?.root)
+        binding = CustomVideoViewBinding.inflate(LayoutInflater.from(context), this, true)
+        binding?.videoView?.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        setupControls()
+    }
 
-        binding?.videoView?.player = player
-
-        binding?.btnPlay?.setOnClickListener {
-            isPlaying = !isPlaying
-            if (isPlaying) {
-                player.play()
-                binding?.btnPlay?.setImageResource(R.drawable.ic_pause)
-            } else {
-                player.pause()
-                binding?.btnPlay?.setImageResource(R.drawable.ic_play)
-            }
-        }
+    private fun setupControls() {
+        binding?.btnPlay?.setOnClickListener { togglePlayPause() }
 
         binding?.btnReplay10s?.setOnClickListener {
-            player.seekTo(player.currentPosition - 10000)
+            player?.seekTo((player?.currentPosition ?: 0L) - 10_000L)
         }
 
         binding?.btnForward10s?.setOnClickListener {
-            player.seekTo(player.currentPosition + 10000)
+            player?.seekTo((player?.currentPosition ?: 0L) + 10_000L)
         }
 
         binding?.videoView?.setOnClickListener {
@@ -59,38 +59,158 @@ class CustomVideoView @JvmOverloads constructor(
             }
             binding?.viewControl?.isVisible = showViewControl
         }
-    }
 
-    fun initVideo(url: String) {
-        val mediaItem = MediaItem.fromUri(Uri.parse(url))
-        player.setMediaItem(mediaItem)
-        player.prepare()
-        player.playWhenReady = true
-
-        player.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) {
-                    binding?.seekBarVideo?.apply {
-                        max = player.duration.toInt()
-                    }
-
-                    Log.e("CustomVideoView", "initVideo: ${player.duration}")
-                    timePlay.postDelayed(object : Runnable {
-                        override fun run() {
-                            if (isPlaying) {
-                                Log.e("CustomVideoView", "run: ${player.currentPosition.toInt()}")
-                                binding?.seekBarVideo?.progress = player.currentPosition.toInt()
-                            }
-                            timePlay.postDelayed(this, 1000)
-                        }
-                    }, 0)
+        binding?.seekBarVideo?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    binding?.tvCurrentTime?.text = formatDuration(progress.toLong())
                 }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                isUserSeeking = true
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                isUserSeeking = false
+                player?.seekTo((seekBar?.progress ?: 0).toLong())
             }
         })
     }
 
-    fun cancel() {
-        player.release()
+    fun initVideo(url: String, autoPlay: Boolean = true) {
+        ensurePlayer()
+        val exoPlayer = player ?: return
+        stopProgressUpdates()
+        exoPlayer.setMediaItem(MediaItem.fromUri(Uri.parse(url)))
+        exoPlayer.prepare()
+        exoPlayer.playWhenReady = autoPlay
+        isPlaying = autoPlay
+        updatePlayButton()
+        attachPlayerListener(exoPlayer)
+        if (autoPlay) startProgressUpdates()
+    }
+
+    fun bindPlayer(externalPlayer: ExoPlayer) {
+        releaseOwnedPlayer()
+        player = externalPlayer
+        ownsPlayer = false
+        binding?.videoView?.player = externalPlayer
+        attachPlayerListener(externalPlayer)
+    }
+
+    fun pausePlayback() {
+        player?.pause()
+        isPlaying = false
+        updatePlayButton()
+        stopProgressUpdates()
+    }
+
+    fun release() {
+        stopProgressUpdates()
+        playerListener?.let { player?.removeListener(it) }
+        playerListener = null
+        binding?.videoView?.player = null
+        if (ownsPlayer) {
+            player?.release()
+        }
+        player = null
         binding = null
+    }
+
+    @Deprecated("Use release()", ReplaceWith("release()"))
+    fun cancel() = release()
+
+    private fun ensurePlayer() {
+        if (player != null) return
+        player = ExoPlayer.Builder(context).build()
+        ownsPlayer = true
+        binding?.videoView?.player = player
+    }
+
+    private fun releaseOwnedPlayer() {
+        if (ownsPlayer) {
+            player?.release()
+        }
+        playerListener?.let { player?.removeListener(it) }
+        playerListener = null
+        player = null
+    }
+
+    private fun attachPlayerListener(exoPlayer: ExoPlayer) {
+        playerListener?.let { exoPlayer.removeListener(it) }
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                binding?.progressLoading?.isVisible = playbackState == Player.STATE_BUFFERING
+                if (playbackState == Player.STATE_READY) {
+                    val duration = exoPlayer.duration.coerceAtLeast(0L)
+                    binding?.seekBarVideo?.max = duration.toInt()
+                    binding?.tvTotalTime?.text = formatDuration(duration)
+                    updateProgressUi()
+                }
+                if (playbackState == Player.STATE_ENDED) {
+                    isPlaying = false
+                    updatePlayButton()
+                    stopProgressUpdates()
+                }
+            }
+
+            override fun onIsPlayingChanged(playing: Boolean) {
+                isPlaying = playing
+                updatePlayButton()
+                if (playing) startProgressUpdates() else stopProgressUpdates()
+            }
+        }
+        playerListener = listener
+        exoPlayer.addListener(listener)
+    }
+
+    private fun togglePlayPause() {
+        val exoPlayer = player ?: return
+        if (exoPlayer.isPlaying) {
+            exoPlayer.pause()
+        } else {
+            if (exoPlayer.playbackState == Player.STATE_ENDED) {
+                exoPlayer.seekTo(0)
+            }
+            exoPlayer.play()
+        }
+    }
+
+    private fun updatePlayButton() {
+        binding?.btnPlay?.setImageResource(
+            if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
+        )
+    }
+
+    private fun startProgressUpdates() {
+        stopProgressUpdates()
+        val runnable = object : Runnable {
+            override fun run() {
+                updateProgressUi()
+                progressHandler.postDelayed(this, 500L)
+            }
+        }
+        progressRunnable = runnable
+        progressHandler.post(runnable)
+    }
+
+    private fun stopProgressUpdates() {
+        progressRunnable?.let { progressHandler.removeCallbacks(it) }
+        progressRunnable = null
+    }
+
+    private fun updateProgressUi() {
+        if (isUserSeeking) return
+        val position = player?.currentPosition?.coerceAtLeast(0L) ?: return
+        binding?.seekBarVideo?.progress = position.toInt()
+        binding?.tvCurrentTime?.text = formatDuration(position)
+    }
+
+    private fun formatDuration(millis: Long): String {
+        val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(millis.coerceAtLeast(0L))
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
     }
 }

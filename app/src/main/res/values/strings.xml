@@ -297,6 +297,9 @@
     <string name="status_post_updated">Đã cập nhật bài đăng</string>
     <string name="chat_upload_sending">Đang gửi</string>
     <string name="chat_upload_progress">Đang tải lên %d%%</string>
+    <string name="chat_video_player_title">Video</string>
+    <string name="chat_video_play_error">Không thể phát video</string>
+    <string name="chat_video_loading">Đang tải video…</string>
 
     <!-- Group chat -->
     <string name="create_group_title">Tạo nhóm</string>

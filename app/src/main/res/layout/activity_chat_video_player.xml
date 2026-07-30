@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootVideoPlayer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    tools:context=".ChatVideoPlayerActivity">
+
+    <com.example.messageapp.custom.CustomVideoView
+        android:id="@+id/videoPlayerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#7B000000"
+        android:gravity="center_vertical"
+        android:paddingTop="30dp">
+
+        <LinearLayout
+            android:id="@+id/btnClose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginVertical="15dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="10dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_back"
+                app:tint="@color/white" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/chat_video_player_title"
+            android:textColor="@color/text_on_color"
+            android:textSize="16sp" />
+    </LinearLayout>
+</RelativeLayout>

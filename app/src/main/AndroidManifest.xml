@@ -38,6 +38,11 @@
             android:name=".PreviewPhotoActivity"
             android:exported="false" />
         <activity
+            android:name=".ChatVideoPlayerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.MessageApp" />
+        <activity
             android:name=".PersonalActivity"
             android:exported="false" />
         <activity

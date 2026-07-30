@@ -30,6 +30,7 @@ import com.example.messageapp.base.BaseAdapter.BaseDiffUtil
 import com.example.messageapp.helper.screenHeight
 import com.example.messageapp.helper.screenWidth
 import com.example.messageapp.custom.AudioPlaybackState
+import com.example.messageapp.custom.ChatVideoCellView
 import com.example.messageapp.model.Message
 import com.example.messageapp.model.TypeMessage
 import com.example.messageapp.utils.DateUtils
@@ -78,6 +79,7 @@ class ChatAdapter(
     private var groupReaderIds: List<String> = emptyList()
     private var groupMembers: List<MentionHelper.MentionCandidate> = emptyList()
     private var mCallBack: CallBackClickItem? = null
+    private var videoPlaybackCallback: ChatVideoPlaybackCallback? = null
 
     companion object {
         /** Khoảng tối đa giữa hai tin cùng người gửi để gộp nhóm (kiểu Zalo / iMessage). */
@@ -138,6 +140,10 @@ class ChatAdapter(
      */
     fun setOnActionClickItem(callBackClickItem: CallBackClickItem) {
         this.mCallBack = callBackClickItem
+    }
+
+    fun setVideoPlaybackCallback(callback: ChatVideoPlaybackCallback?) {
+        videoPlaybackCallback = callback
     }
 
     fun updateGroupReaders(readerIds: List<String>) {
@@ -787,8 +793,39 @@ class ChatAdapter(
         }
 
         viewPhoto.removeAllViews()
-        val imageView = ImageView(context)
         val (w, h) = bubbleDisplaySizeForPositive(width, height)
+        val placeholder = if (width < height) R.drawable.bg_grey else R.drawable.bg_grey_horizontal
+        if (isLikelyVideoUrl(photo)) {
+            val cell = ChatVideoCellView(context)
+            cell.layoutParams = ViewGroup.LayoutParams(w, h)
+            cell.transitionName = message.time
+            cell.bindVideo(photo, placeholder)
+            cell.setOnClickListener {
+                mCallBack?.onPhotoClick(
+                    ClickPhotoModel(
+                        message = message,
+                        indexOfPhoto = 0,
+                        photoData = arrayListOf(photo),
+                        fromSender = fromSender,
+                        imageView = cell.thumbnailView,
+                    ),
+                )
+            }
+            attachPhotoLongClickListener(
+                anchor = cell,
+                message = message,
+                photoUrl = photo,
+                fromSender = fromSender,
+                photoIndex = 0,
+                intrinsicWidth = width,
+                intrinsicHeight = height,
+            )
+            viewPhoto.addView(cell)
+            videoPlaybackCallback?.onVideoCellBound(cell)
+            return
+        }
+
+        val imageView = ImageView(context)
         imageView.layoutParams = ViewGroup.LayoutParams(w, h)
         imageView.transitionName = message.time
         imageView.setOnClickListener {
@@ -798,8 +835,8 @@ class ChatAdapter(
                     indexOfPhoto = 0,
                     photoData = arrayListOf(photo),
                     fromSender = fromSender,
-                    imageView = imageView
-                )
+                    imageView = imageView,
+                ),
             )
         }
         attachPhotoLongClickListener(
@@ -811,40 +848,8 @@ class ChatAdapter(
             intrinsicWidth = width,
             intrinsicHeight = height,
         )
-        if (isLikelyVideoUrl(photo)) {
-            val frame = FrameLayout(context)
-            frame.layoutParams = ViewGroup.LayoutParams(w, h)
-            imageView.layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            frame.addView(imageView)
-            val playSize = (32 * context.resources.displayMetrics.density).toInt()
-            val play = ImageView(context).apply {
-                layoutParams = FrameLayout.LayoutParams(playSize, playSize, Gravity.CENTER)
-                setImageResource(R.drawable.ic_play)
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                isClickable = false
-            }
-            frame.addView(play)
-            attachPhotoLongClickListener(
-                anchor = frame,
-                message = message,
-                photoUrl = photo,
-                fromSender = fromSender,
-                photoIndex = 0,
-                intrinsicWidth = width,
-                intrinsicHeight = height,
-            )
-            viewPhoto.addView(frame)
-        } else {
-            viewPhoto.addView(imageView)
-        }
-        context.loadImg(
-            photo,
-            imageView,
-            imgDefault = if (width < height) R.drawable.bg_grey else R.drawable.bg_grey_horizontal
-        )
+        viewPhoto.addView(imageView)
+        context.loadImg(photo, imageView, imgDefault = placeholder)
     }
 
     /**
@@ -874,30 +879,77 @@ class ChatAdapter(
                         rightMargin = if (j == 3 * i + 2) 0 else 8
                     }
                 imgPhoto.transitionName = message.time
-                imgPhoto.setOnClickListener {
-                    mCallBack?.onPhotoClick(
-                        ClickPhotoModel(
-                            message = message,
-                            indexOfPhoto = j,
-                            photoData = photos,
-                            fromSender = fromSender,
-                            imageView = imgPhoto
-                        )
-                    )
-                }
+                val photoUrl = photos[j]
+                val cellSize = screenWidth / 4 - 40
                 val (intrinsicW, intrinsicH) = parsePhotoSizeToken(message.photoSizes, j)
-                attachPhotoLongClickListener(
-                    anchor = imgPhoto,
-                    message = message,
-                    photoUrl = photos[j],
-                    fromSender = fromSender,
-                    photoIndex = j,
-                    intrinsicWidth = intrinsicW,
-                    intrinsicHeight = intrinsicH,
-                )
-                imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
-                context.loadImg(photos[j], imgPhoto, imgDefault = R.drawable.bg_grey_equal)
-                layoutRow.addView(imgPhoto)
+                if (isLikelyVideoUrl(photoUrl)) {
+                    val frame = FrameLayout(context)
+                    frame.layoutParams = MarginLayoutParams(cellSize, cellSize).apply {
+                        bottomMargin = if (i == row - 1) 0 else 8
+                        rightMargin = if (j == 3 * i + 2) 0 else 8
+                    }
+                    imgPhoto.layoutParams = FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
+                    frame.addView(imgPhoto)
+                    val playSize = (24 * context.resources.displayMetrics.density).toInt()
+                    val play = ImageView(context).apply {
+                        layoutParams = FrameLayout.LayoutParams(playSize, playSize, Gravity.CENTER)
+                        setImageResource(R.drawable.ic_play)
+                        scaleType = ImageView.ScaleType.FIT_CENTER
+                        isClickable = false
+                    }
+                    frame.addView(play)
+                    frame.transitionName = message.time
+                    frame.setOnClickListener {
+                        mCallBack?.onPhotoClick(
+                            ClickPhotoModel(
+                                message = message,
+                                indexOfPhoto = j,
+                                photoData = photos,
+                                fromSender = fromSender,
+                                imageView = imgPhoto,
+                            ),
+                        )
+                    }
+                    attachPhotoLongClickListener(
+                        anchor = frame,
+                        message = message,
+                        photoUrl = photoUrl,
+                        fromSender = fromSender,
+                        photoIndex = j,
+                        intrinsicWidth = intrinsicW,
+                        intrinsicHeight = intrinsicH,
+                    )
+                    imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+                    context.loadImg(photoUrl, imgPhoto, imgDefault = R.drawable.bg_grey_equal)
+                    layoutRow.addView(frame)
+                } else {
+                    imgPhoto.setOnClickListener {
+                        mCallBack?.onPhotoClick(
+                            ClickPhotoModel(
+                                message = message,
+                                indexOfPhoto = j,
+                                photoData = photos,
+                                fromSender = fromSender,
+                                imageView = imgPhoto,
+                            ),
+                        )
+                    }
+                    attachPhotoLongClickListener(
+                        anchor = imgPhoto,
+                        message = message,
+                        photoUrl = photoUrl,
+                        fromSender = fromSender,
+                        photoIndex = j,
+                        intrinsicWidth = intrinsicW,
+                        intrinsicHeight = intrinsicH,
+                    )
+                    imgPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+                    context.loadImg(photoUrl, imgPhoto, imgDefault = R.drawable.bg_grey_equal)
+                    layoutRow.addView(imgPhoto)
+                }
             }
             viewPhotos.addView(layoutRow)
         }
@@ -926,6 +978,7 @@ class ChatAdapter(
             is SenderViewHolder -> holder.v.viewRecordWave.pause()
             is ReceiverViewHolder -> holder.v.viewRecordWave.pause()
         }
+        videoPlaybackCallback?.onViewRecycled(holder.itemView)
     }
 
     override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
@@ -934,6 +987,7 @@ class ChatAdapter(
             is SenderViewHolder -> holder.v.viewRecordWave.pause()
             is ReceiverViewHolder -> holder.v.viewRecordWave.pause()
         }
+        videoPlaybackCallback?.onViewRecycled(holder.itemView)
     }
 
     private fun buildAudioKey(message: Message): String = "${message.time}_${message.audio.orEmpty()}"
@@ -961,6 +1015,11 @@ class ChatAdapter(
             )
             true
         }
+    }
+
+    interface ChatVideoPlaybackCallback {
+        fun onVideoCellBound(cell: ChatVideoCellView) {}
+        fun onViewRecycled(itemView: View)
     }
 
     /**
