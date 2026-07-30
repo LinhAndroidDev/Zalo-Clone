@@ -798,7 +798,7 @@ class ChatAdapter(
         if (isLikelyVideoUrl(photo)) {
             val cell = ChatVideoCellView(context)
             cell.layoutParams = ViewGroup.LayoutParams(w, h)
-            cell.transitionName = message.time
+            cell.thumbnailView.transitionName = message.time
             cell.bindVideo(photo, placeholder)
             cell.setOnClickListener {
                 mCallBack?.onPhotoClick(

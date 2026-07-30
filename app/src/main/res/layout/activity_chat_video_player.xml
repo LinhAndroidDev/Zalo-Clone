@@ -8,10 +8,18 @@
     android:background="@color/black"
     tools:context=".ChatVideoPlayerActivity">
 
+    <ImageView
+        android:id="@+id/imgSharedElement"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter" />
+
     <com.example.messageapp.custom.CustomVideoView
         android:id="@+id/videoPlayerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:alpha="0" />
 
     <LinearLayout
         android:id="@+id/header"

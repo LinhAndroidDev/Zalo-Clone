@@ -178,7 +178,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
                         startPositionMs = startPositionMs,
                     ),
                 )
-                chatVideoLauncher.launch(intent)
+                val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                    requireActivity(),
+                    data.imageView,
+                    data.message.time,
+                )
+                chatVideoLauncher.launch(intent, options)
                 return
             }
             val keyId = when {
