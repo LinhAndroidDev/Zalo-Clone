@@ -22,13 +22,26 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.example.messageapp.library.fast_scroll.IndexFastScrollRecyclerView
-                android:id="@+id/rcvPhoneBook"
-                android:layout_weight="1"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:orientation="vertical"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                android:layout_weight="1">
+
+                <com.example.messageapp.library.fast_scroll.IndexFastScrollRecyclerView
+                    android:id="@+id/rcvPhoneBook"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rcvPhoneBookOnline"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            </FrameLayout>
 
             <View
                 android:id="@+id/viewBottom"

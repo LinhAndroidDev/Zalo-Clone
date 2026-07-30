@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <FrameLayout
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginVertical="10dp">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/avatarFriend"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@mipmap/ic_launcher" />
+
+            <View
+                android:id="@+id/onlineIndicator"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_gravity="bottom|end"
+                android:background="@drawable/bg_online_indicator"
+                android:importantForAccessibility="no" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/nameFriend"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            tools:text="Anh Hội" />
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center_vertical"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_contact"
+            app:tint="@color/text_muted" />
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginHorizontal="30dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_call_video"
+            app:tint="@color/text_muted" />
+    </LinearLayout>
+</layout>

@@ -5,6 +5,7 @@ package com.example.messageapp.fragment
  */
 
 import android.annotation.SuppressLint
+import android.view.View
 import android.widget.LinearLayout
 import androidx.appcompat.app.ActionBar.LayoutParams
 import androidx.lifecycle.lifecycleScope
@@ -14,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.adapter.PhoneBookAdapter
+import com.example.messageapp.adapter.PhoneBookFilter
+import com.example.messageapp.adapter.PhoneBookOnlineAdapter
 import com.example.messageapp.adapter.TypePhoneBook
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.library.sticky_header.StickyHeaderItemDecorator
@@ -30,10 +33,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 /**
- * This list use Sticky Header combined with Fast Scroll Alphabet
- * Below is a description how to get data to list:
- * + Filter list name user by letter if have data, add header group then import data into group phone book
- * + Then get data PhoneBook by GroupPhoneBook and import into recyclerview, need to add header group before
+ * Tab "Tất cả": Sticky Header + Fast Scroll Alphabet.
+ * Tab "Mới truy cập": danh sách phẳng, không sticky header / fast scroll.
  */
 @AndroidEntryPoint
 class PhoneBookFragment :
@@ -41,6 +42,9 @@ class PhoneBookFragment :
     override val layoutResId: Int = R.layout.fragment_phone_book
 
     private val phoneBookAdapter by lazy { PhoneBookAdapter() }
+    private val phoneBookOnlineAdapter by lazy { PhoneBookOnlineAdapter() }
+    private var allFriends: List<Friend> = emptyList()
+    private var currentFilter = PhoneBookFilter.ALL
 
     @SuppressLint("InflateParams", "ClickableViewAccessibility")
     override fun initView() {
@@ -54,26 +58,60 @@ class PhoneBookFragment :
             )
         }
 
-        phoneBookAdapter.onClickPhoneBook = { phoneBook ->
-            val user = User(
-                name = phoneBook.nameFriend,
-                avatar = phoneBook.avatar,
-                keyAuth = phoneBook.keyAuth
-            )
-            val action = PhoneBookFragmentDirections.actionPhoneBookFragmentToChatFragment(
-                Conversation(user)
-            )
-            findNavController().navigate(action)
-        }
-        phoneBookAdapter.onClickFriendRequest = {
-            findNavController().navigate(R.id.action_phoneBookFragment_to_friendRequestFragment)
-        }
+        setupPhoneBookCallbacks(phoneBookAdapter)
+        setupPhoneBookCallbacks(phoneBookOnlineAdapter)
 
         binding?.rcvPhoneBook?.adapter = phoneBookAdapter
+        binding?.rcvPhoneBookOnline?.adapter = phoneBookOnlineAdapter
         setupStickyHeader()
         setupAlphabetScroll()
+        applyFilterVisibility()
         viewModel?.getFriends()
         viewModel?.getPendingRequestCounts()
+    }
+
+    private fun setupPhoneBookCallbacks(adapter: PhoneBookAdapter) {
+        adapter.onClickPhoneBook = { phoneBook ->
+            navigateToChat(phoneBook.nameFriend, phoneBook.avatar, phoneBook.keyAuth)
+        }
+        adapter.onClickFriendRequest = {
+            findNavController().navigate(R.id.action_phoneBookFragment_to_friendRequestFragment)
+        }
+        adapter.onFilterChanged = { filter -> switchFilter(filter) }
+    }
+
+    private fun setupPhoneBookCallbacks(adapter: PhoneBookOnlineAdapter) {
+        adapter.onClickFriend = { friend ->
+            navigateToChat(friend.name, friend.avatar, friend.keyAuth)
+        }
+        adapter.onClickFriendRequest = {
+            findNavController().navigate(R.id.action_phoneBookFragment_to_friendRequestFragment)
+        }
+        adapter.onFilterChanged = { filter -> switchFilter(filter) }
+    }
+
+    private fun navigateToChat(name: String, avatar: String, keyAuth: String) {
+        val user = User(name = name, avatar = avatar, keyAuth = keyAuth)
+        val action = PhoneBookFragmentDirections.actionPhoneBookFragmentToChatFragment(
+            Conversation(user)
+        )
+        findNavController().navigate(action)
+    }
+
+    private fun switchFilter(filter: PhoneBookFilter) {
+        if (currentFilter == filter) return
+        currentFilter = filter
+        phoneBookAdapter.filter = filter
+        phoneBookOnlineAdapter.filter = filter
+        applyFilterVisibility()
+        phoneBookAdapter.notifyItemChanged(0)
+        phoneBookOnlineAdapter.notifyItemChanged(0)
+    }
+
+    private fun applyFilterVisibility() {
+        val showAll = currentFilter == PhoneBookFilter.ALL
+        binding?.rcvPhoneBook?.visibility = if (showAll) View.VISIBLE else View.GONE
+        binding?.rcvPhoneBookOnline?.visibility = if (showAll) View.GONE else View.VISIBLE
     }
 
     override fun onClickView() {
@@ -90,19 +128,45 @@ class PhoneBookFragment :
         super.bindData()
         lifecycleScope.launch {
             viewModel?.friends?.collect { friends ->
-                buildPhoneBookList(friends)
+                allFriends = friends
+                rebuildPhoneBookLists(viewModel?.presenceMap?.value.orEmpty())
+            }
+        }
+        lifecycleScope.launch {
+            viewModel?.presenceMap?.collect { presenceMap ->
+                rebuildPhoneBookLists(presenceMap)
             }
         }
         lifecycleScope.launch {
             viewModel?.totalRequestCount?.collect { count ->
                 phoneBookAdapter.friendRequestCount = count
+                phoneBookOnlineAdapter.friendRequestCount = count
                 phoneBookAdapter.notifyItemChanged(0)
+                phoneBookOnlineAdapter.notifyItemChanged(0)
             }
         }
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    private fun buildPhoneBookList(friends: List<Friend>) {
+    private fun rebuildPhoneBookLists(presenceMap: Map<String, com.example.messageapp.model.UserPresence>) {
+        val onlineCount = countOnlineFriends(presenceMap)
+        phoneBookAdapter.totalFriendCount = allFriends.size
+        phoneBookAdapter.onlineCount = onlineCount
+        phoneBookOnlineAdapter.totalFriendCount = allFriends.size
+        phoneBookOnlineAdapter.onlineCount = onlineCount
+
+        buildAllPhoneBookList(allFriends)
+        buildOnlinePhoneBookList(
+            allFriends.filter { friend -> presenceMap[friend.keyAuth]?.online == true },
+        )
+    }
+
+    private fun countOnlineFriends(presenceMap: Map<String, com.example.messageapp.model.UserPresence>): Int {
+        return allFriends.count { friend -> presenceMap[friend.keyAuth]?.online == true }
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private fun buildAllPhoneBookList(friends: List<Friend>) {
         val groupPhoneBooks = arrayListOf<GroupPhoneBook>()
         var indexGroupHeader = 1
 
@@ -135,6 +199,12 @@ class PhoneBookFragment :
 
         phoneBookAdapter.phoneBooks = phoneBookDatas
         phoneBookAdapter.notifyDataSetChanged()
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private fun buildOnlinePhoneBookList(onlineFriends: List<Friend>) {
+        phoneBookOnlineAdapter.friends = onlineFriends.sortedBy { it.name.lowercase() }
+        phoneBookOnlineAdapter.notifyDataSetChanged()
     }
 
     private fun setupStickyHeader() {

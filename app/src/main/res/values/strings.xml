@@ -58,6 +58,8 @@
     <string name="contact_using_zalo">Liên hệ có dùng Zalo</string>
     <string name="birthday_calendar">Lịch sinh nhật</string>
     <string name="track_your_birthday">Theo dõi sinh nhật của bạn</string>
+    <string name="phone_book_filter_all">Tất cả  %1$d</string>
+    <string name="phone_book_filter_recent_online">Mới truy cập  %1$d</string>
     <string name="register">Đăng ký</string>
     <string name="email">Email</string>
     <string name="full_name">Họ tên</string>
