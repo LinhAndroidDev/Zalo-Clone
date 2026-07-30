@@ -3,6 +3,7 @@ package com.example.messageapp.chat
 import android.view.View
 import android.view.ViewGroup
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -14,7 +15,21 @@ class ChatVideoPlaybackCoordinator(
 ) {
     private var currentTarget: ChatVideoPlayTarget? = null
     private var enabled = true
+    private var handoffInProgress = false
+    private var handoffVideoUrl: String? = null
+    private var handoffWasPlaying = false
     private val minVisibleRatio = 0.6f
+
+    private val playbackListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState != Player.STATE_ENDED) return
+            if (!enabled || handoffInProgress || currentTarget == null) return
+            player.seekTo(0)
+            player.playWhenReady = true
+            currentTarget?.attachPlayer(player)
+            player.play()
+        }
+    }
 
     private val scrollListener = object : RecyclerView.OnScrollListener() {
         override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
@@ -26,16 +41,29 @@ class ChatVideoPlaybackCoordinator(
 
     init {
         recyclerView.addOnScrollListener(scrollListener)
+        player.addListener(playbackListener)
     }
 
-    fun refresh() {
-        if (!enabled) return
+    fun refresh(preferredVideoUrl: String? = null) {
+        if (!enabled || handoffInProgress) return
         val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
         val first = layoutManager.findFirstVisibleItemPosition()
         val last = layoutManager.findLastVisibleItemPosition()
         if (first == RecyclerView.NO_POSITION || last == RecyclerView.NO_POSITION) {
-            pauseInternal()
+            pauseInternal(keepPlaybackState = true)
             return
+        }
+
+        preferredVideoUrl?.let { url ->
+            for (position in first..last) {
+                val holder = recyclerView.findViewHolderForAdapterPosition(position) ?: continue
+                findVideoTargets(holder.itemView).forEach { target ->
+                    if (target.videoUrl == url && target.visibleRatio() > 0f) {
+                        playTarget(target)
+                        return
+                    }
+                }
+            }
         }
 
         var bestTarget: ChatVideoPlayTarget? = null
@@ -52,7 +80,7 @@ class ChatVideoPlaybackCoordinator(
         }
 
         if (bestTarget == null) {
-            pauseInternal()
+            pauseInternal(keepPlaybackState = true)
             return
         }
         if (bestTarget !== currentTarget) {
@@ -62,17 +90,88 @@ class ChatVideoPlaybackCoordinator(
         }
     }
 
+    fun isHandoffInProgress(): Boolean = handoffInProgress
+
+    fun prepareHandoffToFullscreen(clickedVideoUrl: String): HandoffSnapshot {
+        handoffInProgress = true
+        enabled = false
+
+        val positionMs = player.currentPosition.coerceAtLeast(0L)
+        val videoUrl = currentTarget?.videoUrl ?: currentVideoUrl()
+        handoffVideoUrl = clickedVideoUrl
+        handoffWasPlaying = player.isPlaying || player.playWhenReady
+        val sameMediaAlreadyLoaded = videoUrl != null &&
+            currentVideoUrl() == videoUrl &&
+            player.playbackState != Player.STATE_IDLE
+
+        currentTarget?.detachPlayer()
+        currentTarget = null
+        player.clearVideoSurface()
+        player.volume = 1f
+
+        return HandoffSnapshot(
+            videoUrl = videoUrl,
+            positionMs = positionMs,
+            sameMediaAlreadyLoaded = sameMediaAlreadyLoaded,
+        )
+    }
+
+    fun resumeFromFullscreen() {
+        handoffInProgress = false
+        enabled = true
+        player.volume = 0f
+
+        val (returnUrl, shouldResumeFromActivity) = ChatVideoPlayerHolder.consumeListResumeState()
+        val preferredUrl = returnUrl ?: handoffVideoUrl ?: currentVideoUrl()
+        val resumePlayback = shouldResumeFromActivity ||
+            handoffWasPlaying ||
+            player.isPlaying ||
+            player.playWhenReady
+
+        handoffVideoUrl = null
+        handoffWasPlaying = false
+
+        player.playWhenReady = resumePlayback
+        if (resumePlayback && !player.isPlaying) {
+            player.play()
+        }
+
+        recyclerView.post {
+            attachAndResume(preferredVideoUrl = preferredUrl, resumePlayback = resumePlayback)
+        }
+    }
+
+    private fun attachAndResume(preferredVideoUrl: String?, resumePlayback: Boolean, retryCount: Int = 0) {
+        refresh(preferredVideoUrl = preferredVideoUrl)
+        if (currentTarget != null) {
+            if (resumePlayback) {
+                resumeCurrentTarget()
+            } else {
+                currentTarget?.attachPlayer(player)
+            }
+            return
+        }
+        if (preferredVideoUrl != null && retryCount < 3) {
+            recyclerView.postDelayed({
+                attachAndResume(preferredVideoUrl, resumePlayback, retryCount + 1)
+            }, 100L)
+        }
+    }
+
     fun pause() {
+        if (handoffInProgress) return
         enabled = false
         pauseInternal()
     }
 
     fun resume() {
+        if (handoffInProgress) return
         enabled = true
         refresh()
     }
 
     fun onViewRecycled(view: View) {
+        if (handoffInProgress) return
         if (currentTarget != null && containsView(view, currentTarget!!)) {
             pauseInternal()
         }
@@ -80,7 +179,9 @@ class ChatVideoPlaybackCoordinator(
 
     fun release() {
         enabled = false
+        handoffInProgress = false
         recyclerView.removeOnScrollListener(scrollListener)
+        player.removeListener(playbackListener)
         pauseInternal()
     }
 
@@ -88,7 +189,7 @@ class ChatVideoPlaybackCoordinator(
         currentTarget?.detachPlayer()
         currentTarget = target
 
-        val currentUri = player.currentMediaItem?.localConfiguration?.uri?.toString().orEmpty()
+        val currentUri = currentVideoUrl().orEmpty()
         if (currentUri != target.videoUrl) {
             player.setMediaItem(MediaItem.fromUri(target.videoUrl))
             player.prepare()
@@ -103,16 +204,24 @@ class ChatVideoPlaybackCoordinator(
         val target = currentTarget ?: return
         player.volume = 0f
         player.playWhenReady = true
+        if (player.playbackState == Player.STATE_ENDED) {
+            player.seekTo(0)
+        }
         target.attachPlayer(player)
         player.play()
     }
 
-    private fun pauseInternal() {
-        player.pause()
-        player.playWhenReady = false
+    private fun pauseInternal(keepPlaybackState: Boolean = false) {
+        if (!keepPlaybackState) {
+            player.pause()
+            player.playWhenReady = false
+        }
         currentTarget?.detachPlayer()
         currentTarget = null
     }
+
+    private fun currentVideoUrl(): String? =
+        player.currentMediaItem?.localConfiguration?.uri?.toString()
 
     private fun findVideoTargets(root: View): List<ChatVideoPlayTarget> {
         val targets = mutableListOf<ChatVideoPlayTarget>()

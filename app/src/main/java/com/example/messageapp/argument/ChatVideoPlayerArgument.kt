@@ -7,4 +7,5 @@ import kotlinx.parcelize.Parcelize
 data class ChatVideoPlayerArgument(
     val videoUrl: String,
     val messageTime: String = "",
+    val startPositionMs: Long = 0L,
 ) : Parcelable

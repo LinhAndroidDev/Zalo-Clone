@@ -4,14 +4,17 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.example.messageapp.argument.ChatVideoPlayerArgument
+import com.example.messageapp.chat.ChatVideoPlayerHolder
 import com.example.messageapp.databinding.ActivityChatVideoPlayerBinding
 
 class ChatVideoPlayerActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivityChatVideoPlayerBinding.inflate(layoutInflater) }
     private var argument: ChatVideoPlayerArgument? = null
+    private var returnStateMarked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,18 +27,65 @@ class ChatVideoPlayerActivity : AppCompatActivity() {
             finish()
             return
         }
-        binding.btnClose.setOnClickListener { finish() }
-        binding.videoPlayerView.initVideo(videoUrl, autoPlay = true)
+
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    markReturnState()
+                    finish()
+                }
+            },
+        )
+        binding.btnClose.setOnClickListener {
+            markReturnState()
+            finish()
+        }
+
+        binding.videoPlayerView.setControlsVisible(false)
+        binding.videoPlayerView.setAutoRestartOnEnd(true)
+
+        val player = ChatVideoPlayerHolder.obtainPlayer(this)
+        val startPositionMs = argument?.startPositionMs?.coerceAtLeast(0L) ?: 0L
+        val canContinueSameMedia = ChatVideoPlayerHolder.isSameMediaLoaded(videoUrl)
+
+        if (canContinueSameMedia) {
+            binding.videoPlayerView.bindPlayer(player)
+            player.volume = 1f
+            player.playWhenReady = true
+            player.play()
+        } else {
+            binding.videoPlayerView.initVideo(
+                url = videoUrl,
+                startPositionMs = startPositionMs,
+                autoPlay = true,
+                sharedPlayer = player,
+            )
+            player.volume = 1f
+        }
     }
 
     override fun onPause() {
-        binding.videoPlayerView.pausePlayback()
+        if (isFinishing) {
+            markReturnState()
+        }
         super.onPause()
     }
 
     override fun onDestroy() {
-        binding.videoPlayerView.release()
+        binding.videoPlayerView.setAutoRestartOnEnd(false)
+        binding.videoPlayerView.detachPlayerOnly()
         super.onDestroy()
+    }
+
+    private fun markReturnState() {
+        if (returnStateMarked) return
+        returnStateMarked = true
+        val player = ChatVideoPlayerHolder.obtainPlayer(this)
+        ChatVideoPlayerHolder.markReturnToList(
+            videoUrl = argument?.videoUrl.orEmpty(),
+            shouldResume = player.isPlaying || player.playWhenReady,
+        )
     }
 
     private fun setUpFullScreen() {

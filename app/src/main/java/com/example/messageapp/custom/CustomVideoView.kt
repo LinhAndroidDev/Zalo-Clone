@@ -29,7 +29,8 @@ class CustomVideoView @JvmOverloads constructor(
     private var player: ExoPlayer? = null
     private var ownsPlayer = true
     private var isPlaying = false
-    private var showViewControl = true
+    private var showViewControl = false
+    private var autoRestartOnEnd = false
     private var isUserSeeking = false
     private val progressHandler = Handler(Looper.getMainLooper())
     private var progressRunnable: Runnable? = null
@@ -39,6 +40,16 @@ class CustomVideoView @JvmOverloads constructor(
         binding = CustomVideoViewBinding.inflate(LayoutInflater.from(context), this, true)
         binding?.videoView?.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
         setupControls()
+        setControlsVisible(false)
+    }
+
+    fun setControlsVisible(visible: Boolean) {
+        showViewControl = visible
+        binding?.viewControl?.isVisible = visible
+    }
+
+    fun setAutoRestartOnEnd(enabled: Boolean) {
+        autoRestartOnEnd = enabled
     }
 
     private fun setupControls() {
@@ -78,25 +89,56 @@ class CustomVideoView @JvmOverloads constructor(
         })
     }
 
-    fun initVideo(url: String, autoPlay: Boolean = true) {
-        ensurePlayer()
-        val exoPlayer = player ?: return
+    fun initVideo(
+        url: String,
+        startPositionMs: Long = 0L,
+        autoPlay: Boolean = true,
+        sharedPlayer: ExoPlayer? = null,
+    ) {
+        val exoPlayer = if (sharedPlayer != null) {
+            bindPlayer(sharedPlayer)
+            sharedPlayer
+        } else {
+            ensurePlayer()
+            player
+        } ?: return
+
         stopProgressUpdates()
-        exoPlayer.setMediaItem(MediaItem.fromUri(Uri.parse(url)))
-        exoPlayer.prepare()
+        val currentUrl = exoPlayer.currentMediaItem?.localConfiguration?.uri?.toString()
+        if (currentUrl != url) {
+            exoPlayer.setMediaItem(MediaItem.fromUri(Uri.parse(url)), startPositionMs)
+            exoPlayer.prepare()
+        } else if (startPositionMs > 0L) {
+            exoPlayer.seekTo(startPositionMs)
+        }
         exoPlayer.playWhenReady = autoPlay
         isPlaying = autoPlay
         updatePlayButton()
         attachPlayerListener(exoPlayer)
+        syncUiFromPlayer(exoPlayer)
         if (autoPlay) startProgressUpdates()
     }
 
-    fun bindPlayer(externalPlayer: ExoPlayer) {
-        releaseOwnedPlayer()
-        player = externalPlayer
-        ownsPlayer = false
+    fun bindPlayer(externalPlayer: ExoPlayer): ExoPlayer {
+        if (player !== externalPlayer) {
+            releaseOwnedPlayer()
+            player = externalPlayer
+            ownsPlayer = false
+        }
         binding?.videoView?.player = externalPlayer
         attachPlayerListener(externalPlayer)
+        isPlaying = externalPlayer.isPlaying
+        updatePlayButton()
+        syncUiFromPlayer(externalPlayer)
+        if (externalPlayer.isPlaying) startProgressUpdates() else stopProgressUpdates()
+        return externalPlayer
+    }
+
+    fun detachPlayerOnly() {
+        stopProgressUpdates()
+        playerListener?.let { listener -> player?.removeListener(listener) }
+        playerListener = null
+        binding?.videoView?.player = null
     }
 
     fun pausePlayback() {
@@ -141,17 +183,27 @@ class CustomVideoView @JvmOverloads constructor(
         playerListener?.let { exoPlayer.removeListener(it) }
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                binding?.progressLoading?.isVisible = playbackState == Player.STATE_BUFFERING
+                val targetPosition = exoPlayer.currentPosition
+                val isBufferingAhead = exoPlayer.bufferedPosition >= targetPosition
+                binding?.progressLoading?.isVisible =
+                    playbackState == Player.STATE_BUFFERING && !isBufferingAhead
                 if (playbackState == Player.STATE_READY) {
-                    val duration = exoPlayer.duration.coerceAtLeast(0L)
-                    binding?.seekBarVideo?.max = duration.toInt()
-                    binding?.tvTotalTime?.text = formatDuration(duration)
-                    updateProgressUi()
+                    syncUiFromPlayer(exoPlayer)
                 }
                 if (playbackState == Player.STATE_ENDED) {
-                    isPlaying = false
-                    updatePlayButton()
-                    stopProgressUpdates()
+                    if (autoRestartOnEnd) {
+                        exoPlayer.seekTo(0)
+                        exoPlayer.playWhenReady = true
+                        exoPlayer.play()
+                        isPlaying = true
+                        updatePlayButton()
+                        syncUiFromPlayer(exoPlayer)
+                        startProgressUpdates()
+                    } else {
+                        isPlaying = false
+                        updatePlayButton()
+                        stopProgressUpdates()
+                    }
                 }
             }
 
@@ -163,6 +215,17 @@ class CustomVideoView @JvmOverloads constructor(
         }
         playerListener = listener
         exoPlayer.addListener(listener)
+    }
+
+    private fun syncUiFromPlayer(exoPlayer: ExoPlayer) {
+        val duration = exoPlayer.duration.coerceAtLeast(0L)
+        if (duration > 0L) {
+            binding?.seekBarVideo?.max = duration.toInt()
+            binding?.tvTotalTime?.text = formatDuration(duration)
+        }
+        val position = exoPlayer.currentPosition.coerceAtLeast(0L)
+        binding?.seekBarVideo?.progress = position.toInt()
+        binding?.tvCurrentTime?.text = formatDuration(position)
     }
 
     private fun togglePlayPause() {

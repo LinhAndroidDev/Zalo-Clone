@@ -18,7 +18,8 @@
         android:id="@+id/viewControl"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#66111111">
+        android:background="#66111111"
+        android:visibility="gone">
 
         <LinearLayout
             android:layout_width="wrap_content"
