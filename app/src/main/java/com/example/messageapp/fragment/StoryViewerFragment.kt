@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
 import android.view.MotionEvent
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.isVisible
@@ -60,11 +61,13 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         binding?.btnClose?.setOnClickListener { closeViewer() }
         binding?.btnMore?.setOnClickListener { showOwnerMenu() }
         setupPager()
-        setupPagerTouch()
+        setupTapZones()
+        setupSwipeDownToClose()
         observeViewModel()
     }
 
     private fun setupPager() {
+        binding?.storyPager?.isUserInputEnabled = false
         binding?.storyPager?.offscreenPageLimit = 1
         binding?.storyPager?.adapter = pagerAdapter
         binding?.storyPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
@@ -120,9 +123,14 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         }
     }
 
+    private fun setupTapZones() {
+        binding?.tapZoneLeft?.setOnClickListener { handleTapLeft() }
+        binding?.tapZoneRight?.setOnClickListener { goNextPage() }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupPagerTouch() {
-        binding?.storyPager?.setOnTouchListener { _, event ->
+    private fun setupSwipeDownToClose() {
+        val swipeListener = View.OnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     touchDownY = event.y
@@ -133,25 +141,15 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
                     val deltaX = kotlin.math.abs(event.x - touchDownX)
                     if (deltaY > SWIPE_DOWN_THRESHOLD_PX && deltaY > deltaX * 1.5f) {
                         closeViewer()
-                        return@setOnTouchListener true
-                    }
-                    if (deltaX < TAP_SLOP_PX && deltaY < TAP_SLOP_PX) {
-                        val width = binding?.storyPager?.width?.toFloat() ?: return@setOnTouchListener false
-                        when {
-                            event.x < width * 0.35f -> {
-                                handleTapLeft()
-                                return@setOnTouchListener true
-                            }
-                            event.x > width * 0.65f -> {
-                                goNextPage()
-                                return@setOnTouchListener true
-                            }
-                        }
+                        return@OnTouchListener true
                     }
                 }
             }
             false
         }
+        binding?.storyPager?.setOnTouchListener(swipeListener)
+        binding?.tapOverlay?.setOnTouchListener(swipeListener)
+        binding?.headerScrim?.setOnTouchListener(swipeListener)
     }
 
     private fun handleTapLeft() {
@@ -215,7 +213,8 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
     }
 
     private fun resetPageProgress(index: Int) {
-        pageBindingAt(index)?.progressStory?.progress = 0
+        if (index != currentPageIndex) return
+        binding?.progressStory?.progress = 0
     }
 
     private fun bindPageMedia(story: StoryItem) {
@@ -348,8 +347,9 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
     }
 
     private fun updatePageProgress(pageIndex: Int, elapsed: Long, duration: Long) {
-        val progressBar = pageBindingAt(pageIndex)?.progressStory ?: return
-        progressBar.progress = ((elapsed.toFloat() / duration) * 1000).toInt().coerceIn(0, 1000)
+        if (pageIndex != currentPageIndex) return
+        binding?.progressStory?.progress =
+            ((elapsed.toFloat() / duration) * 1000).toInt().coerceIn(0, 1000)
     }
 
     private fun restartCurrentStory() {
@@ -358,16 +358,23 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         stopPlayback()
         binding?.storyPager?.post {
             if (!isAdded) return@post
-            bindPageMedia(page.story)
-            bindPageMusic(page.story)
-            resetPageProgress(currentPageIndex)
-            if (page.story.musicAudioUrl.isNotBlank()) {
-                ensureMusicPlayer()
-                musicPlayer?.seekTo(0)
-                musicPlayer?.playWhenReady = true
-            }
-            startSegmentTimer(page.story, currentPageIndex)
+            restartPlayback(page)
         }
+    }
+
+    private fun restartPlayback(page: StoryViewerPage) {
+        bindPageMedia(page.story)
+        bindPageMusic(page.story)
+        resetPageProgress(currentPageIndex)
+        if (page.story.mediaType == StoryMediaType.VIDEO) {
+            videoPlayer?.seekTo(0)
+            videoPlayer?.playWhenReady = true
+        }
+        if (page.story.musicAudioUrl.isNotBlank()) {
+            musicPlayer?.seekTo(0)
+            musicPlayer?.playWhenReady = true
+        }
+        startSegmentTimer(page.story, currentPageIndex)
     }
 
     private fun goNextPage() {
@@ -519,7 +526,6 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         private const val VIDEO_VOLUME = 0.7f
         private const val MUSIC_VOLUME = 0.5f
         private const val SWIPE_DOWN_THRESHOLD_PX = 120f
-        private const val TAP_SLOP_PX = 30f
         private const val MENU_PRIVACY = 1
         private const val MENU_DELETE = 2
     }

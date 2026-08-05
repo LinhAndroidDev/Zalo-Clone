@@ -29,8 +29,6 @@ class StoryViewerPagerAdapter : RecyclerView.Adapter<StoryViewerPagerAdapter.Pag
     }
 
     override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
-        holder.binding.progressStory.max = 1000
-        holder.binding.progressStory.progress = 0
         holder.binding.musicSticker.clearSticker()
     }
 
