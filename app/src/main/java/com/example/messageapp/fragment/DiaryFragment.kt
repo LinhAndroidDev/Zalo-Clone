@@ -127,6 +127,8 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
 
     override fun onResume() {
         super.onResume()
+        viewModel?.ensureDataForCurrentUser()
+        diaryPostAdapter.currentUserId = viewModel?.currentUserId().orEmpty()
         (activity as? MainActivity)?.consumePendingDiaryTarget()?.let { target ->
             handleDiaryNavigationTarget(target)
         }

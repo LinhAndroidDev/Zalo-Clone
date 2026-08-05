@@ -48,16 +48,47 @@ class DiaryFragmentViewModel @Inject constructor(
     private var stopFeed: (() -> Unit)? = null
     private var stopStoryRings: (() -> Unit)? = null
     private var stopUnread: (() -> Unit)? = null
+    private var activeUserId: String? = null
     private var lastDiaryFeedErrorAtMs = 0L
     private var lastStoryRingsErrorAtMs = 0L
 
     init {
-        if (sessionRepository.getAuth().isNotBlank()) {
-            getInfoUser()
-            startDiaryFeed()
-            startStoryRings()
-            startNotificationBadge()
+        ensureDataForCurrentUser()
+    }
+
+    fun ensureDataForCurrentUser() {
+        val userId = sessionRepository.getAuth()
+        if (userId.isBlank()) {
+            stopAllObservers()
+            clearState()
+            activeUserId = null
+            return
         }
+        if (userId == activeUserId && stopFeed != null) return
+        stopAllObservers()
+        clearState()
+        activeUserId = userId
+        StoryViewerCache.clear()
+        getInfoUser()
+        startDiaryFeed()
+        startStoryRings()
+        startNotificationBadge()
+    }
+
+    private fun clearState() {
+        _user.value = null
+        _diaryPosts.value = emptyList()
+        _unreadNotificationCount.value = 0
+        _storyRings.value = emptyList()
+    }
+
+    private fun stopAllObservers() {
+        stopFeed?.invoke()
+        stopFeed = null
+        stopStoryRings?.invoke()
+        stopStoryRings = null
+        stopUnread?.invoke()
+        stopUnread = null
     }
 
     fun currentUserId(): String = sessionRepository.getAuth()
@@ -172,11 +203,7 @@ class DiaryFragmentViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        stopFeed?.invoke()
-        stopFeed = null
-        stopStoryRings?.invoke()
-        stopStoryRings = null
-        stopUnread?.invoke()
-        stopUnread = null
+        stopAllObservers()
+        activeUserId = null
     }
 }
