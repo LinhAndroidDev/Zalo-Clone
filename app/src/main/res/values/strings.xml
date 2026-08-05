@@ -173,10 +173,10 @@
     <string name="typing_multiple">%1$s đang nhập tin nhắn</string>
     <string name="typing_multiple_and_others">%1$s và %2$d người khác đang nhập tin nhắn</string>
     <string name="story_my_ring_label">Tin của bạn</string>
-    <string name="story_add_music">Thêm nhạc</string>
+    <string name="story_add_music">Thêm âm nhạc</string>
     <string name="story_remove_music">Bỏ nhạc</string>
     <string name="story_load_more_music">Tải thêm</string>
-    <string name="story_publish">Đăng</string>
+    <string name="story_publish">Chia sẻ</string>
     <string name="story_publish_success">Đã đăng tin</string>
     <string name="story_music_selected">%1$s — %2$s</string>
     <string name="story_privacy_title">Quyền riêng tư</string>
@@ -185,7 +185,6 @@
     <string name="story_privacy_custom">Tùy chọn riêng</string>
     <string name="story_hours_ago">%1$d giờ trước</string>
     <string name="story_pick_media_title">Chọn ảnh hoặc video</string>
-    <string name="story_change_media">Đổi</string>
     <string name="story_gallery_empty">Không có ảnh hoặc video trong thư viện</string>
     <string name="story_gallery_permission_required">Cần quyền truy cập thư viện để chọn ảnh hoặc video</string>
     <string name="story_viewer_empty">Không tải được tin. Vui lòng thử lại.</string>

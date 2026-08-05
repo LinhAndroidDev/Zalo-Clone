@@ -125,52 +125,82 @@
                     android:visibility="gone"
                     tools:visibility="visible" />
 
-                <LinearLayout
+                <FrameLayout
                     android:id="@+id/toolbarCreateStory"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top"
-                    android:background="#66000000"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="10dp">
-
-                    <ImageView
-                        android:id="@+id/btnClose"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_close"
-                        app:tint="@color/white" />
-
-                    <TextView
-                        android:id="@+id/btnChangeMedia"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_circle_stroke_1"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
-                        android:text="@string/story_change_media"
-                        android:textColor="@color/white"
-                        android:textSize="12sp" />
+                    android:gravity="center_vertical">
 
                     <View
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:layout_weight="1" />
+                        android:id="@+id/headerScrim"
+                        android:layout_width="match_parent"
+                        android:layout_height="80dp"
+                        android:layout_gravity="top"
+                        android:background="@drawable/bg_story_header_scrim"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:importantForAccessibility="no" />
 
-                    <TextView
-                        android:id="@+id/btnPrivacy"
+                    <ImageView
+                        android:layout_marginStart="12dp"
+                        android:layout_gravity="start|center_vertical"
+                        android:id="@+id/btnClose"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_back"
+                        android:elevation="3dp"
+                        app:tint="@color/white" />
+
+                    <LinearLayout
+                        android:id="@+id/btnAddMusic"
+                        android:padding="5dp"
+                        android:background="@drawable/bg_white_corner_25"
+                        android:backgroundTint="#66000000"
+                        android:layout_gravity="center"
+                        android:gravity="center_vertical"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_circle_stroke_1"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
-                        android:text="@string/story_privacy_everyone"
-                        android:textColor="@color/white"
-                        android:textSize="12sp" />
-                </LinearLayout>
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:src="@drawable/ic_music"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:layout_marginEnd="10dp"
+                            app:tint="@color/white"/>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/txtSong"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="@string/story_add_music"
+                                android:textColor="@color/white"
+                                android:textSize="14sp" />
+
+                            <TextView
+                                android:id="@+id/txtSinger"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="Khám phá gợi ý"
+                                android:textColor="@color/text_hint"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="50dp"
+                            android:layout_height="1dp"/>
+                    </LinearLayout>
+                </FrameLayout>
             </FrameLayout>
 
             <LinearLayout
@@ -194,24 +224,45 @@
                     android:paddingHorizontal="16dp"
                     android:paddingVertical="12dp">
 
-                    <TextView
-                        android:id="@+id/btnAddMusic"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                    <LinearLayout
+                        android:id="@+id/btnPrivacy"
+                        android:layout_gravity="end|center_vertical"
+                        android:background="@drawable/bg_corner_25_blue_light"
+                        android:backgroundTint="@color/icon_default"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="6dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:src="@drawable/ic_person_fill"
+                            android:layout_width="15dp"
+                            android:layout_height="15dp"
+                            android:layout_marginEnd="5dp"
+                            app:tint="@color/white"/>
+
+                        <TextView
+                            android:id="@+id/txtPrivacy"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/story_privacy_everyone"
+                            android:textColor="@color/white"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <View
                         android:layout_weight="1"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="@string/story_add_music"
-                        android:textColor="@color/white"
-                        android:textSize="14sp" />
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"/>
 
                     <TextView
                         android:id="@+id/btnPublish"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_circle_gradient_stroke_grey"
-                        android:paddingHorizontal="20dp"
-                        android:paddingVertical="10dp"
+                        android:background="@drawable/bg_white_corner_10"
+                        android:backgroundTint="@color/color_link"
+                        android:paddingHorizontal="15dp"
+                        android:paddingVertical="8dp"
                         android:text="@string/story_publish"
                         android:textColor="@color/white"
                         android:textStyle="bold" />

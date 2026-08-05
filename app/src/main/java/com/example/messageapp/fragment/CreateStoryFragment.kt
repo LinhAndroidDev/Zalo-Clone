@@ -81,7 +81,6 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
 
     private fun setupPreviewActions() {
         binding?.btnClose?.setOnClickListener { backToGalleryPicker() }
-        binding?.btnChangeMedia?.setOnClickListener { backToGalleryPicker() }
         binding?.btnPrivacy?.setOnClickListener { showPrivacySheet() }
         binding?.btnAddMusic?.setOnClickListener { showMusicSheet() }
         binding?.btnPublish?.setOnClickListener { publishStoryWithMusicPosition() }
@@ -112,15 +111,19 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
 
         lifecycleScope.launch {
             viewModel?.privacy?.collectLatest { privacy ->
-                binding?.btnPrivacy?.text = privacyLabel(privacy)
+                binding?.txtPrivacy?.text = privacyLabel(privacy)
             }
         }
 
         lifecycleScope.launch {
             viewModel?.selectedMusic?.collectLatest { track ->
-                binding?.btnAddMusic?.text = track?.let {
-                    getString(R.string.story_music_selected, it.name, it.artistName)
-                } ?: getString(R.string.story_add_music)
+                track?.let {
+                    binding?.txtSong?.text = track.name
+                    binding?.txtSinger?.text = track.artistName
+                } ?: {
+                    binding?.txtSong?.text = getString(R.string.story_add_music)
+                    binding?.txtSinger?.text = "Khám phá gợi ý"
+                }
                 bindMusicSticker(track)
             }
         }
