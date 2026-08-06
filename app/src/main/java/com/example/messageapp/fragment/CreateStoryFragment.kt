@@ -1,9 +1,12 @@
 package com.example.messageapp.fragment
 
+import android.content.res.ColorStateList
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,9 +14,14 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomViewTarget
+import com.bumptech.glide.request.transition.Transition
 import com.example.messageapp.R
 import com.example.messageapp.adapter.GalleryAdapter
 import com.example.messageapp.base.BaseFragment
@@ -38,6 +46,7 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
 
     private var previewPlayer: ExoPlayer? = null
     private var galleryAdapter: GalleryAdapter? = null
+    private var previewVideoSizeListener: Player.Listener? = null
 
     private val requestMediaPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
@@ -83,6 +92,7 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
         binding?.btnClose?.setOnClickListener { backToGalleryPicker() }
         binding?.btnPrivacy?.setOnClickListener { showPrivacySheet() }
         binding?.btnAddMusic?.setOnClickListener { showMusicSheet() }
+        binding?.btnClearMusic?.setOnClickListener { viewModel?.setMusic(null) }
         binding?.btnPublish?.setOnClickListener { publishStoryWithMusicPosition() }
     }
 
@@ -117,13 +127,7 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
 
         lifecycleScope.launch {
             viewModel?.selectedMusic?.collectLatest { track ->
-                track?.let {
-                    binding?.txtSong?.text = track.name
-                    binding?.txtSinger?.text = track.artistName
-                } ?: {
-                    binding?.txtSong?.text = getString(R.string.story_add_music)
-                    binding?.txtSinger?.text = "Khám phá gợi ý"
-                }
+                bindMusicToolbar(track)
                 bindMusicSticker(track)
             }
         }
@@ -222,7 +226,7 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
     }
 
     private fun bindPreview(uri: Uri, isVideo: Boolean) {
-        binding?.mediaTransformContainer?.resetTransform()
+        binding?.mediaTransformContainer?.clearMediaSize()
         binding?.imgPreview?.isVisible = !isVideo
         binding?.videoPreview?.isVisible = isVideo
         if (isVideo) {
@@ -233,18 +237,60 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
             binding?.videoPreview?.player = previewPlayer
         } else {
             releasePreviewPlayer()
-            context?.loadImg(uri.toString(), binding?.imgPreview!!, R.drawable.bg_grey_equal)
+            loadPreviewImage(uri)
         }
+    }
+
+    private fun loadPreviewImage(uri: Uri) {
+        val imageView = binding?.imgPreview ?: return
+        Glide.with(this)
+            .load(uri)
+            .placeholder(R.drawable.bg_grey_equal)
+            .error(R.drawable.bg_grey_equal)
+            .into(object : CustomViewTarget<ImageView, Drawable>(imageView) {
+                override fun onResourceReady(
+                    resource: Drawable,
+                    transition: Transition<in Drawable>?,
+                ) {
+                    view.setImageDrawable(resource)
+                    applyFitWidthTransform(resource.intrinsicWidth, resource.intrinsicHeight)
+                }
+
+                override fun onLoadFailed(errorDrawable: Drawable?) {
+                    view.setImageDrawable(errorDrawable)
+                }
+
+                override fun onResourceCleared(placeholder: Drawable?) {
+                    view.setImageDrawable(placeholder)
+                }
+            })
+    }
+
+    private fun applyFitWidthTransform(mediaWidth: Int, mediaHeight: Int) {
+        binding?.mediaTransformContainer?.configureMediaSize(mediaWidth, mediaHeight)
+        binding?.mediaTransformContainer?.resetToFitWidth()
     }
 
     private fun ensurePreviewPlayer() {
         if (previewPlayer != null) return
-        previewPlayer = ExoPlayer.Builder(requireContext()).build()
+        previewVideoSizeListener = object : Player.Listener {
+            override fun onVideoSizeChanged(videoSize: VideoSize) {
+                if (videoSize.width <= 0 || videoSize.height <= 0) return
+                applyFitWidthTransform(videoSize.width, videoSize.height)
+            }
+        }
+        previewPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
+            previewVideoSizeListener?.let { player.addListener(it) }
+        }
     }
 
     private fun releasePreviewPlayer() {
-        previewPlayer?.release()
+        previewPlayer?.let { player ->
+            previewVideoSizeListener?.let { player.removeListener(it) }
+            player.release()
+        }
         previewPlayer = null
+        previewVideoSizeListener = null
         binding?.videoPreview?.player = null
     }
 
@@ -279,6 +325,25 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
             musicStickerY = stickerY,
             mediaTransform = mediaTransform,
         )
+    }
+
+    private fun bindMusicToolbar(track: MusicTrackItem?) {
+        val b = binding ?: return
+        if (track == null) {
+            b.txtSong.text = getString(R.string.story_add_music)
+            b.txtSinger.text = "Khám phá gợi ý"
+            b.imgMusicThumb.setImageResource(R.drawable.ic_music)
+            b.imgMusicThumb.imageTintList = ColorStateList.valueOf(
+                ContextCompat.getColor(requireContext(), R.color.white),
+            )
+            b.btnClearMusic.isVisible = false
+            return
+        }
+        b.txtSong.text = track.name
+        b.txtSinger.text = track.artistName
+        b.imgMusicThumb.imageTintList = null
+        requireContext().loadImg(track.imageUrl, b.imgMusicThumb, R.drawable.bg_grey_equal)
+        b.btnClearMusic.isVisible = true
     }
 
     private fun bindMusicSticker(track: MusicTrackItem?) {

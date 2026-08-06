@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.FrameLayout
 import com.example.messageapp.model.StoryMediaTransform
 import kotlin.math.atan2
+import kotlin.math.min
 
 class StoryMediaTransformLayout @JvmOverloads constructor(
     context: Context,
@@ -27,13 +28,19 @@ class StoryMediaTransformLayout @JvmOverloads constructor(
     private var lastRotationDegrees = 0f
     private var isMultiTouch = false
 
+    private var mediaWidth = 0
+    private var mediaHeight = 0
+    private var minScale = DEFAULT_MIN_SCALE
+    private var maxScale = DEFAULT_MAX_SCALE
+    private var fitWidthScale = 1f
+
     var isTransformEnabled = true
 
     private val scaleDetector = ScaleGestureDetector(
         context,
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {
-                currentScale = (currentScale * detector.scaleFactor).coerceIn(MIN_SCALE, MAX_SCALE)
+                currentScale = (currentScale * detector.scaleFactor).coerceIn(minScale, maxScale)
                 applyTransform()
                 return true
             }
@@ -43,6 +50,8 @@ class StoryMediaTransformLayout @JvmOverloads constructor(
     init {
         isClickable = true
         isFocusable = true
+        clipChildren = false
+        clipToPadding = false
     }
 
     override fun onFinishInflate() {
@@ -52,8 +61,43 @@ class StoryMediaTransformLayout @JvmOverloads constructor(
         }
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (mediaWidth > 0 && mediaHeight > 0) {
+            updateScaleLimits()
+        }
+    }
+
+    fun clearMediaSize() {
+        mediaWidth = 0
+        mediaHeight = 0
+        minScale = DEFAULT_MIN_SCALE
+        maxScale = DEFAULT_MAX_SCALE
+        fitWidthScale = 1f
+    }
+
+    fun configureMediaSize(width: Int, height: Int) {
+        if (width <= 0 || height <= 0) return
+        mediaWidth = width
+        mediaHeight = height
+        updateScaleLimits()
+    }
+
+    fun resetToFitWidth() {
+        if (mediaWidth > 0 && mediaHeight > 0) {
+            updateScaleLimits()
+            currentScale = fitWidthScale
+        } else {
+            currentScale = 1f
+        }
+        currentRotation = 0f
+        translationX = 0f
+        translationY = 0f
+        applyTransform()
+    }
+
     fun resetTransform() {
-        applyTransformState(StoryMediaTransform.Default)
+        resetToFitWidth()
     }
 
     fun captureTransformState(): StoryMediaTransform {
@@ -68,7 +112,7 @@ class StoryMediaTransformLayout @JvmOverloads constructor(
     }
 
     fun applyTransformState(state: StoryMediaTransform) {
-        currentScale = state.scale.coerceIn(MIN_SCALE, MAX_SCALE)
+        currentScale = state.scale.coerceIn(minScale, maxScale)
         currentRotation = state.rotation
         if (width == 0 || height == 0) {
             post { applyTransformState(state) }
@@ -127,6 +171,24 @@ class StoryMediaTransformLayout @JvmOverloads constructor(
         return true
     }
 
+    private fun updateScaleLimits() {
+        val containerW = width.toFloat()
+        val containerH = height.toFloat()
+        if (containerW <= 0f || containerH <= 0f || mediaWidth <= 0 || mediaHeight <= 0) {
+            return
+        }
+
+        val imageW = mediaWidth.toFloat()
+        val imageH = mediaHeight.toFloat()
+        val fitCenterScale = min(containerW / imageW, containerH / imageH)
+        val fitWidthAbsoluteScale = containerW / imageW
+
+        fitWidthScale = (fitWidthAbsoluteScale / fitCenterScale).coerceAtLeast(1f)
+        // fitCenter base: zooming out only shrinks the full image (letterbox), never crops top/bottom.
+        minScale = DEFAULT_MIN_SCALE
+        maxScale = fitWidthScale * DEFAULT_MAX_SCALE
+    }
+
     private fun applyTransform() {
         val target = transformTarget ?: return
         if (target.width == 0 || target.height == 0) {
@@ -149,7 +211,7 @@ class StoryMediaTransformLayout @JvmOverloads constructor(
     }
 
     companion object {
-        private const val MIN_SCALE = 0.4f
-        private const val MAX_SCALE = 5f
+        private const val DEFAULT_MIN_SCALE = 0.1f
+        private const val DEFAULT_MAX_SCALE = 5f
     }
 }

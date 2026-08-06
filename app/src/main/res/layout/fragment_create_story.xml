@@ -87,24 +87,28 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:clipChildren="false">
+                android:clipChildren="false"
+                android:clipToPadding="false">
 
                 <com.example.messageapp.custom.StoryMediaTransformLayout
                     android:id="@+id/mediaTransformContainer"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="match_parent"
+                    android:clipChildren="false"
+                    android:clipToPadding="false">
 
                     <FrameLayout
                         android:id="@+id/mediaTransformWrapper"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent">
+                        android:layout_height="match_parent"
+                        android:clipChildren="false">
 
                         <ImageView
                             android:id="@+id/imgPreview"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:importantForAccessibility="no"
-                            android:scaleType="centerCrop"
+                            android:scaleType="fitCenter"
                             android:visibility="gone" />
 
                         <androidx.media3.ui.PlayerView
@@ -112,7 +116,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:visibility="gone"
-                            app:resize_mode="zoom"
+                            app:resize_mode="fit"
                             app:show_buffering="when_playing"
                             app:use_controller="false" />
                     </FrameLayout>
@@ -162,12 +166,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content">
 
-                        <ImageView
-                            android:src="@drawable/ic_music"
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/imgMusicThumb"
                             android:layout_width="30dp"
                             android:layout_height="30dp"
                             android:layout_marginEnd="10dp"
-                            app:tint="@color/white"/>
+                            android:src="@drawable/ic_music"
+                            app:civ_circle_background_color="@android:color/transparent"
+                            app:tint="@color/white" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -199,6 +205,19 @@
                         <View
                             android:layout_width="50dp"
                             android:layout_height="1dp"/>
+
+                        <ImageView
+                            android:id="@+id/btnClearMusic"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:clickable="true"
+                            android:contentDescription="@string/story_remove_music"
+                            android:focusable="true"
+                            android:padding="6dp"
+                            android:src="@drawable/ic_close"
+                            android:visibility="gone"
+                            app:tint="@color/white"
+                            tools:visibility="visible" />
                     </LinearLayout>
                 </FrameLayout>
             </FrameLayout>

@@ -24,23 +24,5 @@
             android:layout_marginTop="8dp"
             android:layout_weight="1"
             tools:listitem="@layout/item_story_music" />
-
-        <TextView
-            android:id="@+id/btnLoadMore"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:padding="12dp"
-            android:text="@string/story_load_more_music"
-            android:textColor="@color/color_icon_amber" />
-
-        <TextView
-            android:id="@+id/btnRemoveMusic"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:padding="12dp"
-            android:text="@string/story_remove_music"
-            android:textColor="@color/text_secondary" />
     </LinearLayout>
 </layout>
