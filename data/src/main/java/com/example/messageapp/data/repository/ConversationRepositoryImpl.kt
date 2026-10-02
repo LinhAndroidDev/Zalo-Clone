@@ -18,7 +18,7 @@ class ConversationRepositoryImpl @Inject constructor() : ConversationRepository 
             userId = userId,
             success = { snapshot ->
                 val list = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(com.example.messageapp.data.firestore.Conversation::class.java)
+                    com.example.messageapp.data.firestore.Conversation.fromSnapshot(doc)
                         ?.let { EntityMapper.toDomain(it) }
                 }.orEmpty()
                 trySend(list)

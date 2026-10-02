@@ -1190,7 +1190,7 @@ object FireBaseInstance {
             .document(userId)
             .get()
             .addOnSuccessListener { result ->
-                val conversation = result.toObject(Conversation::class.java)
+                val conversation = Conversation.fromSnapshot(result)
                 conversation?.let { success.invoke(it) }
             }
     }
@@ -1206,7 +1206,7 @@ object FireBaseInstance {
             .document(userId)
             .addSnapshotListener { value, _ ->
                 if (value != null) {
-                    val conversation = value.toObject(Conversation::class.java)
+                    val conversation = Conversation.fromSnapshot(value)
                     conversation?.let { success.invoke(it) }
                 }
             }
@@ -1243,7 +1243,7 @@ object FireBaseInstance {
                 if (value != null) {
                     var num = 0
                     value.forEach { document ->
-                        val conversation = document.toObject(Conversation::class.java)
+                        val conversation = Conversation.fromSnapshot(document) ?: return@forEach
                         num += conversation.numberUnSeen
                     }
                     number.invoke(num)

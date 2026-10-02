@@ -1,6 +1,7 @@
 package com.example.messageapp.data.firestore
 
 import android.os.Parcelable
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.PropertyName
 import kotlinx.parcelize.Parcelize
 
@@ -33,6 +34,35 @@ data class Conversation(
 
         fun looksLikeGroupRoomId(friendId: String): Boolean =
             friendId.isNotBlank() && GROUP_THREAD_ROOM_ID.matches(friendId)
+
+        /** Firestore docs may store [seen] as `"0"`/`"1"` (app) or [Boolean] (legacy/other clients). */
+        fun normalizeSeenField(value: Any?): String = when (value) {
+            is Boolean -> if (value) "1" else "0"
+            is String -> when {
+                value == "1" || value.equals("true", ignoreCase = true) -> "1"
+                else -> "0"
+            }
+            is Number -> if (value.toInt() != 0) "1" else "0"
+            else -> "0"
+        }
+
+        fun fromSnapshot(doc: DocumentSnapshot): Conversation? {
+            val data = doc.data ?: return null
+            val friendId = data["friendId"]?.toString()?.takeIf { it.isNotBlank() } ?: doc.id
+            return Conversation(
+                friendId = friendId,
+                friendImage = data["friendImage"]?.toString().orEmpty(),
+                message = data["message"]?.toString().orEmpty(),
+                name = data["name"]?.toString().orEmpty(),
+                person = data["person"]?.toString().orEmpty(),
+                sender = data["sender"]?.toString().orEmpty(),
+                time = data["time"]?.toString().orEmpty(),
+                seen = normalizeSeenField(data["seen"]),
+                numberUnSeen = (data["numberUnSeen"] as? Number)?.toInt() ?: 0,
+                typing = data["typing"] as? Boolean ?: false,
+                isGroup = (data["isGroup"] as? Boolean ?: false) || looksLikeGroupRoomId(friendId),
+            )
+        }
     }
 
     /**
