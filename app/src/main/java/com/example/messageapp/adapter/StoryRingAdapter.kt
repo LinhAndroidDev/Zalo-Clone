@@ -10,6 +10,7 @@ import com.example.messageapp.utils.FileUtils.loadImg
 class StoryRingAdapter : BaseAdapter<StoryRingItem, ItemStoryRingBinding>() {
 
     var onMyStoryClick: ((StoryRingItem?) -> Unit)? = null
+    var onMyStoryAddClick: (() -> Unit)? = null
     var onFriendStoryClick: ((StoryRingItem) -> Unit)? = null
 
     override fun getLayout(): Int = R.layout.item_story_ring
@@ -40,6 +41,12 @@ class StoryRingAdapter : BaseAdapter<StoryRingItem, ItemStoryRingBinding>() {
                 if (unseenStyle) R.drawable.bg_circle_gradient_stroke_grey
                 else R.drawable.bg_circle_stroke_1,
             )
+        }
+
+        holder.v.imgAddBadge.setOnClickListener {
+            if (item.isMe) {
+                onMyStoryAddClick?.invoke()
+            }
         }
 
         holder.v.root.setOnClickListener {

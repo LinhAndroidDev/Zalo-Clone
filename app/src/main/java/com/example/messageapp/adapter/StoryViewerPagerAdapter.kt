@@ -4,20 +4,20 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.messageapp.databinding.ItemStoryPageBinding
-import com.example.messageapp.model.StoryViewerPage
+import com.example.messageapp.model.StoryItem
 
 class StoryViewerPagerAdapter : RecyclerView.Adapter<StoryViewerPagerAdapter.PageViewHolder>() {
 
-    private var pages: List<StoryViewerPage> = emptyList()
+    private var stories: List<StoryItem> = emptyList()
 
-    fun submitPages(newPages: List<StoryViewerPage>) {
-        pages = newPages
+    fun submitStories(newStories: List<StoryItem>) {
+        stories = newStories
         notifyDataSetChanged()
     }
 
-    fun pageAt(position: Int): StoryViewerPage? = pages.getOrNull(position)
+    fun storyAt(position: Int): StoryItem? = stories.getOrNull(position)
 
-    override fun getItemCount(): Int = pages.size
+    override fun getItemCount(): Int = stories.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
         val binding = ItemStoryPageBinding.inflate(

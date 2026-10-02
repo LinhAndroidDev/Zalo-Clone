@@ -5,6 +5,8 @@ import android.os.Handler
 import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.isVisible
@@ -16,6 +18,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.example.messageapp.R
+import com.example.messageapp.adapter.StoryRingPagerAdapter
 import com.example.messageapp.adapter.StoryViewerPagerAdapter
 import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetStoryCustomFriends
@@ -27,7 +30,7 @@ import com.example.messageapp.domain.model.StoryPrivacy
 import com.example.messageapp.model.MusicTrackItem
 import com.example.messageapp.model.StoryItem
 import com.example.messageapp.model.StoryMediaTransform
-import com.example.messageapp.model.StoryViewerPage
+import com.example.messageapp.model.StoryRingItem
 import com.example.messageapp.utils.FileUtils.loadImg
 import com.example.messageapp.utils.RelativeTimeFormatter
 import com.example.messageapp.viewmodel.StoryViewerViewModel
@@ -41,20 +44,27 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
     override val layoutResId: Int = R.layout.fragment_story_viewer
 
     private val handler = Handler(Looper.getMainLooper())
-    private val pagerAdapter = StoryViewerPagerAdapter()
+    private val ringPagerAdapter = StoryRingPagerAdapter()
+    private val progressSegmentBars = mutableListOf<ProgressBar>()
     private var videoPlayer: ExoPlayer? = null
     private var musicPlayer: ExoPlayer? = null
     private var segmentStartMs = 0L
     private var segmentElapsedOffsetMs = 0L
     private var isTimerPaused = false
     private var activeTimerStory: StoryItem? = null
-    private var activeTimerPageIndex = -1
+    private var activeTimerRingIndex = -1
+    private var activeTimerStoryIndex = -1
     private var progressRunnable: Runnable? = null
     private var touchDownY = 0f
     private var touchDownX = 0f
-    private var currentPageIndex = 0
+    private var currentRingIndex = 0
+    private var currentStoryIndex = 0
     private var pagerInitialized = false
-    private var suppressPageChange = false
+    private var suppressRingPageChange = false
+    private var progressBoundRingIndex = -1
+    private var lastRingsStructure: List<Pair<String, List<String>>> = emptyList()
+    private var pendingStoryIndex = -1
+    private var pendingInnerNav: Pair<Int, Int>? = null
 
     override fun initView() {
         super.initView()
@@ -62,27 +72,51 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         binding?.btnMore?.setOnClickListener { showOwnerMenu() }
         setupPager()
         setupTapZones()
-        setupSwipeDownToClose()
+        setupGestureNavigation()
         observeViewModel()
     }
 
     private fun setupPager() {
-        binding?.storyPager?.isUserInputEnabled = false
-        binding?.storyPager?.offscreenPageLimit = 1
-        binding?.storyPager?.adapter = pagerAdapter
-        binding?.storyPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+        ringPagerAdapter.onInnerPageSelected = { ringIndex, storyIndex ->
+            currentRingIndex = ringIndex
+            currentStoryIndex = storyIndex
+            onStorySelected(ringIndex, storyIndex)
+        }
+        ringPagerAdapter.onRingBound = { ringIndex, innerPager ->
+            val pending = pendingInnerNav
+            if (pending != null && pending.first == ringIndex) {
+                applyInnerNavigation(innerPager, pending.first, pending.second, smooth = false)
+            }
+        }
+        binding?.ringPager?.isUserInputEnabled = true
+        binding?.ringPager?.offscreenPageLimit = 1
+        binding?.ringPager?.adapter = ringPagerAdapter
+        binding?.ringPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
-                if (suppressPageChange) return
-                currentPageIndex = position
-                onStoryPageSelected(position)
+                if (suppressRingPageChange) return
+                onOuterRingSelected(position)
             }
         })
+    }
+
+    private fun onOuterRingSelected(ringIndex: Int) {
+        currentRingIndex = ringIndex
+        bindProgressSegments(ringIndex)
+        val lastStoryIndex = viewModel?.lastStoryIndexInRing(ringIndex) ?: 0
+        val storyIndex = if (pendingStoryIndex >= 0) {
+            val index = pendingStoryIndex.coerceIn(0, lastStoryIndex)
+            pendingStoryIndex = -1
+            index
+        } else {
+            currentStoryIndex.coerceIn(0, lastStoryIndex)
+        }
+        navigateInnerTo(ringIndex, storyIndex, smooth = false)
     }
 
     private fun observeViewModel() {
         lifecycleScope.launch {
             viewModel?.loading?.collectLatest { loading ->
-                if (loading == false && viewModel?.pages?.value.isNullOrEmpty()) {
+                if (loading == false && viewModel?.rings?.value.isNullOrEmpty()) {
                     if (!isAdded) return@collectLatest
                     Toast.makeText(
                         requireContext(),
@@ -95,23 +129,24 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         }
 
         lifecycleScope.launch {
-            viewModel?.pages?.collectLatest { pages ->
-                pagerAdapter.submitPages(pages)
-                if (pages.isEmpty()) return@collectLatest
-                if (!pagerInitialized) {
-                    val start = (viewModel?.resolveInitialPageIndex(pages) ?: 0)
-                        .coerceIn(0, pages.lastIndex)
-                    suppressPageChange = true
-                    currentPageIndex = start
-                    binding?.storyPager?.setCurrentItem(start, false)
-                    binding?.storyPager?.post {
-                        suppressPageChange = false
-                        pagerInitialized = true
-                        onStoryPageSelected(start)
+            viewModel?.rings?.collectLatest { rings ->
+                if (rings.isEmpty()) return@collectLatest
+                val structure = ringsStructure(rings)
+                val structureChanged = structure != lastRingsStructure
+                if (!structureChanged) return@collectLatest
+
+                lastRingsStructure = structure
+                submitRingsSafely(rings) {
+                    if (!isAdded) return@submitRingsSafely
+                    if (!pagerInitialized) {
+                        initializePagerPosition(rings)
+                    } else if (currentRingIndex > rings.lastIndex) {
+                        navigateToStory(
+                            rings.lastIndex,
+                            viewModel?.lastStoryIndexInRing(rings.lastIndex) ?: 0,
+                            smooth = false,
+                        )
                     }
-                } else if (currentPageIndex > pages.lastIndex) {
-                    currentPageIndex = pages.lastIndex
-                    binding?.storyPager?.setCurrentItem(currentPageIndex, false)
                 }
             }
         }
@@ -123,22 +158,85 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupTapZones() {
-        binding?.tapZoneLeft?.setOnClickListener { handleTapLeft() }
-        binding?.tapZoneRight?.setOnClickListener { goNextPage() }
+        setupSideTapZone(binding?.tapZoneLeft, isLeft = true)
+        setupSideTapZone(binding?.tapZoneRight, isLeft = false)
+        setupSwipeZone(binding?.tapOverlay?.getChildAt(1))
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupSwipeDownToClose() {
-        val swipeListener = View.OnTouchListener { _, event ->
+    private fun setupSideTapZone(zone: View?, isLeft: Boolean) {
+        zone ?: return
+        zone.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    touchDownY = event.y
-                    touchDownX = event.x
+                    touchDownX = event.rawX
+                    touchDownY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_UP -> handleStoryTouchEnd(event.rawX, event.rawY, isLeft)
+                else -> true
+            }
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupSwipeZone(zone: View?) {
+        zone ?: return
+        zone.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    touchDownX = event.rawX
+                    touchDownY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_UP -> handleRingSwipeEnd(event.rawX, event.rawY)
+                else -> true
+            }
+        }
+    }
+
+    private fun handleStoryTouchEnd(endX: Float, endY: Float, isLeft: Boolean): Boolean {
+        val deltaX = endX - touchDownX
+        val deltaY = endY - touchDownY
+        val absX = kotlin.math.abs(deltaX)
+        val absY = kotlin.math.abs(deltaY)
+        return when {
+            absX > SWIPE_HORIZONTAL_THRESHOLD_PX && absX > absY * 1.5f -> {
+                if (deltaX > 0) goNextRing() else goPreviousRing()
+                true
+            }
+            absX <= TAP_SLOP_PX && absY <= TAP_SLOP_PX -> {
+                if (isLeft) handleTapLeft() else goNextStory()
+                true
+            }
+            else -> true
+        }
+    }
+
+    private fun handleRingSwipeEnd(endX: Float, endY: Float): Boolean {
+        val deltaX = endX - touchDownX
+        val deltaY = endY - touchDownY
+        val absX = kotlin.math.abs(deltaX)
+        val absY = kotlin.math.abs(deltaY)
+        if (absX > SWIPE_HORIZONTAL_THRESHOLD_PX && absX > absY * 1.5f) {
+            if (deltaX > 0) goNextRing() else goPreviousRing()
+        }
+        return true
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupGestureNavigation() {
+        val swipeDownListener = View.OnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    touchDownY = event.rawY
+                    touchDownX = event.rawX
                 }
                 MotionEvent.ACTION_UP -> {
-                    val deltaY = event.y - touchDownY
-                    val deltaX = kotlin.math.abs(event.x - touchDownX)
+                    val deltaY = event.rawY - touchDownY
+                    val deltaX = kotlin.math.abs(event.rawX - touchDownX)
                     if (deltaY > SWIPE_DOWN_THRESHOLD_PX && deltaY > deltaX * 1.5f) {
                         closeViewer()
                         return@OnTouchListener true
@@ -147,47 +245,238 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
             }
             false
         }
-        binding?.storyPager?.setOnTouchListener(swipeListener)
-        binding?.tapOverlay?.setOnTouchListener(swipeListener)
-        binding?.headerScrim?.setOnTouchListener(swipeListener)
+        binding?.headerScrim?.setOnTouchListener(swipeDownListener)
+    }
+
+    private fun goNextRing() {
+        if (!isAdded) return
+        val vm = viewModel ?: return
+        if (vm.hasNextRing(currentRingIndex)) {
+            navigateToStory(currentRingIndex + 1, 0, smooth = true)
+        } else {
+            closeViewer()
+        }
+    }
+
+    private fun goPreviousRing() {
+        if (!isAdded) return
+        val vm = viewModel ?: return
+        if (vm.hasPreviousRing(currentRingIndex)) {
+            val prevRingIndex = currentRingIndex - 1
+            navigateToStory(prevRingIndex, vm.lastStoryIndexInRing(prevRingIndex), smooth = true)
+        } else {
+            restartCurrentStory()
+        }
     }
 
     private fun handleTapLeft() {
         if (!isAdded) return
-        val page = viewModel?.pageAt(currentPageIndex) ?: return
-        if (viewModel?.isFirstStoryInRing(page) == true) {
-            restartCurrentStory()
+        val vm = viewModel ?: return
+        if (!vm.isFirstStoryInRing(currentRingIndex, currentStoryIndex)) {
+            goPreviousStory()
+        } else if (vm.hasPreviousRing(currentRingIndex)) {
+            val prevRingIndex = currentRingIndex - 1
+            val prevStoryIndex = vm.lastStoryIndexInRing(prevRingIndex)
+            navigateToStory(prevRingIndex, prevStoryIndex, smooth = true)
         } else {
-            goPreviousPage()
+            restartCurrentStory()
         }
     }
 
-    private fun onStoryPageSelected(index: Int) {
+    private fun goNextStory() {
+        if (!isAdded || view == null) return
+        val vm = viewModel ?: return
+        if (!vm.isLastStoryInRing(currentRingIndex, currentStoryIndex)) {
+            navigateToStory(currentRingIndex, currentStoryIndex + 1, smooth = true)
+        } else if (vm.hasNextRing(currentRingIndex)) {
+            navigateToStory(currentRingIndex + 1, 0, smooth = true)
+        } else {
+            closeViewer()
+        }
+    }
+
+    private fun goPreviousStory() {
+        if (!isAdded || view == null || currentStoryIndex <= 0) return
+        navigateToStory(currentRingIndex, currentStoryIndex - 1, smooth = true)
+    }
+
+    private fun initializePagerPosition(rings: List<StoryRingItem>) {
+        val ringIndex = (viewModel?.resolveInitialRingIndex() ?: 0).coerceIn(0, rings.lastIndex)
+        val ring = rings[ringIndex]
+        val storyIndex = (viewModel?.resolveInitialStoryIndex(ring) ?: 0)
+            .coerceIn(0, ring.stories.lastIndex)
+        currentRingIndex = ringIndex
+        currentStoryIndex = storyIndex
+        pendingStoryIndex = storyIndex
+        pagerInitialized = true
+        suppressRingPageChange = false
+        val outerPager = binding?.ringPager ?: return
+        outerPager.post {
+            if (!isAdded) return@post
+            if (outerPager.currentItem == ringIndex) {
+                onOuterRingSelected(ringIndex)
+            } else {
+                outerPager.setCurrentItem(ringIndex, false)
+            }
+        }
+    }
+
+    private fun navigateToStory(ringIndex: Int, storyIndex: Int, smooth: Boolean) {
+        val vm = viewModel ?: return
+        val outerPager = binding?.ringPager ?: return
+        if (ringIndex !in vm.rings.value.indices) return
+        val ring = vm.ringAt(ringIndex) ?: return
+        val safeStoryIndex = storyIndex.coerceIn(0, ring.stories.lastIndex)
+        currentRingIndex = ringIndex
+        currentStoryIndex = safeStoryIndex
+        pendingStoryIndex = safeStoryIndex
+
+        if (outerPager.currentItem != ringIndex) {
+            suppressRingPageChange = false
+            outerPager.setCurrentItem(ringIndex, smooth)
+        } else {
+            navigateInnerTo(ringIndex, safeStoryIndex, smooth)
+        }
+    }
+
+    private fun navigateInnerTo(ringIndex: Int, storyIndex: Int, smooth: Boolean, retryCount: Int = 0) {
+        val outerPager = binding?.ringPager ?: return
         if (!isAdded) return
-        val page = viewModel?.pageAt(index) ?: return
-        stopPlayback()
-        viewModel?.markViewed(page.story)
-        bindHeader(page)
-        updateOwnerMenu(page)
-        binding?.storyPager?.post {
-            if (!isAdded || currentPageIndex != index) return@post
-            bindPageMedia(page.story)
-            bindPageMusic(page.story)
-            resetPageProgress(index)
-            startSegmentTimer(page.story, index)
+        pendingInnerNav = ringIndex to storyIndex
+
+        fun tryNavigate() {
+            val pending = pendingInnerNav
+            if (pending == null || pending.first != ringIndex || pending.second != storyIndex) {
+                return
+            }
+            val innerPager = ringPagerAdapter.findInnerPager(outerPager, ringIndex)
+            if (innerPager == null) {
+                if (retryCount < 15) {
+                    outerPager.post { navigateInnerTo(ringIndex, storyIndex, smooth, retryCount + 1) }
+                }
+                return
+            }
+            applyInnerNavigation(innerPager, ringIndex, storyIndex, smooth)
+        }
+
+        if (retryCount == 0) {
+            outerPager.post { tryNavigate() }
+        } else {
+            tryNavigate()
         }
     }
 
-    private fun bindHeader(page: StoryViewerPage) {
-        binding?.tvAuthorName?.text = page.ring.authorName
-        binding?.tvStoryTime?.text = context?.let {
-            RelativeTimeFormatter.format(it, page.story.createdAtMillis)
-        }.orEmpty()
-        context?.loadImg(page.ring.authorAvatarUrl, binding?.imgAuthor!!, R.drawable.bg_grey_equal)
+    private fun applyInnerNavigation(
+        innerPager: ViewPager2,
+        ringIndex: Int,
+        storyIndex: Int,
+        smooth: Boolean,
+    ) {
+        pendingInnerNav = null
+        currentStoryIndex = storyIndex
+        ringPagerAdapter.suppressInnerPageChange = true
+        innerPager.setCurrentItem(storyIndex, smooth)
+        ringPagerAdapter.suppressInnerPageChange = false
+        onStorySelected(ringIndex, storyIndex)
     }
 
-    private fun bindPageMusic(story: StoryItem) {
-        val pageBinding = pageBindingAt(currentPageIndex) ?: return
+    private fun ringsStructure(rings: List<StoryRingItem>): List<Pair<String, List<String>>> =
+        rings.map { ring -> ring.authorId to ring.stories.map { it.id } }
+
+    private fun submitRingsSafely(rings: List<StoryRingItem>, onCommitted: (() -> Unit)? = null) {
+        val pager = binding?.ringPager ?: return
+        val applySubmit: () -> Unit = submit@{
+            if (!isAdded) return@submit
+            val recyclerView = pager.getChildAt(0) as? RecyclerView
+            ringPagerAdapter.submitRings(rings, recyclerView) {
+                if (isAdded) onCommitted?.invoke()
+            }
+        }
+        pager.post {
+            val recyclerView = pager.getChildAt(0) as? RecyclerView
+            if (recyclerView != null &&
+                (recyclerView.isComputingLayout || recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE)
+            ) {
+                recyclerView.post(applySubmit)
+            } else {
+                applySubmit()
+            }
+        }
+    }
+
+    private fun onStorySelected(ringIndex: Int, storyIndex: Int) {
+        if (!isAdded) return
+        val vm = viewModel ?: return
+        val ring = vm.ringAt(ringIndex) ?: return
+        val story = vm.storyAt(ringIndex, storyIndex) ?: return
+        currentRingIndex = ringIndex
+        currentStoryIndex = storyIndex
+        bindProgressSegments(ringIndex)
+        stopPlayback()
+        bindHeader(ring, story)
+        updateOwnerMenu(story)
+        binding?.ringPager?.post {
+            if (!isAdded || currentRingIndex != ringIndex || currentStoryIndex != storyIndex) return@post
+            vm.markViewed(story)
+            bindPageMedia(ringIndex, storyIndex, story)
+            bindPageMusic(ringIndex, storyIndex, story)
+            resetPageProgress(storyIndex)
+            startSegmentTimer(story, ringIndex, storyIndex)
+        }
+    }
+
+    private fun bindHeader(ring: StoryRingItem, story: StoryItem) {
+        binding?.tvAuthorName?.text = ring.authorName
+        binding?.tvStoryTime?.text = context?.let {
+            RelativeTimeFormatter.format(it, story.createdAtMillis)
+        }.orEmpty()
+        context?.loadImg(ring.authorAvatarUrl, binding?.imgAuthor!!, R.drawable.bg_grey_equal)
+    }
+
+    private fun bindProgressSegments(ringIndex: Int) {
+        val ring = viewModel?.ringAt(ringIndex) ?: return
+        val container = binding?.storyProgressContainer ?: return
+        val storyCount = ring.stories.size
+        if (progressBoundRingIndex == ringIndex &&
+            progressSegmentBars.size == storyCount &&
+            progressSegmentBars.isNotEmpty()
+        ) {
+            updateProgressSegments(currentStoryIndex, 0)
+            return
+        }
+        container.removeAllViews()
+        progressSegmentBars.clear()
+        progressBoundRingIndex = ringIndex
+        container.isVisible = storyCount > 0
+        val segmentGap = (4 * resources.displayMetrics.density).toInt()
+        val segmentHeight = (3 * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        repeat(storyCount) { index ->
+            val bar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
+                layoutParams = LinearLayout.LayoutParams(0, segmentHeight, 1f).apply {
+                    if (index < storyCount - 1) marginEnd = segmentGap
+                }
+                max = 1000
+                progress = 0
+                progressDrawable = context.getDrawable(R.drawable.story_progress_segment)
+            }
+            container.addView(bar)
+            progressSegmentBars.add(bar)
+        }
+        updateProgressSegments(currentStoryIndex, 0)
+    }
+
+    private fun updateProgressSegments(activeIndex: Int, activeProgress: Int) {
+        progressSegmentBars.forEachIndexed { index, bar ->
+            bar.progress = when {
+                index < activeIndex -> 1000
+                index == activeIndex -> activeProgress
+                else -> 0
+            }
+        }
+    }
+
+    private fun bindPageMusic(ringIndex: Int, storyIndex: Int, story: StoryItem) {
+        val pageBinding = pageBindingAt(ringIndex, storyIndex) ?: return
         val sticker = pageBinding.musicSticker
         if (story.musicAudioUrl.isBlank() && story.musicImageUrl.isBlank()) {
             sticker.clearSticker()
@@ -208,17 +497,17 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         sticker.applyNormalizedPosition(story.musicStickerX, story.musicStickerY)
     }
 
-    private fun clearPageMusic(index: Int) {
-        pageBindingAt(index)?.musicSticker?.clearSticker()
+    private fun clearPageMusic(ringIndex: Int, storyIndex: Int) {
+        pageBindingAt(ringIndex, storyIndex)?.musicSticker?.clearSticker()
     }
 
-    private fun resetPageProgress(index: Int) {
-        if (index != currentPageIndex) return
-        binding?.progressStory?.progress = 0
+    private fun resetPageProgress(storyIndex: Int) {
+        if (storyIndex != currentStoryIndex) return
+        updateProgressSegments(storyIndex, 0)
     }
 
-    private fun bindPageMedia(story: StoryItem) {
-        val pageBinding = pageBindingAt(currentPageIndex) ?: return
+    private fun bindPageMedia(ringIndex: Int, storyIndex: Int, story: StoryItem) {
+        val pageBinding = pageBindingAt(ringIndex, storyIndex) ?: return
         pageBinding.mediaTransformContainer.isTransformEnabled = false
         pageBinding.mediaTransformContainer.applyTransformState(
             StoryMediaTransform(
@@ -251,10 +540,12 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         }
     }
 
-    private fun pageBindingAt(index: Int): ItemStoryPageBinding? {
-        val pager = binding?.storyPager ?: return null
-        val recyclerView = pager.getChildAt(0) as? RecyclerView ?: return null
-        val holder = recyclerView.findViewHolderForAdapterPosition(index) as? StoryViewerPagerAdapter.PageViewHolder
+    private fun pageBindingAt(ringIndex: Int, storyIndex: Int): ItemStoryPageBinding? {
+        val outerPager = binding?.ringPager ?: return null
+        val innerPager = ringPagerAdapter.findInnerPager(outerPager, ringIndex) ?: return null
+        val recyclerView = innerPager.getChildAt(0) as? RecyclerView ?: return null
+        val holder = recyclerView.findViewHolderForAdapterPosition(storyIndex)
+            as? StoryViewerPagerAdapter.PageViewHolder
         return holder?.binding
     }
 
@@ -264,7 +555,7 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
             player.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) {
-                        goNextPage()
+                        goNextStory()
                     }
                 }
             })
@@ -276,29 +567,31 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         musicPlayer = ExoPlayer.Builder(requireContext()).build()
     }
 
-    private fun startSegmentTimer(story: StoryItem, pageIndex: Int) {
+    private fun startSegmentTimer(story: StoryItem, ringIndex: Int, storyIndex: Int) {
         segmentElapsedOffsetMs = 0L
         isTimerPaused = false
         activeTimerStory = story
-        activeTimerPageIndex = pageIndex
+        activeTimerRingIndex = ringIndex
+        activeTimerStoryIndex = storyIndex
         segmentStartMs = System.currentTimeMillis()
-        postSegmentTimer(story, pageIndex)
+        postSegmentTimer(story, ringIndex, storyIndex)
     }
 
-    private fun postSegmentTimer(story: StoryItem, pageIndex: Int) {
+    private fun postSegmentTimer(story: StoryItem, ringIndex: Int, storyIndex: Int) {
         progressRunnable?.let { handler.removeCallbacks(it) }
         progressRunnable = if (story.mediaType == StoryMediaType.VIDEO) {
             object : Runnable {
                 override fun run() {
-                    if (!isAdded || view == null || currentPageIndex != pageIndex || isTimerPaused) return
+                    if (!isAdded || view == null || isTimerPaused) return
+                    if (currentRingIndex != ringIndex || currentStoryIndex != storyIndex) return
                     val elapsed = segmentElapsedMs()
                     val duration = minOf(
                         videoPlayer?.duration?.takeIf { it > 0 } ?: MAX_VIDEO_DURATION_MS,
                         MAX_VIDEO_DURATION_MS,
                     )
-                    updatePageProgress(pageIndex, elapsed, duration)
+                    updatePageProgress(storyIndex, elapsed, duration)
                     if (elapsed >= duration) {
-                        goNextPage()
+                        goNextStory()
                     } else {
                         handler.postDelayed(this, 32L)
                     }
@@ -307,11 +600,12 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         } else {
             object : Runnable {
                 override fun run() {
-                    if (!isAdded || view == null || currentPageIndex != pageIndex || isTimerPaused) return
+                    if (!isAdded || view == null || isTimerPaused) return
+                    if (currentRingIndex != ringIndex || currentStoryIndex != storyIndex) return
                     val elapsed = segmentElapsedMs()
-                    updatePageProgress(pageIndex, elapsed, IMAGE_DURATION_MS)
+                    updatePageProgress(storyIndex, elapsed, IMAGE_DURATION_MS)
                     if (elapsed >= IMAGE_DURATION_MS) {
-                        goNextPage()
+                        goNextStory()
                     } else {
                         handler.postDelayed(this, 32L)
                     }
@@ -336,60 +630,48 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
     private fun resumeStoryTimer() {
         if (!isTimerPaused) return
         isTimerPaused = false
-        val story = activeTimerStory ?: viewModel?.pageAt(currentPageIndex)?.story ?: return
-        val pageIndex = activeTimerPageIndex.takeIf { it >= 0 } ?: currentPageIndex
+        val story = activeTimerStory
+            ?: viewModel?.storyAt(currentRingIndex, currentStoryIndex)
+            ?: return
+        val ringIndex = activeTimerRingIndex.takeIf { it >= 0 } ?: currentRingIndex
+        val storyIndex = activeTimerStoryIndex.takeIf { it >= 0 } ?: currentStoryIndex
         segmentStartMs = System.currentTimeMillis()
         if (story.mediaType == StoryMediaType.VIDEO) {
             videoPlayer?.playWhenReady = true
         }
         musicPlayer?.playWhenReady = true
-        postSegmentTimer(story, pageIndex)
+        postSegmentTimer(story, ringIndex, storyIndex)
     }
 
-    private fun updatePageProgress(pageIndex: Int, elapsed: Long, duration: Long) {
-        if (pageIndex != currentPageIndex) return
-        binding?.progressStory?.progress =
-            ((elapsed.toFloat() / duration) * 1000).toInt().coerceIn(0, 1000)
+    private fun updatePageProgress(storyIndex: Int, elapsed: Long, duration: Long) {
+        if (storyIndex != currentStoryIndex) return
+        val progress = ((elapsed.toFloat() / duration) * 1000).toInt().coerceIn(0, 1000)
+        updateProgressSegments(storyIndex, progress)
     }
 
     private fun restartCurrentStory() {
         if (!isAdded) return
-        val page = viewModel?.pageAt(currentPageIndex) ?: return
+        val story = viewModel?.storyAt(currentRingIndex, currentStoryIndex) ?: return
         stopPlayback()
-        binding?.storyPager?.post {
+        binding?.ringPager?.post {
             if (!isAdded) return@post
-            restartPlayback(page)
+            restartPlayback(story)
         }
     }
 
-    private fun restartPlayback(page: StoryViewerPage) {
-        bindPageMedia(page.story)
-        bindPageMusic(page.story)
-        resetPageProgress(currentPageIndex)
-        if (page.story.mediaType == StoryMediaType.VIDEO) {
+    private fun restartPlayback(story: StoryItem) {
+        bindPageMedia(currentRingIndex, currentStoryIndex, story)
+        bindPageMusic(currentRingIndex, currentStoryIndex, story)
+        resetPageProgress(currentStoryIndex)
+        if (story.mediaType == StoryMediaType.VIDEO) {
             videoPlayer?.seekTo(0)
             videoPlayer?.playWhenReady = true
         }
-        if (page.story.musicAudioUrl.isNotBlank()) {
+        if (story.musicAudioUrl.isNotBlank()) {
             musicPlayer?.seekTo(0)
             musicPlayer?.playWhenReady = true
         }
-        startSegmentTimer(page.story, currentPageIndex)
-    }
-
-    private fun goNextPage() {
-        if (!isAdded || view == null) return
-        val lastIndex = viewModel?.pages?.value?.lastIndex ?: -1
-        if (currentPageIndex >= lastIndex) {
-            closeViewer()
-            return
-        }
-        binding?.storyPager?.setCurrentItem(currentPageIndex + 1, true)
-    }
-
-    private fun goPreviousPage() {
-        if (!isAdded || view == null || currentPageIndex <= 0) return
-        binding?.storyPager?.setCurrentItem(currentPageIndex - 1, true)
+        startSegmentTimer(story, currentRingIndex, currentStoryIndex)
     }
 
     private fun stopPlayback() {
@@ -398,34 +680,35 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         segmentElapsedOffsetMs = 0L
         isTimerPaused = false
         activeTimerStory = null
-        activeTimerPageIndex = -1
-        pageBindingAt(currentPageIndex)?.videoStory?.player = null
-        clearPageMusic(currentPageIndex)
+        activeTimerRingIndex = -1
+        activeTimerStoryIndex = -1
+        pageBindingAt(currentRingIndex, currentStoryIndex)?.videoStory?.player = null
+        clearPageMusic(currentRingIndex, currentStoryIndex)
         videoPlayer?.stop()
         videoPlayer?.clearMediaItems()
         musicPlayer?.stop()
         musicPlayer?.clearMediaItems()
     }
 
-    private fun updateOwnerMenu(page: StoryViewerPage) {
-        val isOwner = page.story.authorId == viewModel?.currentUserId()
+    private fun updateOwnerMenu(story: StoryItem) {
+        val isOwner = story.authorId == viewModel?.currentUserId()
         binding?.btnMore?.isVisible = isOwner
     }
 
     private fun showOwnerMenu() {
-        val page = viewModel?.pageAt(currentPageIndex) ?: return
-        if (page.story.authorId != viewModel?.currentUserId()) return
+        val story = viewModel?.storyAt(currentRingIndex, currentStoryIndex) ?: return
+        if (story.authorId != viewModel?.currentUserId()) return
         val popup = PopupMenu(requireContext(), binding?.btnMore!!)
         popup.menu.add(0, MENU_PRIVACY, 0, R.string.story_menu_privacy)
         popup.menu.add(0, MENU_DELETE, 1, R.string.story_menu_delete)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 MENU_PRIVACY -> {
-                    showPrivacySheet(page.story)
+                    showPrivacySheet(story)
                     true
                 }
                 MENU_DELETE -> {
-                    confirmDeleteStory(page.story)
+                    confirmDeleteStory(story)
                     true
                 }
                 else -> false
@@ -476,14 +759,17 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
             .setPositiveButton(R.string.diary_post_delete_confirm) { _, _ ->
                 viewModel?.deleteStory(
                     storyId = story.id,
-                    currentPageIndex = currentPageIndex,
-                    onSuccess = { newIndex ->
+                    currentRingIndex = currentRingIndex,
+                    currentStoryIndex = currentStoryIndex,
+                    onSuccess = { position ->
                         Toast.makeText(requireContext(), R.string.story_delete_success, Toast.LENGTH_SHORT).show()
-                        if (newIndex == null) {
+                        if (position == null) {
                             closeViewer()
                         } else {
-                            currentPageIndex = newIndex
-                            binding?.storyPager?.setCurrentItem(newIndex, false)
+                            val (newRingIndex, newStoryIndex) = position
+                            binding?.ringPager?.post {
+                                navigateToStory(newRingIndex, newStoryIndex, smooth = false)
+                            }
                         }
                     },
                     onFailure = { msg ->
@@ -516,7 +802,12 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         musicPlayer?.release()
         musicPlayer = null
         pagerInitialized = false
-        suppressPageChange = false
+        suppressRingPageChange = false
+        progressSegmentBars.clear()
+        progressBoundRingIndex = -1
+        lastRingsStructure = emptyList()
+        pendingStoryIndex = -1
+        pendingInnerNav = null
         super.onDestroyView()
     }
 
@@ -526,6 +817,8 @@ class StoryViewerFragment : BaseFragment<FragmentStoryViewerBinding, StoryViewer
         private const val VIDEO_VOLUME = 0.7f
         private const val MUSIC_VOLUME = 0.5f
         private const val SWIPE_DOWN_THRESHOLD_PX = 120f
+        private const val SWIPE_HORIZONTAL_THRESHOLD_PX = 80f
+        private const val TAP_SLOP_PX = 24f
         private const val MENU_PRIVACY = 1
         private const val MENU_DELETE = 2
     }

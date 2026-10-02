@@ -48,6 +48,7 @@ class DiaryFragment : BaseFragment<FragmentDiaryBinding, DiaryFragmentViewModel>
         binding?.rcvStoryRings?.layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         binding?.rcvStoryRings?.adapter = storyRingAdapter
+        storyRingAdapter.onMyStoryAddClick = { navigateToCreateStory() }
         storyRingAdapter.onMyStoryClick = { ring ->
             if (ring == null) {
                 navigateToCreateStory()

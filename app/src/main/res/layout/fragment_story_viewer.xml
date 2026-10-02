@@ -8,7 +8,7 @@
         android:background="@color/black">
 
         <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/storyPager"
+            android:id="@+id/ringPager"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
@@ -22,24 +22,14 @@
             android:focusable="true"
             android:importantForAccessibility="no" />
 
-        <ProgressBar
-            android:id="@+id/progressStory"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:layout_gravity="top"
-            android:layout_marginHorizontal="8dp"
-            android:layout_marginTop="12dp"
-            android:max="1000"
-            android:progress="0"
-            android:progressDrawable="@drawable/story_progress_bar" />
-
         <LinearLayout
             android:id="@+id/tapOverlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginTop="120dp"
             android:baselineAligned="false"
+            android:clickable="false"
+            android:focusable="false"
             android:orientation="horizontal">
 
             <View
@@ -145,5 +135,17 @@
                     app:tint="@color/white" />
             </LinearLayout>
         </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/storyProgressContainer"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_gravity="top"
+            android:layout_marginHorizontal="8dp"
+            android:layout_marginTop="12dp"
+            android:clickable="false"
+            android:elevation="10dp"
+            android:focusable="false"
+            android:orientation="horizontal" />
     </FrameLayout>
 </layout>
