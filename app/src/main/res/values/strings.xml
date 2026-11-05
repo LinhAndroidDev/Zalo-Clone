@@ -344,4 +344,13 @@
     <string name="presence_last_seen_minutes">Truy cập %1$d phút trước</string>
     <string name="presence_last_seen_hours">Truy cập %1$d giờ trước</string>
     <string name="presence_last_seen_days">Truy cập %1$d ngày trước</string>
+
+    <!-- Permission -->
+    <string name="permission_open_settings">Mở cài đặt</string>
+    <string name="permission_camera_denied">Cần quyền camera để sử dụng tính năng này. Vui lòng cấp quyền trong Cài đặt.</string>
+    <string name="permission_microphone_denied">Cần quyền micro để ghi âm. Vui lòng cấp quyền trong Cài đặt.</string>
+    <string name="permission_voice_call_denied">Cần quyền micro để thực hiện cuộc gọi. Vui lòng cấp quyền trong Cài đặt.</string>
+    <string name="permission_video_call_denied">Cần quyền camera và micro để gọi video. Vui lòng cấp quyền trong Cài đặt.</string>
+    <string name="permission_media_denied">Cần quyền truy cập thư viện để chọn ảnh hoặc video. Vui lòng cấp quyền trong Cài đặt.</string>
+    <string name="permission_notifications_denied">Cần quyền thông báo để nhận tin nhắn mới.</string>
 </resources>

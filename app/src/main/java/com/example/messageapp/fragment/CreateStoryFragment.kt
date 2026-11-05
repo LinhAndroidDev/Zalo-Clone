@@ -1,5 +1,7 @@
 package com.example.messageapp.fragment
 
+import com.example.messageapp.permission.AppPermission
+import com.example.messageapp.permission.PermissionRequester
 import android.content.res.ColorStateList
 import android.Manifest
 import android.content.pm.PackageManager
@@ -48,19 +50,7 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
     private var galleryAdapter: GalleryAdapter? = null
     private var previewVideoSizeListener: Player.Listener? = null
 
-    private val requestMediaPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
-            if (grants.values.any { it }) {
-                loadGalleryItems()
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    R.string.story_gallery_permission_required,
-                    Toast.LENGTH_LONG,
-                ).show()
-                findNavController().navigateUp()
-            }
-        }
+    private val permissionRequester = PermissionRequester(this)
 
     override fun initView() {
         super.initView()
@@ -150,27 +140,19 @@ class CreateStoryFragment : BaseFragment<FragmentCreateStoryBinding, CreateStory
     }
 
     private fun ensureGalleryPermissionAndLoad() {
-        if (hasMediaPermission()) {
-            loadGalleryItems()
-        } else {
-            requestMediaPermissionLauncher.launch(requiredMediaPermissions())
-        }
+        permissionRequester.request(
+            AppPermission.MEDIA_LIBRARY,
+            showDefaultDeniedUi = false,
+            onDenied = {
+                Toast.makeText(
+                    requireContext(),
+                    R.string.story_gallery_permission_required,
+                    Toast.LENGTH_LONG,
+                ).show()
+                findNavController().navigateUp()
+            },
+        ) { loadGalleryItems() }
     }
-
-    private fun hasMediaPermission(): Boolean =
-        requiredMediaPermissions().any {
-            ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
-        }
-
-    private fun requiredMediaPermissions(): Array<String> =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-            )
-        } else {
-            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
 
     private fun loadGalleryItems() {
         binding?.galleryLoading?.isVisible = true

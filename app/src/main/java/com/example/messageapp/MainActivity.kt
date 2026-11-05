@@ -16,6 +16,8 @@ import com.example.messageapp.fragment.SplashFragment
 import com.example.messageapp.model.Conversation
 import com.example.messageapp.model.DiaryNavigationTarget
 import com.example.messageapp.model.User
+import com.example.messageapp.permission.AppPermission
+import com.example.messageapp.permission.PermissionRequester
 import com.example.messageapp.service.ReceiverMessageService
 import com.example.messageapp.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private var isDoubleTab = false
     val mainViewModel: MainViewModel by viewModels()
     private var pendingDiaryTarget: DiaryNavigationTarget? = null
+    private val permissionRequester = PermissionRequester(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +38,8 @@ class MainActivity : AppCompatActivity() {
             ?.let { pendingDiaryTarget = DiaryNavigationTarget(postId = it) }
         initView()
         observeBadge()
+        // Chỉ xin quyền thông báo 1 lần ở đây (không tự hiện UI nếu bị từ chối)
+        permissionRequester.request(AppPermission.NOTIFICATIONS, showDefaultDeniedUi = false) {}
     }
 
     fun setPendingDiaryTarget(target: DiaryNavigationTarget) {

@@ -1,5 +1,7 @@
 package com.example.messageapp.bottom_sheet
 
+import com.example.messageapp.permission.AppPermission
+import com.example.messageapp.permission.PermissionRequester
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -20,14 +22,7 @@ class BottomSheetRecord : BottomSheetDialogFragment() {
     private var audioRecorder: AudioRecorderManager? = null
     var onRecordListener: ((String) -> Unit)? = null
     private var recordedFilePath: String? = null
-    private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
-                startRecord()
-            } else {
-                Toast.makeText(requireActivity(), "Bạn cần cấp quyền để ghi âm!", Toast.LENGTH_SHORT).show()
-            }
-        }
+    private val permissionRequester = PermissionRequester(this)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -67,11 +62,7 @@ class BottomSheetRecord : BottomSheetDialogFragment() {
     }
 
     private fun checkAndRequestPermission() {
-        if (ContextCompat.checkSelfPermission(requireActivity(), android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            startRecord()
-        } else {
-            requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-        }
+        permissionRequester.request(AppPermission.MICROPHONE) { startRecord() }
     }
 
     private fun startRecord() {

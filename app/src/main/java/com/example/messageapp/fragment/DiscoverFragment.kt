@@ -1,5 +1,7 @@
 package com.example.messageapp.fragment
 
+import com.example.messageapp.permission.AppPermission
+import com.example.messageapp.permission.PermissionRequester
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -22,19 +24,7 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
 
     private var galleryBottomSheet: GalleryBottomSheet? = null
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            showGalleryBottomSheet()
-        } else {
-            Snackbar.make(
-                binding?.root ?: return@registerForActivityResult,
-                "Cần quyền truy cập thư viện để xem ảnh và video",
-                Snackbar.LENGTH_LONG
-            ).show()
-        }
-    }
+    private val permissionRequester = PermissionRequester(this)
 
     override fun initView() {
         super.initView()
@@ -63,24 +53,7 @@ class DiscoverFragment : BaseFragment<FragmentDiscoverBinding, DiscoverFragmentV
     }
 
     private fun checkPermissionAndShowGallery() {
-        when {
-            ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                showGalleryBottomSheet()
-            }
-            shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE) -> {
-                Snackbar.make(
-                    binding?.root ?: return,
-                    "Cần quyền truy cập thư viện để xem ảnh và video",
-                    Snackbar.LENGTH_LONG
-                ).show()
-            }
-            else -> {
-                requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-            }
-        }
+        permissionRequester.request(AppPermission.MEDIA_LIBRARY) { showGalleryBottomSheet() }
     }
 
     private fun showGalleryBottomSheet() {

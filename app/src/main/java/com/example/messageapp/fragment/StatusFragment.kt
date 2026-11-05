@@ -1,5 +1,7 @@
 package com.example.messageapp.fragment
 
+import com.example.messageapp.permission.AppPermission
+import com.example.messageapp.permission.PermissionRequester
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -62,18 +64,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
             pendingCameraUri = null
         }
 
-    private val requestCameraPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
-                startCameraCaptureInternal()
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.status_camera_permission_denied),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
+    private val permissionRequester = PermissionRequester(this)
 
     override fun initView() {
         super.initView()
@@ -270,15 +261,7 @@ class StatusFragment : BaseFragment<FragmentStatusBinding, StatusFragmentViewMod
 
     private fun launchCamera() {
         if (attachedLink != null) return
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        } else {
-            startCameraCaptureInternal()
-        }
+        permissionRequester.request(AppPermission.CAMERA) { startCameraCaptureInternal() }
     }
 
     private fun startCameraCaptureInternal() {

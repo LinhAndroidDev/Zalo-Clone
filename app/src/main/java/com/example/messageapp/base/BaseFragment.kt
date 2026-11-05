@@ -27,22 +27,6 @@ abstract class BaseFragment<VB : ViewDataBinding, VM: BaseViewModel> : Fragment(
     protected var viewModel: VM? = null
     abstract val layoutResId: Int
 
-    private val requestPermissionLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            if (isGranted) {
-                // Permission is granted. Continue the action or workflow in your
-                // app.
-            } else {
-                // Explain to the user that the feature is unavailable because the
-                // feature requires a permission that the user has denied. At the
-                // same time, respect the user's decision. Don't link to system
-                // settings in an effort to convince the user to change their
-                // decision.
-            }
-        }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -61,27 +45,7 @@ abstract class BaseFragment<VB : ViewDataBinding, VM: BaseViewModel> : Fragment(
     override fun initView() {
         super.initView()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            checkPermissionApp(android.Manifest.permission.POST_NOTIFICATIONS)
-        }
-        checkPermissionApp(android.Manifest.permission.CAMERA)
         showError()
-    }
-
-    private fun checkPermissionApp(permission: String) {
-        when {
-            ContextCompat.checkSelfPermission(
-                requireActivity(),
-                permission
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                // You can use the API that requires the permission.
-            }
-            else -> {
-                // You can directly ask for the permission.
-                // The registered ActivityResultCallback gets the result of this request.
-                requestPermissionLauncher.launch(permission)
-            }
-        }
     }
 
     private fun showError() {
