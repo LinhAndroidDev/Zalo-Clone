@@ -14,6 +14,7 @@ import com.example.messageapp.base.BaseFragment
 import com.example.messageapp.bottom_sheet.BottomSheetOptionConversation
 import com.example.messageapp.databinding.FragmentHomeBinding
 import com.example.messageapp.model.Conversation
+import com.example.messageapp.permission.PermissionRequester
 import com.example.messageapp.service.ChatHeadService
 import com.example.messageapp.utils.AnimatorUtils
 import com.example.messageapp.utils.FirebaseAnalyticsInstance
@@ -38,9 +39,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
     private var updateJob: Job? = null
     private var menuOtherShowing = false
 
-    companion object {
-        private const val REQUEST_OVERLAY_PERMISSION = 1001
-    }
+    private val permissionRequester = PermissionRequester(this)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -72,34 +71,14 @@ class HomeFragment : BaseFragment<FragmentHomeBinding, HomeViewModel>() {
         }
 
         binding?.btnFindMoreFriend?.setOnClickListener {
-            if (android.provider.Settings.canDrawOverlays(requireActivity())) {
+            permissionRequester.requestOverlay {
                 activity?.startService(Intent(requireActivity(), ChatHeadService::class.java))
-            } else {
-                requestOverlayPermission()
             }
         }
 
         binding?.header?.showMenuOther = {
             menuOtherShowing = !menuOtherShowing
             binding?.menuOther?.showView(menuOtherShowing)
-        }
-    }
-
-    private fun requestOverlayPermission() {
-        val intent = Intent(
-            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:${activity?.packageName}")
-        )
-        startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_OVERLAY_PERMISSION &&
-            android.provider.Settings.canDrawOverlays(requireActivity())
-        ) {
-            activity?.startService(Intent(requireActivity(), ChatHeadService::class.java))
         }
     }
 

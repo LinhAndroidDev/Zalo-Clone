@@ -53,6 +53,37 @@ class PermissionRequester private constructor(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { grants -> onResult(grants) }
 
+    private var pendingOverlayGranted: (() -> Unit)? = null
+
+    private val overlayLauncher = caller.registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        val context = contextProvider() ?: return@registerForActivityResult
+        val onGranted = pendingOverlayGranted
+        pendingOverlayGranted = null
+        if (Settings.canDrawOverlays(context)) {
+            onGranted?.invoke()
+        } else {
+            Toast.makeText(context, R.string.permission_overlay_denied, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Quyền "hiển thị trên ứng dụng khác": là trang Cài đặt đặc biệt chứ không phải quyền runtime.
+     * Đã có quyền thì chạy luôn, chưa có thì mở trang cài đặt và chạy callback khi quay lại nếu đã được cấp.
+     */
+    fun requestOverlay(onGranted: () -> Unit) {
+        val context = contextProvider() ?: return
+        if (Settings.canDrawOverlays(context)) {
+            onGranted()
+            return
+        }
+        pendingOverlayGranted = onGranted
+        overlayLauncher.launch(
+            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+        )
+    }
+
     /**
      * @param onDenied gọi khi bị từ chối (tham số: có bị chặn vĩnh viễn không).
      * @param showDefaultDeniedUi true: tự hiển thị Toast/hộp thoại mở Cài đặt khi bị từ chối.
