@@ -26,4 +26,11 @@ data class Data(
     val commentId: String? = null,
     val replyId: String? = null,
     val reactionType: String? = null,
+    /** "call" cho push cuộc gọi đến; null với các push khác. */
+    val type: String? = null,
+    val callId: String? = null,
+    /** "voice" hoặc "video". */
+    val callType: String? = null,
+    val callerName: String? = null,
+    val callerAvatar: String? = null,
 )

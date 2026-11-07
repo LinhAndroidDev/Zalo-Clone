@@ -2,6 +2,7 @@ package com.example.messageapp.data.di
 
 import com.example.messageapp.data.legacy.PresenceManager
 import com.example.messageapp.data.repository.AuthRepositoryImpl
+import com.example.messageapp.data.repository.CallRepositoryImpl
 import com.example.messageapp.data.repository.ChatRepositoryImpl
 import com.example.messageapp.data.repository.ConversationRepositoryImpl
 import com.example.messageapp.data.repository.DiaryNotificationRepositoryImpl
@@ -17,6 +18,7 @@ import com.example.messageapp.data.repository.PresenceRepositoryImpl
 import com.example.messageapp.data.repository.UserRepositoryImpl
 import com.example.messageapp.data.session.SessionRepositoryImpl
 import com.example.messageapp.domain.repository.AuthRepository
+import com.example.messageapp.domain.repository.CallRepository
 import com.example.messageapp.domain.repository.ChatRepository
 import com.example.messageapp.domain.repository.ConversationRepository
 import com.example.messageapp.domain.repository.DiaryNotificationRepository
@@ -57,6 +59,7 @@ abstract class RepositoryModule {
     @Binds @Singleton abstract fun bindDiaryNotificationRepository(impl: DiaryNotificationRepositoryImpl): DiaryNotificationRepository
     @Binds @Singleton abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
     @Binds @Singleton abstract fun bindStickerRepository(impl: StickerRepositoryImpl): StickerRepository
+    @Binds @Singleton abstract fun bindCallRepository(impl: CallRepositoryImpl): CallRepository
 }
 
 @Module
