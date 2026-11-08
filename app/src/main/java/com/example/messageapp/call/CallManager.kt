@@ -66,6 +66,8 @@ class CallManager @Inject constructor(
     data class State(
         val phase: Phase = Phase.IDLE,
         val call: Call? = null,
+        /** true: mình là người gọi; false: mình là người nhận. */
+        val isOutgoing: Boolean = false,
         val isMicOn: Boolean = true,
         val isCameraOn: Boolean = false,
         val isSpeakerOn: Boolean = false,
@@ -118,6 +120,7 @@ class CallManager @Inject constructor(
         answerApplied = false
         _state.value = State(
             phase = Phase.OUTGOING,
+            isOutgoing = true,
             call = Call(calleeId = calleeId, calleeName = calleeName, calleeAvatar = calleeAvatar, type = type),
             isCameraOn = video,
             isSpeakerOn = video,

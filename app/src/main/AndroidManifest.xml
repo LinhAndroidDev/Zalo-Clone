@@ -57,6 +57,15 @@
             android:name=".PersonalActivity"
             android:exported="false" />
         <activity
+            android:name=".call.CallActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.MessageApp.Call" />
+        <activity
             android:name=".QRCodeActivity"
             android:exported="false" />
         <activity
