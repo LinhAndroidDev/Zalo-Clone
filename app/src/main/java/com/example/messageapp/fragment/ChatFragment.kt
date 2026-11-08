@@ -153,6 +153,12 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     }
 
     private val mCallBackClickItem = object : ChatAdapter.CallBackClickItem {
+        override fun onCallLogClick(message: Message) {
+            val cvt = conversation ?: return
+            val type = if (message.callType == "video") CallType.VIDEO else CallType.VOICE
+            startCall(cvt, type)
+        }
+
         override fun onSenderLongClick(data: Pair<View, Message>) {
             showPopupOption(data.first, data.second)
         }

@@ -1,5 +1,7 @@
 package com.example.messageapp.data.legacy
 
+import com.example.messageapp.data.firestore.Message
+import com.example.messageapp.data.firestore.TypeMessage
 import com.example.messageapp.data.remote.ApiClient
 import com.example.messageapp.data.remote.Token
 import com.example.messageapp.data.remote.request.AndroidConfig
@@ -14,6 +16,8 @@ import com.example.messageapp.domain.model.CallType
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -125,6 +129,69 @@ class CallFirestore @Inject constructor() {
         return false
     }
 
+    /**
+     * Ghi nhật ký cuộc gọi vào chat 1-1: tin nhắn SYSTEM (systemEvent "call") + cập nhật dòng hội thoại
+     * của hai bên. KHÔNG gửi push chat (người nhận đã được báo bằng push cuộc gọi).
+     */
+    suspend fun saveCallLog(call: Call, status: CallStatus, durationSec: Long) {
+        val time = DateUtils.getTimeCurrent()
+        val threadId = listOf(call.callerId, call.calleeId).sorted().toString()
+        val typeLabel = if (call.type == CallType.VIDEO) "video" else "thoại"
+        val summary = "Cuộc gọi $typeLabel"
+
+        db.collection(PATH_MESSAGE).document(threadId).collection(PATH_CHAT).document(time).set(
+            Message(
+                message = summary,
+                receiver = call.calleeId,
+                sender = call.callerId,
+                time = time,
+                type = TypeMessage.SYSTEM.rawValue,
+                systemEvent = EVENT_CALL,
+                callId = call.callId,
+                callType = call.type.value,
+                callStatus = status.value,
+                callDurationSec = durationSec,
+            )
+        ).await()
+
+        val unanswered = status == CallStatus.MISSED || status == CallStatus.CANCELLED || status == CallStatus.BUSY
+        val callerPreview = when (status) {
+            CallStatus.ENDED -> summary
+            CallStatus.REJECTED -> "Cuộc gọi $typeLabel bị từ chối"
+            else -> "Cuộc gọi $typeLabel không được trả lời"
+        }
+        val calleePreview = when (status) {
+            CallStatus.ENDED -> summary
+            CallStatus.REJECTED -> "Bạn đã từ chối cuộc gọi $typeLabel"
+            else -> "Cuộc gọi $typeLabel nhỡ"
+        }
+        // merge: không ghi đè các trường khác của dòng hội thoại (seen, typing...).
+        db.collection("Conversation${call.callerId}").document(call.calleeId).set(
+            mapOf(
+                "friendId" to call.calleeId,
+                "friendImage" to call.calleeAvatar,
+                "name" to call.calleeName,
+                "person" to "Bạn",
+                "sender" to call.callerId,
+                "message" to callerPreview,
+                "time" to time,
+            ),
+            SetOptions.merge(),
+        ).await()
+        val calleeFields = mutableMapOf<String, Any>(
+            "friendId" to call.callerId,
+            "friendImage" to call.callerAvatar,
+            "name" to call.callerName,
+            "person" to call.callerName,
+            "sender" to call.callerId,
+            "message" to calleePreview,
+            "time" to time,
+        )
+        if (unanswered) calleeFields["numberUnSeen"] = FieldValue.increment(1)
+        db.collection("Conversation${call.calleeId}").document(call.callerId)
+            .set(calleeFields, SetOptions.merge()).await()
+    }
+
     /** Gửi push FCM (data-only) báo cuộc gọi đến, dùng lại cơ chế gửi push hiện có. */
     suspend fun notifyIncomingCall(call: Call) {
         val token = db.collection(PATH_TOKEN).document(call.calleeId).get().await()
@@ -220,6 +287,9 @@ class CallFirestore @Inject constructor() {
     companion object {
         const val PATH_CALLS = "calls"
         const val PATH_TOKEN = "Tokens"
+        const val EVENT_CALL = "call"
+        private const val PATH_MESSAGE = "messages" // trùng FireBaseInstance.PATH_MESSAGE
+        private const val PATH_CHAT = "chats" // trùng FireBaseInstance.PATH_CHAT
         const val PUSH_TYPE_CALL = "call"
         const val RINGING_TIMEOUT_MS = 60_000L
         const val ACCEPTED_MAX_AGE_MS = 6 * 60 * 60 * 1000L

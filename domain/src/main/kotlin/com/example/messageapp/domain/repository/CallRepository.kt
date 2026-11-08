@@ -29,6 +29,12 @@ interface CallRepository {
     /** User đang có cuộc gọi khác (đổ chuông hoặc đang gọi) hay không. */
     suspend fun isUserBusy(userId: String): Boolean
 
+    /**
+     * Ghi nhật ký cuộc gọi vào đoạn chat 1-1 giữa caller và callee (tin nhắn hệ thống kèm
+     * thông tin cuộc gọi) và cập nhật dòng hội thoại của cả hai bên.
+     */
+    suspend fun saveCallLog(call: Call, status: CallStatus, durationSec: Long): Result<Unit>
+
     /** Gửi push FCM báo cuộc gọi đến cho callee. */
     suspend fun notifyIncomingCall(call: Call): Result<Unit>
 }

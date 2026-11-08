@@ -14,6 +14,7 @@ import com.example.messageapp.domain.usecase.call.CallException
 import com.example.messageapp.domain.usecase.call.GetCallUseCase
 import com.example.messageapp.domain.usecase.call.ObserveCallUseCase
 import com.example.messageapp.domain.usecase.call.ObserveIceCandidatesUseCase
+import com.example.messageapp.domain.usecase.call.SaveCallLogUseCase
 import com.example.messageapp.domain.usecase.call.StartCallUseCase
 import com.example.messageapp.domain.usecase.call.UpdateCallStatusUseCase
 import com.example.messageapp.service.CallNotifier
@@ -57,6 +58,7 @@ class CallManager @Inject constructor(
     private val updateCallStatusUseCase: UpdateCallStatusUseCase,
     private val addIceCandidateUseCase: AddIceCandidateUseCase,
     private val observeIceCandidatesUseCase: ObserveIceCandidatesUseCase,
+    private val saveCallLogUseCase: SaveCallLogUseCase,
 ) {
     enum class Phase { IDLE, OUTGOING, INCOMING, CONNECTING, CONNECTED, ENDED }
 
@@ -423,6 +425,8 @@ class CallManager @Inject constructor(
 
         _state.value = s.copy(phase = Phase.ENDED, endReason = reason)
 
+        saveCallLogIfCaller(s, reason)
+
         if (writeStatus != null && id != null) {
             scope.launch { updateCallStatusUseCase(id, writeStatus) }
         }
@@ -432,6 +436,30 @@ class CallManager @Inject constructor(
                 activeCallId = null
                 _state.value = State()
             }
+        }
+    }
+
+    /**
+     * Chỉ NGƯỜI GỌI ghi nhật ký vào chat (một nguồn ghi duy nhất, tránh trùng tin nhắn).
+     * Không ghi khi chưa tạo được cuộc gọi (lỗi, không phải bạn bè).
+     */
+    private fun saveCallLogIfCaller(s: State, reason: EndReason) {
+        val call = s.call ?: return
+        if (!s.isOutgoing || call.callId.isBlank() || call.callerId.isBlank()) return
+        val status = when (reason) {
+            EndReason.LOCAL_HANGUP, EndReason.REMOTE_HANGUP, EndReason.CONNECTION_LOST -> CallStatus.ENDED
+            EndReason.CANCELLED -> CallStatus.CANCELLED
+            EndReason.MISSED -> CallStatus.MISSED
+            EndReason.REJECTED -> CallStatus.REJECTED
+            EndReason.BUSY -> CallStatus.BUSY
+            EndReason.NOT_FRIEND, EndReason.FAILED -> return
+        }
+        val durationSec = if (s.phase == Phase.CONNECTED && s.connectedAtElapsed > 0L) {
+            (SystemClock.elapsedRealtime() - s.connectedAtElapsed) / 1000
+        } else 0L
+        scope.launch {
+            saveCallLogUseCase(call, status, durationSec)
+                .onFailure { Log.e(TAG, "saveCallLog failed", it) }
         }
     }
 

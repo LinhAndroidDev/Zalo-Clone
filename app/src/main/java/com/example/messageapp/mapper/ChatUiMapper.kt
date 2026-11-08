@@ -41,6 +41,10 @@ object ChatUiMapper {
         systemActorName = message.systemActorName,
         systemTargetIds = ArrayList(message.systemTargetIds),
         systemTargetNames = ArrayList(message.systemTargetNames),
+        callId = message.callId,
+        callType = message.callType,
+        callStatus = message.callStatus,
+        callDurationSec = message.callDurationSec,
     )
 
     fun toDomain(message: Message): DomainMessage = DomainMessage(
@@ -63,6 +67,10 @@ object ChatUiMapper {
         systemActorName = message.systemActorName,
         systemTargetIds = message.systemTargetIds.toList(),
         systemTargetNames = message.systemTargetNames.toList(),
+        callId = message.callId,
+        callType = message.callType,
+        callStatus = message.callStatus,
+        callDurationSec = message.callDurationSec,
     )
 
     fun toUiList(messages: List<DomainMessage>): ArrayList<Message> =

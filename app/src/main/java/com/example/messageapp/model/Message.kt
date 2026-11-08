@@ -42,6 +42,13 @@ data class Message(
     val systemActorName: String = "",
     val systemTargetIds: ArrayList<String> = arrayListOf(),
     val systemTargetNames: ArrayList<String> = arrayListOf(),
+    /** Tin nhắn nhật ký cuộc gọi: callId khác rỗng. */
+    val callId: String = "",
+    /** voice | video */
+    val callType: String = "",
+    /** ended | missed | rejected | cancelled | busy */
+    val callStatus: String = "",
+    val callDurationSec: Long = 0L,
 ) : Parcelable
 
 enum class EmotionType(val firestoreKey: String) {

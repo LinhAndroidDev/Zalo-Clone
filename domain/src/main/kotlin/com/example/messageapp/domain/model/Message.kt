@@ -35,6 +35,10 @@ data class Message(
     val systemActorName: String = "",
     val systemTargetIds: List<String> = emptyList(),
     val systemTargetNames: List<String> = emptyList(),
+    val callId: String = "",
+    val callType: String = "",
+    val callStatus: String = "",
+    val callDurationSec: Long = 0L,
 )
 
 enum class EmotionType() {

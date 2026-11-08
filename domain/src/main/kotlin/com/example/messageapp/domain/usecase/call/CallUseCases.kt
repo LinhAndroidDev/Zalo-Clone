@@ -92,6 +92,12 @@ class UpdateCallStatusUseCase @Inject constructor(private val callRepository: Ca
         callRepository.updateStatus(callId, status)
 }
 
+/** Ghi tin nhắn nhật ký cuộc gọi vào chat (chỉ người gọi ghi để không bị trùng). */
+class SaveCallLogUseCase @Inject constructor(private val callRepository: CallRepository) {
+    suspend operator fun invoke(call: Call, status: CallStatus, durationSec: Long): Result<Unit> =
+        callRepository.saveCallLog(call, status, durationSec)
+}
+
 class AddIceCandidateUseCase @Inject constructor(private val callRepository: CallRepository) {
     suspend operator fun invoke(callId: String, fromCaller: Boolean, candidate: CallIceCandidate): Result<Unit> =
         callRepository.addIceCandidate(callId, fromCaller, candidate)

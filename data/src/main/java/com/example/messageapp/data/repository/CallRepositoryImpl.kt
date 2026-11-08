@@ -38,6 +38,9 @@ class CallRepositoryImpl @Inject constructor(
     override suspend fun isUserBusy(userId: String): Boolean =
         runCatchingCancellable { firestore.isUserBusy(userId) }.getOrDefault(false)
 
+    override suspend fun saveCallLog(call: Call, status: CallStatus, durationSec: Long) =
+        runCatchingCancellable { firestore.saveCallLog(call, status, durationSec) }
+
     override suspend fun notifyIncomingCall(call: Call) =
         runCatchingCancellable { firestore.notifyIncomingCall(call) }
 

@@ -379,6 +379,17 @@
     <string name="call_fsi_open_settings">Mở cài đặt</string>
     <string name="call_fsi_later">Để sau</string>
     <string name="call_notification_ongoing">Đang trong cuộc gọi</string>
+    <string name="call_log_voice">Cuộc gọi thoại</string>
+    <string name="call_log_video">Cuộc gọi video</string>
+    <string name="call_log_voice_missed">Cuộc gọi thoại nhỡ</string>
+    <string name="call_log_video_missed">Cuộc gọi video nhỡ</string>
+    <string name="call_log_no_answer">Không trả lời</string>
+    <string name="call_log_rejected_by_peer">Đối phương đã từ chối</string>
+    <string name="call_log_rejected_by_me">Bạn đã từ chối</string>
+    <string name="call_log_cancelled_by_me">Bạn đã hủy cuộc gọi</string>
+    <string name="call_log_busy">Đối phương đang bận</string>
+    <string name="call_log_ended">Cuộc gọi đã kết thúc</string>
+    <string name="call_log_tap_to_call_back">Chạm để gọi lại</string>
     <string name="call_cd_voice_call">Gọi thoại</string>
     <string name="call_cd_video_call">Gọi video</string>
     <string name="call_cd_mic">Micro</string>

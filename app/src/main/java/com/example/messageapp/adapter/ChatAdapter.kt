@@ -45,6 +45,7 @@ import androidx.core.graphics.drawable.toDrawable
 const val VIEW_SENDER = 0
 const val VIEW_RECEIVER = 1
 const val VIEW_SYSTEM = 2
+const val VIEW_CALL = 3
 
 data class ClickPhotoModel(
     val message: Message,
@@ -204,6 +205,13 @@ class ChatAdapter(
                 )
             }
 
+            VIEW_CALL -> {
+                CallLogViewHolder(
+                    LayoutInflater.from(parent.context)
+                        .inflate(R.layout.item_chat_call, parent, false),
+                )
+            }
+
             else -> {
                 ReceiverViewHolder(
                     DataBindingUtil.inflate(
@@ -219,6 +227,60 @@ class ChatAdapter(
 
     class SystemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvSystem: TextView = itemView.findViewById(R.id.tvSystem)
+    }
+
+    class CallLogViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val layout: View = itemView.findViewById(R.id.layoutCallLog)
+        val icon: ImageView = itemView.findViewById(R.id.imgCallLogIcon)
+        val title: TextView = itemView.findViewById(R.id.tvCallLogTitle)
+        val subtitle: TextView = itemView.findViewById(R.id.tvCallLogSubtitle)
+    }
+
+    /** Hiển thị nhật ký cuộc gọi; chạm để gọi lại cùng loại cuộc gọi. */
+    private fun bindCallLog(holder: CallLogViewHolder, message: Message) {
+        val isVideo = message.callType == "video"
+        val iAmCaller = message.sender == myUserId
+        val tapToCallBack = context.getString(R.string.call_log_tap_to_call_back)
+        val typeTitle = context.getString(if (isVideo) R.string.call_log_video else R.string.call_log_voice)
+        val missedTitle = context.getString(
+            if (isVideo) R.string.call_log_video_missed else R.string.call_log_voice_missed
+        )
+        var missed = false
+        val (title, subtitle) = when (message.callStatus) {
+            "ended" ->
+                if (message.callDurationSec > 0) {
+                    typeTitle to "%02d:%02d".format(message.callDurationSec / 60, message.callDurationSec % 60)
+                } else {
+                    context.getString(R.string.call_log_ended) to tapToCallBack
+                }
+            "rejected" -> {
+                missed = !iAmCaller
+                typeTitle to context.getString(
+                    if (iAmCaller) R.string.call_log_rejected_by_peer else R.string.call_log_rejected_by_me
+                )
+            }
+            "busy" -> {
+                missed = !iAmCaller
+                if (iAmCaller) typeTitle to context.getString(R.string.call_log_busy) else missedTitle to tapToCallBack
+            }
+            "cancelled" -> {
+                missed = !iAmCaller
+                if (iAmCaller) typeTitle to context.getString(R.string.call_log_cancelled_by_me)
+                else missedTitle to tapToCallBack
+            }
+            else -> { // missed
+                missed = !iAmCaller
+                if (iAmCaller) typeTitle to context.getString(R.string.call_log_no_answer)
+                else missedTitle to tapToCallBack
+            }
+        }
+        holder.title.text = title
+        holder.subtitle.text = subtitle
+        holder.icon.setImageResource(if (isVideo) R.drawable.ic_call_camera else R.drawable.ic_call_accept)
+        holder.icon.imageTintList = android.content.res.ColorStateList.valueOf(
+            ContextCompat.getColor(context, if (missed) R.color.color_error else R.color.color_primary)
+        )
+        holder.layout.setOnClickListener { mCallBack?.onCallLogClick(message) }
     }
 
     /**
@@ -315,6 +377,12 @@ class ChatAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val message = messages[position]
         when (holder.itemViewType) {
+            VIEW_CALL -> {
+                holder as CallLogViewHolder
+                bindCallLog(holder, message)
+                applyItemTopMargin(holder, position)
+            }
+
             VIEW_SYSTEM -> {
                 holder as SystemViewHolder
                 holder.tvSystem.text = GroupSystemMessageStyle.styledText(
@@ -960,6 +1028,7 @@ class ChatAdapter(
      */
     override fun getItemViewType(position: Int): Int {
         val msg = messages[position]
+        if (msg.callId.isNotBlank()) return VIEW_CALL
         if (isSystemMessage(msg)) return VIEW_SYSTEM
         return if (!isGroup) {
             if (msg.sender != friendId) VIEW_SENDER else VIEW_RECEIVER
@@ -1032,6 +1101,9 @@ class ChatAdapter(
         fun onPhotoLongClick(data: LongClickPhotoModel)
         fun onOptionMenuClick(msg: Message)
         fun onReplyQuoteClick(messageTime: String)
+
+        /** Chạm vào tin nhắn nhật ký cuộc gọi để gọi lại. */
+        fun onCallLogClick(message: Message) {}
     }
 
     /**
