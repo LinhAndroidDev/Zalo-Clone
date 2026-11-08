@@ -369,6 +369,8 @@
     <string name="call_end_not_friend">Chỉ có thể gọi cho bạn bè</string>
     <string name="call_end_failed">Không thể thực hiện cuộc gọi</string>
     <string name="call_end_connection_lost">Mất kết nối cuộc gọi</string>
+    <string name="call_cd_voice_call">Gọi thoại</string>
+    <string name="call_cd_video_call">Gọi video</string>
     <string name="call_cd_mic">Micro</string>
     <string name="call_cd_camera">Camera</string>
     <string name="call_cd_speaker">Loa ngoài</string>

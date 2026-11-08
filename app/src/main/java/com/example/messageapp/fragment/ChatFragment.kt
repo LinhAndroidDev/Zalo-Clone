@@ -4,6 +4,12 @@ package com.example.messageapp.fragment
  * Created by Nguyen Huu Linh in 2024/10/01
  */
 
+import com.example.messageapp.call.CallActivity
+import com.example.messageapp.call.CallManager
+import com.example.messageapp.domain.model.CallType
+import com.example.messageapp.permission.AppPermission
+import com.example.messageapp.permission.PermissionRequester
+import javax.inject.Inject
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.app.NotificationManager
@@ -99,6 +105,11 @@ import java.io.File
 
 @AndroidEntryPoint
 class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() {
+
+    @Inject
+    lateinit var callManager: CallManager
+
+    private val callPermissionRequester = PermissionRequester(this)
     override val layoutResId: Int = R.layout.fragment_chat
 
     private var conversation: Conversation? = null
@@ -280,12 +291,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
             if (cvt.isGroupThread()) {
                 binding?.header?.setFriendStatusVisible(false)
                 binding?.header?.setChatMenuVisible(true)
+                binding?.header?.setCallButtonsVisible(false)
                 binding?.header?.onChatMenuClick = { showGroupMenuPopup() }
                 setupMentionPicker()
             } else {
                 binding?.header?.setFriendStatusVisible(true)
                 binding?.header?.setChatMenuVisible(false)
+                binding?.header?.setCallButtonsVisible(true)
                 binding?.header?.onChatMenuClick = null
+                binding?.header?.onVoiceCallClick = { startCall(cvt, CallType.VOICE) }
+                binding?.header?.onVideoCallClick = { startCall(cvt, CallType.VIDEO) }
                 viewModel?.startObservingFriendPresence(cvt.friendId)
             }
             binding?.header?.showInfoFriend = if (cvt.isGroupThread()) {
@@ -520,6 +535,16 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
     }
 
     fun currentConversation(): Conversation? = conversation
+
+    /** Xin quyền (camera/micro) rồi bắt đầu cuộc gọi tới người bạn đang chat. */
+    private fun startCall(cvt: Conversation, type: CallType) {
+        if (cvt.isGroupThread() || cvt.friendId.isBlank()) return
+        val permission = if (type == CallType.VIDEO) AppPermission.VIDEO_CALL else AppPermission.VOICE_CALL
+        callPermissionRequester.request(permission) {
+            callManager.startCall(cvt.friendId, cvt.name, cvt.friendImage, type)
+            CallActivity.start(requireActivity())
+        }
+    }
 
     fun scrollToPinnedMessage(messageTime: String) {
         val index = chatAdapter?.indexOfMessageTime(messageTime) ?: -1

@@ -31,6 +31,8 @@ class CustomHeaderView @JvmOverloads constructor(
     var onDiaryNotificationClick: (() -> Unit)? = null
     var onAddStoryClick: (() -> Unit)? = null
     var onChatSearchClick: (() -> Unit)? = null
+    var onVoiceCallClick: (() -> Unit)? = null
+    var onVideoCallClick: (() -> Unit)? = null
 
     interface OnTypeSearchListener {
         fun callBackKeySearch(keySearch: String)
@@ -169,6 +171,14 @@ class CustomHeaderView @JvmOverloads constructor(
         binding?.viewChat?.btnChatSearch?.setOnClickListener {
             onChatSearchClick?.invoke()
         }
+
+        binding?.viewChat?.btnChatVoiceCall?.setOnClickListener {
+            onVoiceCallClick?.invoke()
+        }
+
+        binding?.viewChat?.btnChatVideoCall?.setOnClickListener {
+            onVideoCallClick?.invoke()
+        }
     }
 
     private fun hideAllViews() {
@@ -195,6 +205,12 @@ class CustomHeaderView @JvmOverloads constructor(
 
     fun setFriendStatusVisible(visible: Boolean) {
         binding?.viewChat?.tvFriendStatus?.isVisible = visible
+    }
+
+    /** Nút gọi thoại/video chỉ dành cho chat 1-1. */
+    fun setCallButtonsVisible(visible: Boolean) {
+        binding?.viewChat?.btnChatVoiceCall?.isVisible = visible
+        binding?.viewChat?.btnChatVideoCall?.isVisible = visible
     }
 
     fun setChatMenuVisible(visible: Boolean) {

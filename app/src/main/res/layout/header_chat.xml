@@ -58,12 +58,13 @@
         app:tint="@color/white" />
 
     <ImageView
-        android:id="@+id/btnChatContact"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:id="@+id/btnChatVoiceCall"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
         android:layout_marginStart="20dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_contact"
+        android:contentDescription="@string/call_cd_voice_call"
+        android:importantForAccessibility="yes"
+        android:src="@drawable/ic_call_accept"
         app:tint="@color/white" />
 
     <ImageView
@@ -71,7 +72,8 @@
         android:layout_width="25dp"
         android:layout_height="25dp"
         android:layout_marginStart="20dp"
-        android:importantForAccessibility="no"
+        android:contentDescription="@string/call_cd_video_call"
+        android:importantForAccessibility="yes"
         android:src="@drawable/ic_call_video"
         app:tint="@color/white" />
 
