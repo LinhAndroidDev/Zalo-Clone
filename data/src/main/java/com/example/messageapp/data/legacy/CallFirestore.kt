@@ -2,6 +2,7 @@ package com.example.messageapp.data.legacy
 
 import com.example.messageapp.data.remote.ApiClient
 import com.example.messageapp.data.remote.Token
+import com.example.messageapp.data.remote.request.AndroidConfig
 import com.example.messageapp.data.remote.request.Data
 import com.example.messageapp.data.remote.request.MessageRequest
 import com.example.messageapp.data.remote.request.NotificationData
@@ -144,6 +145,7 @@ class CallFirestore @Inject constructor() {
                     callerName = call.callerName,
                     callerAvatar = call.callerAvatar,
                 ),
+                android = AndroidConfig(priority = "high", ttl = "30s"),
             )
         )
         withContext(Dispatchers.IO) {

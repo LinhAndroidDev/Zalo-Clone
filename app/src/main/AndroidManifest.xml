@@ -87,6 +87,15 @@
         </service>
 
         <service
+            android:name=".service.CallService"
+            android:exported="false"
+            android:foregroundServiceType="microphone|camera" />
+
+        <receiver
+            android:name=".broadcast.CallActionReceiver"
+            android:exported="false" />
+
+        <service
             android:name=".service.ChatHeadService"
             android:exported="false"/>
 

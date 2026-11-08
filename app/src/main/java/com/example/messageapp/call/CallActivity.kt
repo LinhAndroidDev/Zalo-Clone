@@ -46,6 +46,7 @@ class CallActivity : AppCompatActivity() {
     private var remoteTrack: VideoTrack? = null
     private var localTrack: VideoTrack? = null
     private var renderersReleased = false
+    private var autoAccept = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,6 +74,7 @@ class CallActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent) {
         val callId = intent.getStringExtra(EXTRA_CALL_ID)
+        if (intent.getBooleanExtra(EXTRA_AUTO_ACCEPT, false)) autoAccept = true
         if (!callId.isNullOrBlank()) callManager.onIncomingCall(callId)
         // Nếu không có callId (gọi đi) thì CallManager đã ở trạng thái OUTGOING.
     }
@@ -90,11 +92,7 @@ class CallActivity : AppCompatActivity() {
     private fun initClicks() = with(binding) {
         btnEnd.setOnClickListener { callManager.endCall() }
         btnReject.setOnClickListener { callManager.rejectCall() }
-        btnAccept.setOnClickListener {
-            val permission =
-                if (callManager.state.value.isVideo) AppPermission.VIDEO_CALL else AppPermission.VOICE_CALL
-            permissionRequester.request(permission) { callManager.acceptCall() }
-        }
+        btnAccept.setOnClickListener { acceptWithPermission() }
         btnMic.setOnClickListener { callManager.toggleMic() }
         btnCamera.setOnClickListener { callManager.toggleCamera() }
         btnFlip.setOnClickListener { callManager.switchCamera() }
@@ -120,6 +118,10 @@ class CallActivity : AppCompatActivity() {
             return@with
         }
         seenActive = true
+        if (autoAccept && state.phase == Phase.INCOMING) {
+            autoAccept = false // người dùng bấm "Nghe" trên notification
+            acceptWithPermission()
+        }
         val call = state.call
         val peerName = if (state.isOutgoing) call?.calleeName else call?.callerName
         val peerAvatar = if (state.isOutgoing) call?.calleeAvatar else call?.callerAvatar
@@ -193,6 +195,12 @@ class CallActivity : AppCompatActivity() {
         }
     }
 
+    private fun acceptWithPermission() {
+        val permission =
+            if (callManager.state.value.isVideo) AppPermission.VIDEO_CALL else AppPermission.VOICE_CALL
+        permissionRequester.request(permission) { callManager.acceptCall() }
+    }
+
     private fun statusText(state: CallManager.State): String = when (state.phase) {
         Phase.OUTGOING -> getString(R.string.call_status_calling)
         Phase.INCOMING -> getString(
@@ -234,6 +242,7 @@ class CallActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_CALL_ID = "extra_call_id"
+        const val EXTRA_AUTO_ACCEPT = "extra_auto_accept"
         private const val NO_CALL_TIMEOUT_MS = 6_000L
 
         /** Mở màn hình cho cuộc gọi đi (CallManager.startCall đã được gọi trước đó). */

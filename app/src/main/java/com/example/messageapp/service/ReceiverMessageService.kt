@@ -7,12 +7,19 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.media.RingtoneManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
 import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.broadcast.NotificationReply
+import com.example.messageapp.call.CallActivity
+import com.example.messageapp.call.CallManager
+import com.example.messageapp.domain.repository.UserRepository
 import com.example.messageapp.domain.repository.GroupChatRepository
 import com.example.messageapp.domain.repository.SessionRepository
 import com.example.messageapp.domain.usecase.social.GetUserInfoUseCase
@@ -31,9 +38,16 @@ class ReceiverMessageService : FirebaseMessagingService() {
     @Inject lateinit var sessionRepository: SessionRepository
     @Inject lateinit var groupChatRepository: GroupChatRepository
     @Inject lateinit var getUserInfoUseCase: GetUserInfoUseCase
+    @Inject lateinit var userRepository: UserRepository
+    @Inject lateinit var callManager: CallManager
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
+        // Lưu lại token mới để vẫn nhận được push (tin nhắn, cuộc gọi đến).
+        if (sessionRepository.getStatusLoggedIn()) {
+            val userId = sessionRepository.getAuth()
+            if (userId.isNotBlank()) userRepository.saveFcmToken(userId, token)
+        }
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
@@ -43,6 +57,10 @@ class ReceiverMessageService : FirebaseMessagingService() {
             val data = remoteMessage.data
             if (data.isEmpty()) return
             Log.d(TAG, "Message data payload: $data")
+            if (data["type"] == TYPE_CALL) {
+                handleIncomingCallPush(data)
+                return
+            }
             val title = data["title"]
             val body = data["body"]
             val diaryNotificationType = data["diaryNotificationType"]?.trim().orEmpty()
@@ -120,6 +138,31 @@ class ReceiverMessageService : FirebaseMessagingService() {
                     },
                     onFailure = { Log.e(TAG, "getInfoUser failed: $it") },
                 )
+            }
+        }
+    }
+
+    /** Push cuộc gọi đến: app đang mở thì vào thẳng màn hình call, ngược lại hiện full-screen notification. */
+    private fun handleIncomingCallPush(data: Map<String, String>) {
+        val currentUserId = sessionRepository.getAuth().trim()
+        val callerId = data["senderId"]?.trim().orEmpty()
+        val recipientId = data["recipientUserId"]?.trim().orEmpty()
+        val callId = data["callId"]?.trim().orEmpty()
+        if (callId.isEmpty() || callerId == currentUserId ||
+            (recipientId.isNotEmpty() && recipientId != currentUserId)
+        ) return
+
+        val callerName = data["callerName"] ?: data["title"].orEmpty()
+        val isVideo = data["callType"] == "video"
+        Handler(Looper.getMainLooper()).post {
+            val appInForeground = ProcessLifecycleOwner.get().lifecycle.currentState
+                .isAtLeast(Lifecycle.State.STARTED)
+            if (appInForeground) {
+                startActivity(CallActivity.intentForIncoming(this, callId))
+            } else {
+                CallNotifier.showIncoming(this, callId, callerName, isVideo)
+                // Nạp cuộc gọi vào CallManager; nếu đã hủy/nhỡ sẽ tự gỡ notification.
+                callManager.onIncomingCall(callId)
             }
         }
     }
@@ -331,6 +374,7 @@ class ReceiverMessageService : FirebaseMessagingService() {
 
     companion object {
         private const val TAG = "MyFirebaseMsgService"
+        private const val TYPE_CALL = "call"
         const val KEY_REPLY_TEXT = "KEY_REPLY_TEXT"
         const val SENDER_ID = "SENDER_ID"
         const val GROUP_ID = "GROUP_ID"

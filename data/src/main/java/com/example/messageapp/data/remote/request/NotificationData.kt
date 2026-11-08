@@ -2,7 +2,15 @@ package com.example.messageapp.data.remote.request
 
 data class NotificationData(
     val token: String? = null,
-    val data: Data? = null
+    val data: Data? = null,
+    /** Cấu hình riêng cho Android (priority/ttl). null = mặc định của FCM. */
+    val android: AndroidConfig? = null,
+)
+
+/** priority "high" để push tới ngay cả khi máy ở Doze; ttl ví dụ "30s". */
+data class AndroidConfig(
+    val priority: String = "high",
+    val ttl: String? = null,
 )
 
 data class Data(

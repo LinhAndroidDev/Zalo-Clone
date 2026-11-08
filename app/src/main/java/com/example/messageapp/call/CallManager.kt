@@ -16,6 +16,8 @@ import com.example.messageapp.domain.usecase.call.ObserveCallUseCase
 import com.example.messageapp.domain.usecase.call.ObserveIceCandidatesUseCase
 import com.example.messageapp.domain.usecase.call.StartCallUseCase
 import com.example.messageapp.domain.usecase.call.UpdateCallStatusUseCase
+import com.example.messageapp.service.CallNotifier
+import com.example.messageapp.service.CallService
 import com.example.messageapp.webrtc.CallConfig
 import com.example.messageapp.webrtc.WebRtcClient
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -125,6 +127,7 @@ class CallManager @Inject constructor(
             isCameraOn = video,
             isSpeakerOn = video,
         )
+        CallService.start(context)
         sessionJob = scope.launch {
             try {
                 val c = newClient(video)
@@ -162,8 +165,12 @@ class CallManager @Inject constructor(
             val call = getCallUseCase(callId) ?: return@launch
             val myId = sessionRepository.getAuth()
             val stale = System.currentTimeMillis() - call.createdAt > CallConfig.INCOMING_STALE_MS
-            if (call.calleeId != myId || call.status != CallStatus.RINGING || stale) return@launch
+            if (call.calleeId != myId || call.status != CallStatus.RINGING || stale) {
+                CallNotifier.cancelIncoming(context)
+                return@launch
+            }
             if (_state.value.phase != Phase.IDLE) {
+                CallNotifier.cancelIncoming(context)
                 updateCallStatusUseCase(callId, CallStatus.BUSY)
                 return@launch
             }
@@ -193,6 +200,8 @@ class CallManager @Inject constructor(
             return
         }
         timeoutJob?.cancel()
+        CallNotifier.cancelIncoming(context)
+        CallService.start(context)
         _state.value = s.copy(phase = Phase.CONNECTING)
         sessionJob = scope.launch {
             try {
@@ -219,6 +228,20 @@ class CallManager @Inject constructor(
     fun rejectCall() {
         if (_state.value.phase != Phase.INCOMING) return
         finish(EndReason.REJECTED, CallStatus.REJECTED)
+    }
+
+    /**
+     * Từ chối cuộc gọi đến theo [callId] (nút trên notification, có thể khi process vừa khởi động).
+     * Gọi [onDone] sau khi đã ghi trạng thái REJECTED.
+     */
+    fun rejectIncoming(callId: String, onDone: () -> Unit = {}) {
+        scope.launch {
+            val s = _state.value
+            if (s.phase == Phase.INCOMING && s.call?.callId == callId) finish(EndReason.REJECTED)
+            if (callId.isNotBlank()) updateCallStatusUseCase(callId, CallStatus.REJECTED)
+            CallNotifier.cancelIncoming(context)
+            onDone()
+        }
     }
 
     /** Kết thúc/hủy cuộc gọi hiện tại tùy giai đoạn. */
@@ -387,6 +410,7 @@ class CallManager @Inject constructor(
         client = null
         audio.stop()
         pendingLocalCandidates.clear()
+        CallNotifier.cancelIncoming(context)
 
         _state.value = s.copy(phase = Phase.ENDED, endReason = reason)
 
