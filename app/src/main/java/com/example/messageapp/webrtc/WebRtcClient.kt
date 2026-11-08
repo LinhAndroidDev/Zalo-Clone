@@ -72,7 +72,13 @@ class WebRtcClient(
     fun start(withVideo: Boolean) {
         check(peerConnection == null) { "WebRtcClient already started" }
         initFactoryGlobally()
-        val audioModule = JavaAudioDeviceModule.builder(appContext).createAudioDeviceModule()
+        // Dùng khử echo/khử ồn bằng phần mềm của WebRTC (AEC3) thay cho phần cứng: AEC phần cứng trên
+        // nhiều máy hoạt động kém (echo, tiếng chói) và WebRTC sẽ tự tắt AEC phần mềm nếu AEC phần
+        // cứng được bật.
+        val audioModule = JavaAudioDeviceModule.builder(appContext)
+            .setUseHardwareAcousticEchoCanceler(false)
+            .setUseHardwareNoiseSuppressor(false)
+            .createAudioDeviceModule()
         val f = PeerConnectionFactory.builder()
             .setAudioDeviceModule(audioModule)
             .setVideoEncoderFactory(DefaultVideoEncoderFactory(eglBase.eglBaseContext, true, true))

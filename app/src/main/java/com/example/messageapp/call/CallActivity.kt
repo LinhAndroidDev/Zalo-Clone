@@ -51,6 +51,8 @@ class CallActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Phím âm lượng điều chỉnh âm lượng CUỘC GỌI (không phải media) trên màn hình này.
+        volumeControlStream = android.media.AudioManager.STREAM_VOICE_CALL
         setContentView(binding.root)
 
         initRenderers()
