@@ -10,6 +10,7 @@ import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.example.messageapp.MainActivity
 import com.example.messageapp.R
 import com.example.messageapp.broadcast.CallActionReceiver
 import com.example.messageapp.call.CallActivity
@@ -18,6 +19,7 @@ import com.example.messageapp.call.CallActivity
 object CallNotifier {
     private const val CHANNEL_INCOMING = "call_incoming"
     private const val CHANNEL_ONGOING = "call_ongoing"
+    private const val CHANNEL_MISSED = "call_missed"
     const val NOTIF_ID_INCOMING = 7001
     const val NOTIF_ID_ONGOING = 7002
 
@@ -45,6 +47,15 @@ object CallNotifier {
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
             nm.createNotificationChannel(channel)
+        }
+        if (nm.getNotificationChannel(CHANNEL_MISSED) == null) {
+            nm.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_MISSED,
+                    context.getString(R.string.call_channel_missed),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
+            )
         }
         if (nm.getNotificationChannel(CHANNEL_ONGOING) == null) {
             nm.createNotificationChannel(
@@ -105,6 +116,44 @@ object CallNotifier {
         manager(context).notify(NOTIF_ID_INCOMING, notification)
     }
 
+    /** Thông báo cuộc gọi nhỡ. Id theo callId nên push trùng chỉ thay thế, không nhân đôi. */
+    fun showMissed(context: Context, callId: String, callerName: String, isVideo: Boolean) {
+        ensureChannels(context)
+        val open = PendingIntent.getActivity(
+            context, 6,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val text = context.getString(
+            if (isVideo) R.string.call_missed_video else R.string.call_missed_voice
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_MISSED)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(callerName)
+            .setContentText(text)
+            .setCategory(NotificationCompat.CATEGORY_MISSED_CALL)
+            .setAutoCancel(true)
+            .setContentIntent(open)
+            .build()
+        manager(context).notify(MISSED_NOTIF_TAG, callId.hashCode(), notification)
+    }
+
+    /** Android 14+ có thể không cấp sẵn quyền hiện cuộc gọi toàn màn hình. */
+    fun canUseFullScreenIntent(context: Context): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+            manager(context).canUseFullScreenIntent()
+
+    fun openFullScreenIntentSettings(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            context.startActivity(
+                Intent(
+                    android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                    android.net.Uri.parse("package:${context.packageName}"),
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+    }
+
     fun cancelIncoming(context: Context) {
         manager(context).cancel(NOTIF_ID_INCOMING)
     }
@@ -136,4 +185,5 @@ object CallNotifier {
     }
 
     private const val CALL_NOTIFICATION_TIMEOUT_MS = 45_000L
+    private const val MISSED_NOTIF_TAG = "call_missed"
 }

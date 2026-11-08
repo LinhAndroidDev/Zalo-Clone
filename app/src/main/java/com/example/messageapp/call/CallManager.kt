@@ -167,6 +167,10 @@ class CallManager @Inject constructor(
             val stale = System.currentTimeMillis() - call.createdAt > CallConfig.INCOMING_STALE_MS
             if (call.calleeId != myId || call.status != CallStatus.RINGING || stale) {
                 CallNotifier.cancelIncoming(context)
+                val missedByCaller = call.status == CallStatus.CANCELLED || call.status == CallStatus.MISSED
+                if (call.calleeId == myId && missedByCaller && !stale) {
+                    CallNotifier.showMissed(context, call.callId, call.callerName, call.type == CallType.VIDEO)
+                }
                 return@launch
             }
             if (_state.value.phase != Phase.IDLE) {
@@ -411,6 +415,11 @@ class CallManager @Inject constructor(
         audio.stop()
         pendingLocalCandidates.clear()
         CallNotifier.cancelIncoming(context)
+        val unanswered = s.phase == Phase.INCOMING && !s.isOutgoing &&
+            (reason == EndReason.MISSED || reason == EndReason.CANCELLED)
+        if (unanswered && s.call != null) {
+            CallNotifier.showMissed(context, s.call.callId, s.call.callerName, s.isVideo)
+        }
 
         _state.value = s.copy(phase = Phase.ENDED, endReason = reason)
 

@@ -371,6 +371,13 @@
     <string name="call_end_connection_lost">Mất kết nối cuộc gọi</string>
     <string name="call_channel_incoming">Cuộc gọi đến</string>
     <string name="call_channel_ongoing">Cuộc gọi đang diễn ra</string>
+    <string name="call_channel_missed">Cuộc gọi nhỡ</string>
+    <string name="call_missed_voice">Cuộc gọi thoại nhỡ</string>
+    <string name="call_missed_video">Cuộc gọi video nhỡ</string>
+    <string name="call_fsi_title">Hiển thị cuộc gọi đến</string>
+    <string name="call_fsi_message">Để thấy cuộc gọi đến khi màn hình đang khóa, hãy cho phép ứng dụng hiển thị thông báo toàn màn hình.</string>
+    <string name="call_fsi_open_settings">Mở cài đặt</string>
+    <string name="call_fsi_later">Để sau</string>
     <string name="call_notification_ongoing">Đang trong cuộc gọi</string>
     <string name="call_cd_voice_call">Gọi thoại</string>
     <string name="call_cd_video_call">Gọi video</string>

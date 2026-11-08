@@ -6,6 +6,7 @@ package com.example.messageapp.fragment
 
 import com.example.messageapp.call.CallActivity
 import com.example.messageapp.call.CallManager
+import com.example.messageapp.service.CallNotifier
 import com.example.messageapp.domain.model.CallType
 import com.example.messageapp.permission.AppPermission
 import com.example.messageapp.permission.PermissionRequester
@@ -541,9 +542,33 @@ class ChatFragment : BaseFragment<FragmentChatBinding, ChatFragmentViewModel>() 
         if (cvt.isGroupThread() || cvt.friendId.isBlank()) return
         val permission = if (type == CallType.VIDEO) AppPermission.VIDEO_CALL else AppPermission.VOICE_CALL
         callPermissionRequester.request(permission) {
-            callManager.startCall(cvt.friendId, cvt.name, cvt.friendImage, type)
-            CallActivity.start(requireActivity())
+            val begin = {
+                callManager.startCall(cvt.friendId, cvt.name, cvt.friendImage, type)
+                CallActivity.start(requireActivity())
+            }
+            promptFullScreenIntentIfNeeded(onContinue = begin)
         }
+    }
+
+    /**
+     * Android 14+: nhắc bật quyền hiện cuộc gọi toàn màn hình (chỉ hỏi một lần), TRƯỚC khi mở
+     * màn hình gọi. "Để sau" vẫn tiếp tục gọi; "Mở cài đặt" đi tới cài đặt, người dùng bấm gọi lại.
+     */
+    private fun promptFullScreenIntentIfNeeded(onContinue: () -> Unit) {
+        val ctx = context ?: return
+        val prefs = ctx.getSharedPreferences("call_prefs", android.content.Context.MODE_PRIVATE)
+        if (CallNotifier.canUseFullScreenIntent(ctx) || prefs.getBoolean("fsi_prompted", false)) {
+            onContinue()
+            return
+        }
+        prefs.edit().putBoolean("fsi_prompted", true).apply()
+        androidx.appcompat.app.AlertDialog.Builder(requireActivity())
+            .setTitle(R.string.call_fsi_title)
+            .setMessage(R.string.call_fsi_message)
+            .setPositiveButton(R.string.call_fsi_open_settings) { _, _ -> CallNotifier.openFullScreenIntentSettings(ctx) }
+            .setNegativeButton(R.string.call_fsi_later) { _, _ -> onContinue() }
+            .setOnCancelListener { onContinue() }
+            .show()
     }
 
     fun scrollToPinnedMessage(messageTime: String) {
